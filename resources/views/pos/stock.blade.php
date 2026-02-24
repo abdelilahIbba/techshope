@@ -326,8 +326,23 @@
     </div>
 
     <div class="tab-content active" id="products-tab">
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="searchProduct" class="form-input" placeholder="🔍 Rechercher un produit (nom, barcode)..." style="flex: 1;" onkeyup="filterProducts()">
+            <select id="filterCategory" class="form-select" style="width: 200px;" onchange="filterProducts()">
+                <option value="">Toutes les catégories</option>
+                @foreach($categories as $category)
+                    <option value="{{ $category->name }}">{{ $category->name }}</option>
+                @endforeach
+            </select>
+            <select id="filterStatus" class="form-select" style="width: 150px;" onchange="filterProducts()">
+                <option value="">Tous les statuts</option>
+                <option value="OK">OK</option>
+                <option value="Faible">Faible</option>
+                <option value="Critique">Critique</option>
+            </select>
+        </div>
         <div class="table-container">
-            <table>
+            <table id="productsTable">
                 <thead>
                     <tr>
                         <th>Produit</th>
@@ -338,6 +353,7 @@
                         <th>Prix achat</th>
                         <th>Prix vente</th>
                         <th>Statut</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -358,6 +374,15 @@
                                 @else
                                     <span class="badge badge-success">OK</span>
                                 @endif
+                            </td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick='editProduct({{ json_encode($product) }})'>✏️</button>
+                                <button class="btn" style="background: var(--warning); color: white; padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick='adjustStock({{ json_encode($product) }})'>📦</button>
+                                <form method="POST" action="{{ route('pos.stock.delete-product', $product) }}" style="display: inline;" onsubmit="return confirm('Supprimer ce produit ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn" style="background: var(--danger); color: white; padding: 4px 8px; font-size: 11px;">🗑️</button>
+                                </form>
                             </td>
                         </tr>
                     @empty
@@ -382,6 +407,7 @@
                         <th>Contact</th>
                         <th>Produits liés</th>
                         <th>Notes</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -391,10 +417,18 @@
                             <td>{{ $supplier->contact_info ?? 'N/A' }}</td>
                             <td>{{ $supplier->products_count ?? 0 }}</td>
                             <td><span class="muted">{{ $supplier->notes ?? '-' }}</span></td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 6px;" onclick='editSupplier({{ json_encode($supplier) }})'>✏️ Éditer</button>
+                                <form method="POST" action="{{ route('pos.stock.delete-supplier', $supplier) }}" style="display: inline;" onsubmit="return confirm('Supprimer ce fournisseur ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn" style="background: var(--danger); color: white; padding: 4px 10px; font-size: 12px;">🗑️ Supprimer</button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" style="text-align: center; color: var(--muted);">Aucun fournisseur</td>
+                            <td colspan="5" style="text-align: center; color: var(--muted);">Aucun fournisseur</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -556,6 +590,123 @@
     </div>
 </div>
 
+<!-- Edit Product Modal -->
+<div class="modal" id="editProductModal">
+    <div class="modal-content">
+        <h3 class="modal-title">Modifier le produit</h3>
+        <form method="POST" id="editProductForm">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_product_id">
+            <div class="form-group">
+                <label class="form-label">Nom du produit</label>
+                <input type="text" name="name" id="edit_product_name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Barcode</label>
+                <input type="text" name="barcode" id="edit_product_barcode" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Catégorie</label>
+                <select name="category_id" id="edit_product_category" class="form-select" required>
+                    <option value="">Sélectionner</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fournisseur</label>
+                <select name="supplier_id" id="edit_product_supplier" class="form-select">
+                    <option value="">Aucun</option>
+                    @foreach($suppliers as $supplier)
+                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Prix d'achat (DZD)</label>
+                <input type="number" step="0.01" name="purchase_price" id="edit_product_purchase_price" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Prix de vente (DZD)</label>
+                <input type="number" step="0.01" name="sale_price" id="edit_product_sale_price" class="form-input" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editProductModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+<div class="modal" id="adjustStockModal">
+    <div class="modal-content">
+        <h3 class="modal-title">Ajuster le stock</h3>
+        <form method="POST" id="adjustStockForm">
+            @csrf
+            <input type="hidden" id="adjust_product_id">
+            <div class="form-group">
+                <label class="form-label">Produit</label>
+                <input type="text" id="adjust_product_name" class="form-input" readonly style="background: #f9fafb;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Stock actuel</label>
+                <input type="text" id="adjust_current_stock" class="form-input" readonly style="background: #f9fafb;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Type d'ajustement</label>
+                <select name="adjustment_type" id="adjustment_type" class="form-select" required>
+                    <option value="add">Ajouter au stock</option>
+                    <option value="remove">Retirer du stock</option>
+                    <option value="set">Définir le stock</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quantité</label>
+                <input type="number" name="quantity" class="form-input" required min="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Motif (optionnel)</label>
+                <input type="text" name="reason" class="form-input" placeholder="Ex: Inventaire, Casse, Réception...">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('adjustStockModal')">Annuler</button>
+                <button type="submit" class="btn" style="background: var(--warning); color: white;">Ajuster</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Supplier Modal -->
+<div class="modal" id="editSupplierModal">
+    <div class="modal-content">
+        <h3 class="modal-title">Modifier le fournisseur</h3>
+        <form method="POST" id="editSupplierForm">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_supplier_id">
+            <div class="form-group">
+                <label class="form-label">Nom du fournisseur</label>
+                <input type="text" name="name" id="edit_supplier_name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contact</label>
+                <input type="text" name="contact_info" id="edit_supplier_contact" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <input type="text" name="notes" id="edit_supplier_notes" class="form-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editSupplierModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function switchTab(tab) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -580,6 +731,35 @@
         openModal('editCategoryModal');
     }
 
+    function editProduct(product) {
+        document.getElementById('edit_product_id').value = product.id;
+        document.getElementById('edit_product_name').value = product.name;
+        document.getElementById('edit_product_barcode').value = product.barcode;
+        document.getElementById('edit_product_category').value = product.category_id;
+        document.getElementById('edit_product_supplier').value = product.supplier_id || '';
+        document.getElementById('edit_product_purchase_price').value = product.purchase_price;
+        document.getElementById('edit_product_sale_price').value = product.sale_price;
+        document.getElementById('editProductForm').action = '/pos/stock/edit-product/' + product.id;
+        openModal('editProductModal');
+    }
+
+    function adjustStock(product) {
+        document.getElementById('adjust_product_id').value = product.id;
+        document.getElementById('adjust_product_name').value = product.name;
+        document.getElementById('adjust_current_stock').value = product.stock_quantity + ' unités';
+        document.getElementById('adjustStockForm').action = '/pos/stock/adjust-stock/' + product.id;
+        openModal('adjustStockModal');
+    }
+
+    function editSupplier(supplier) {
+        document.getElementById('edit_supplier_id').value = supplier.id;
+        document.getElementById('edit_supplier_name').value = supplier.name;
+        document.getElementById('edit_supplier_contact').value = supplier.contact_info || '';
+        document.getElementById('edit_supplier_notes').value = supplier.notes || '';
+        document.getElementById('editSupplierForm').action = '/pos/stock/edit-supplier/' + supplier.id;
+        openModal('editSupplierModal');
+    }
+
     // Close modal on outside click
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', function(e) {
@@ -588,6 +768,36 @@
             }
         });
     });
+
+    function filterProducts() {
+        const searchTerm = document.getElementById('searchProduct').value.toLowerCase();
+        const categoryFilter = document.getElementById('filterCategory').value.toLowerCase();
+        const statusFilter = document.getElementById('filterStatus').value;
+        
+        const table = document.getElementById('productsTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            // Skip empty state row
+            if (row.cells.length === 1) continue;
+            
+            const productName = row.cells[0].textContent.toLowerCase();
+            const barcode = row.cells[1].textContent.toLowerCase();
+            const category = row.cells[2].textContent.toLowerCase();
+            const statusBadge = row.cells[7].querySelector('.badge');
+            const status = statusBadge ? statusBadge.textContent.trim() : '';
+            
+            const matchesSearch = productName.includes(searchTerm) || barcode.includes(searchTerm);
+            const matchesCategory = !categoryFilter || category.includes(categoryFilter);
+            const matchesStatus = !statusFilter || status === statusFilter;
+            
+            if (matchesSearch && matchesCategory && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
 </script>
 </body>
 </html>

@@ -14,6 +14,7 @@ use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
@@ -23,7 +24,7 @@ class PosController extends Controller
 {
     public function dashboard(Request $request): View
     {
-        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $from = $request->input('from', now()->format('Y-m-d'));
         $to = $request->input('to', now()->format('Y-m-d'));
 
         $sales = Sale::query()
@@ -138,6 +139,83 @@ class PosController extends Controller
         Supplier::query()->create($validated);
 
         return redirect()->route('pos.stock')->with('success', 'Fournisseur ajouté avec succès!');
+    }
+
+    public function editProduct(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'barcode' => ['required', 'string', 'unique:products,barcode,' . $product->id],
+            'category_id' => ['required', 'exists:categories,id'],
+            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'sale_price' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $product->update($validated);
+
+        return redirect()->route('pos.stock')->with('success', 'Produit modifié avec succès!');
+    }
+
+    public function deleteProduct(Product $product)
+    {
+        $product->delete();
+
+        return redirect()->route('pos.stock')->with('success', 'Produit supprimé avec succès!');
+    }
+
+    public function adjustStock(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'adjustment_type' => ['required', 'in:add,remove,set'],
+            'quantity' => ['required', 'integer', 'min:0'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $currentStock = $product->stock_quantity;
+        $newStock = $currentStock;
+
+        switch ($validated['adjustment_type']) {
+            case 'add':
+                $newStock = $currentStock + $validated['quantity'];
+                break;
+            case 'remove':
+                $newStock = max(0, $currentStock - $validated['quantity']);
+                break;
+            case 'set':
+                $newStock = $validated['quantity'];
+                break;
+        }
+
+        $product->update(['stock_quantity' => $newStock]);
+
+        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . $newStock . ' unités');
+    }
+
+    public function editSupplier(Request $request, Supplier $supplier)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'contact_info' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $supplier->update($validated);
+
+        return redirect()->route('pos.stock')->with('success', 'Fournisseur modifié avec succès!');
+    }
+
+    public function deleteSupplier(Supplier $supplier)
+    {
+        $productsCount = $supplier->products()->count();
+
+        if ($productsCount > 0) {
+            return redirect()->route('pos.stock')->with('error', 'Impossible de supprimer ce fournisseur car il est lié à ' . $productsCount . ' produit(s).');
+        }
+
+        $supplier->delete();
+
+        return redirect()->route('pos.stock')->with('success', 'Fournisseur supprimé avec succès!');
     }
 
     public function addCategory(Request $request)
@@ -289,7 +367,7 @@ class PosController extends Controller
 
     public function deleteUser(User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->id === Auth::id()) {
             return redirect()->route('pos.settings')->with('error', 'Vous ne pouvez pas supprimer votre propre compte');
         }
 

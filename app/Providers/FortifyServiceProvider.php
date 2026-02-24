@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -34,7 +35,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             $user = \App\Models\User::find($credentials['user_id']);
             
-            if ($user && \Hash::check($credentials['password'], $user->password)) {
+            if ($user && Hash::check($credentials['password'], $user->password)) {
                 return $user;
             }
             

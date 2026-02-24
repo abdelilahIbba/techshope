@@ -18,12 +18,27 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. إضافة حساب مدير النظام
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'admin@droguerie.com'],
             [
-                'name' => 'مدير النظام',
-                'password' => Hash::make('password'), 
-                // يمكنك استخدام كلمة المرور 'password' للدخول لاحقاً
+                'name' => 'Admin',
+                'password' => Hash::make('2001'), 
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'cashier@droguerie.com'],
+            [
+                'name' => 'Caissier',
+                'password' => Hash::make('1234'), 
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'commercial@droguerie.com'],
+            [
+                'name' => 'Commercial',
+                'password' => Hash::make('5678'), 
             ]
         );
 

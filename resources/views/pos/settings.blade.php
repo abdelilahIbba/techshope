@@ -233,6 +233,158 @@
             font-size: 13px;
             color: #1e40af;
         }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: var(--danger);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: var(--ink);
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--panel);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+        }
+
+        .modal-close:hover {
+            color: var(--ink);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .setting-item {
+            padding: 0;
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
@@ -254,101 +406,146 @@
 </nav>
 
 <div class="container">
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-error">{{ session('error') }}</div>
+    @endif
+
     <div class="page-header">
         <h1 class="page-title">Paramètres système</h1>
         <p class="page-subtitle">Configuration utilisateurs et périphériques</p>
     </div>
 
-    <div class="settings-grid">
-        <div class="settings-section">
-            <h3 class="section-title">
-                <div class="section-icon">🖨️</div>
-                Configuration imprimante
-            </h3>
-            <p class="section-desc">Paramètres pour l'impression de tickets</p>
-            <div class="setting-item">
-                <div class="setting-label">Imprimante par défaut</div>
-                <div class="setting-value">Ticket POS Printer (USB)</div>
+    <form method="POST" action="{{ route('pos.settings.system.update') }}">
+        @csrf
+        <div class="settings-grid">
+            <div class="settings-section">
+                <h3 class="section-title">
+                    <div class="section-icon">🖨️</div>
+                    Configuration imprimante
+                </h3>
+                <p class="section-desc">Paramètres pour l'impression de tickets</p>
+                
+                <div class="form-group">
+                    <label class="form-label">Imprimante par défaut</label>
+                    <select name="printer_name" class="form-select">
+                        @if(count($printers) > 0)
+                            @foreach($printers as $printer)
+                                <option value="{{ $printer }}" {{ $settings['printer_name'] == $printer ? 'selected' : '' }}>{{ $printer }}</option>
+                            @endforeach
+                        @else
+                            <option value="Aucune imprimante détectée">Aucune imprimante détectée</option>
+                        @endif
+                        <option value="Manuel">--- Saisie manuelle ---</option>
+                    </select>
+                    <small style="display: block; color: var(--muted); font-size: 12px; margin-top: 4px;">
+                        @if(count($printers) > 0)
+                            {{ count($printers) }} imprimante(s) détectée(s)
+                        @else
+                            Aucune imprimante installée détectée
+                        @endif
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Format ticket</label>
+                    <select name="ticket_format" class="form-select">
+                        <option value="80mm thermal" {{ $settings['ticket_format'] == '80mm thermal' ? 'selected' : '' }}>80mm thermal</option>
+                        <option value="58mm thermal" {{ $settings['ticket_format'] == '58mm thermal' ? 'selected' : '' }}>58mm thermal</option>
+                        <option value="A4" {{ $settings['ticket_format'] == 'A4' ? 'selected' : '' }}>A4</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Auto-print après vente</label>
+                    <select name="auto_print" class="form-select">
+                        <option value="true" {{ $settings['auto_print'] == 'true' ? 'selected' : '' }}>Activé</option>
+                        <option value="false" {{ $settings['auto_print'] == 'false' ? 'selected' : '' }}>Désactivé</option>
+                    </select>
+                </div>
             </div>
-            <div class="setting-item">
-                <div class="setting-label">Format ticket</div>
-                <div class="setting-value">80mm thermal</div>
+
+            <div class="settings-section">
+                <h3 class="section-title">
+                    <div class="section-icon">📷</div>
+                    Scanner barcode
+                </h3>
+                <p class="section-desc">Configuration scanner de codes-barres</p>
+                
+                <div class="form-group">
+                    <label class="form-label">Mode d'entrée</label>
+                    <input type="text" name="scanner_mode" class="form-input" value="{{ $settings['scanner_mode'] }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Beep confirmation</label>
+                    <select name="scanner_beep" class="form-select">
+                        <option value="true" {{ $settings['scanner_beep'] == 'true' ? 'selected' : '' }}>Activé</option>
+                        <option value="false" {{ $settings['scanner_beep'] == 'false' ? 'selected' : '' }}>Désactivé</option>
+                    </select>
+                </div>
             </div>
-            <div class="setting-item">
-                <div class="setting-label">Auto-print après vente</div>
-                <div class="setting-value">Activé</div>
+
+            <div class="settings-section">
+                <h3 class="section-title">
+                    <div class="section-icon">💰</div>
+                    Paramètres de vente
+                </h3>
+                <p class="section-desc">Options générales du système POS</p>
+                
+                <div class="form-group">
+                    <label class="form-label">Devise</label>
+                    <input type="text" name="currency" class="form-input" value="{{ $settings['currency'] }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Seuil stock faible</label>
+                    <input type="number" name="low_stock_threshold" class="form-input" value="{{ $settings['low_stock_threshold'] }}" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Client par défaut</label>
+                    <input type="text" name="default_customer" class="form-input" value="{{ $settings['default_customer'] }}">
+                </div>
             </div>
-            <button class="btn btn-secondary">Configurer</button>
+
+            <div class="settings-section">
+                <h3 class="section-title">
+                    <div class="section-icon">🔔</div>
+                    Notifications
+                </h3>
+                <p class="section-desc">Gestion des alertes système</p>
+                
+                <div class="form-group">
+                    <label class="form-label">Email rapport quotidien CA</label>
+                    <input type="email" name="notification_email" class="form-input" value="{{ $settings['notification_email'] }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Fréquence vérification stock</label>
+                    <select name="stock_check_frequency" class="form-select">
+                        <option value="Chaque heure" {{ $settings['stock_check_frequency'] == 'Chaque heure' ? 'selected' : '' }}>Chaque heure</option>
+                        <option value="Quotidien" {{ $settings['stock_check_frequency'] == 'Quotidien' ? 'selected' : '' }}>Quotidien</option>
+                        <option value="Manuel" {{ $settings['stock_check_frequency'] == 'Manuel' ? 'selected' : '' }}>Manuel</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
-        <div class="settings-section">
-            <h3 class="section-title">
-                <div class="section-icon">📷</div>
-                Scanner barcode
-            </h3>
-            <p class="section-desc">Configuration scanner de codes-barres</p>
-            <div class="setting-item">
-                <div class="setting-label">Scanner connecté</div>
-                <div class="setting-value">Détecté automatiquement</div>
-            </div>
-            <div class="setting-item">
-                <div class="setting-label">Mode d'entrée</div>
-                <div class="setting-value">Scan direct vers champ barcode</div>
-            </div>
-            <div class="setting-item">
-                <div class="setting-label">Beep confirmation</div>
-                <div class="setting-value">Activé</div>
-            </div>
-            <button class="btn btn-secondary">Tester scanner</button>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button type="submit" class="btn btn-primary" style="padding: 12px 32px; font-size: 16px;">
+                💾 Enregistrer tous les paramètres
+            </button>
         </div>
-
-        <div class="settings-section">
-            <h3 class="section-title">
-                <div class="section-icon">💰</div>
-                Paramètres de vente
-            </h3>
-            <p class="section-desc">Options générales du système POS</p>
-            <div class="setting-item">
-                <div class="setting-label">Devise</div>
-                <div class="setting-value">DZD (Dinar algérien)</div>
-            </div>
-            <div class="setting-item">
-                <div class="setting-label">Seuil stock faible</div>
-                <div class="setting-value">10 unités</div>
-            </div>
-            <div class="setting-item">
-                <div class="setting-label">Client par défaut</div>
-                <div class="setting-value">Zbon عام (Cash)</div>
-            </div>
-            <button class="btn btn-secondary">Modifier</button>
-        </div>
-
-        <div class="settings-section">
-            <h3 class="section-title">
-                <div class="section-icon">🔔</div>
-                Notifications
-            </h3>
-            <p class="section-desc">Gestion des alertes système</p>
-            <div class="setting-item">
-                <div class="setting-label">Alerte stock bas</div>
-                <div class="setting-value">Activé</div>
-            </div>
-            <div class="setting-item">
-                <div class="setting-label">Rapport quotidien CA</div>
-                <div class="setting-value">Envoyé à admin@droguerie.com</div>
-            </div>
-            <div class="setting-item">
-                <div class="setting-label">Fréquence vérification stock</div>
-                <div class="setting-value">Chaque heure</div>
-            </div>
-            <button class="btn btn-secondary">Gérer</button>
-        </div>
-    </div>
+    </form>
 
     <div class="users-table">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Gestion des utilisateurs</h3>
-            <button class="btn btn-primary">+ Nouvel utilisateur</button>
+            <button class="btn btn-primary" onclick="openAddUserModal()">+ Nouvel utilisateur</button>
         </div>
 
         <table>
@@ -371,7 +568,14 @@
                         </td>
                         <td>{{ $user->updated_at->diffForHumans() }}</td>
                         <td>
-                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;">Éditer</button>
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary btn-sm" onclick='editUser({{ json_encode($user) }})'>✏️ Éditer</button>
+                                <form method="POST" action="{{ route('pos.settings.user.delete', $user) }}" style="display: inline;" onsubmit="return confirm('Supprimer cet utilisateur ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm">🗑️ Supprimer</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -390,5 +594,103 @@
         </div>
     </div>
 </div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Ajouter un utilisateur</h3>
+            <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
+        </div>
+        <form method="POST" action="{{ route('pos.settings.user.add') }}">
+            @csrf
+            <div class="form-group">
+                <label class="form-label">Nom complet</label>
+                <input type="text" name="name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Code PIN (4 chiffres minimum)</label>
+                <input type="password" name="password" class="form-input" required minlength="4">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rôle</label>
+                <select name="role" class="form-select" required>
+                    <option value="admin">Admin</option>
+                    <option value="cashier">Cashier</option>
+                    <option value="commercial">Commercial</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Modifier l'utilisateur</h3>
+            <button class="modal-close" onclick="closeEditUserModal()">&times;</button>
+        </div>
+        <form method="POST" id="editUserForm">
+            @csrf
+            <input type="hidden" id="edit_user_id">
+            <div class="form-group">
+                <label class="form-label">Nom complet</label>
+                <input type="text" name="name" id="edit_name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" id="edit_email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
+                <input type="password" name="password" class="form-input" minlength="4">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddUserModal() {
+    document.getElementById('addUserModal').classList.add('active');
+}
+
+function closeAddUserModal() {
+    document.getElementById('addUserModal').classList.remove('active');
+}
+
+function editUser(user) {
+    document.getElementById('edit_user_id').value = user.id;
+    document.getElementById('edit_name').value = user.name;
+    document.getElementById('edit_email').value = user.email;
+    document.getElementById('editUserForm').action = '/pos/settings/user/edit/' + user.id;
+    document.getElementById('editUserModal').classList.add('active');
+}
+
+function closeEditUserModal() {
+    document.getElementById('editUserModal').classList.remove('active');
+}
+
+// Close modal on outside click
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('active');
+        }
+    });
+});
+</script>
 </body>
 </html>

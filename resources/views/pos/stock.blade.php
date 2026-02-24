@@ -276,6 +276,12 @@
             color: #065f46;
             border: 1px solid #10b981;
         }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -309,9 +315,14 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    @if (session('error'))
+        <div class="alert alert-error">{{ session('error') }}</div>
+    @endif
+
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('products')">Produits</button>
         <button class="tab-btn" onclick="switchTab('suppliers')">Fournisseurs</button>
+        <button class="tab-btn" onclick="switchTab('categories')">Catégories</button>
     </div>
 
     <div class="tab-content active" id="products-tab">
@@ -384,6 +395,43 @@
                     @empty
                         <tr>
                             <td colspan="4" style="text-align: center; color: var(--muted);">Aucun fournisseur</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-content" id="categories-tab">
+        <div style="margin-bottom: 16px;">
+            <button class="btn btn-success" onclick="openModal('addCategoryModal')">+ Ajouter catégorie</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nom de la catégorie</th>
+                        <th>Nombre de produits</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($categories as $category)
+                        <tr>
+                            <td><strong>{{ $category->name }}</strong></td>
+                            <td>{{ $category->products_count ?? 0 }} produit(s)</td>
+                            <td>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 6px;" onclick='editCategory({{ json_encode($category) }})'>✏️ Éditer</button>
+                                <form method="POST" action="{{ route('pos.stock.delete-category', $category) }}" style="display: inline;" onsubmit="return confirm('Supprimer cette catégorie ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn" style="background: var(--danger); color: white; padding: 4px 10px; font-size: 12px;">🗑️ Supprimer</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: var(--muted);">Aucune catégorie</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -470,6 +518,44 @@
     </div>
 </div>
 
+<!-- Add Category Modal -->
+<div class="modal" id="addCategoryModal">
+    <div class="modal-content">
+        <h3 class="modal-title">Ajouter une catégorie</h3>
+        <form method="POST" action="{{ route('pos.stock.add-category') }}">
+            @csrf
+            <div class="form-group">
+                <label class="form-label">Nom de la catégorie</label>
+                <input type="text" name="name" class="form-input" required placeholder="Ex: Produits d'entretien">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('addCategoryModal')">Annuler</button>
+                <button type="submit" class="btn btn-success">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal" id="editCategoryModal">
+    <div class="modal-content">
+        <h3 class="modal-title">Modifier la catégorie</h3>
+        <form method="POST" id="editCategoryForm">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_category_id">
+            <div class="form-group">
+                <label class="form-label">Nom de la catégorie</label>
+                <input type="text" name="name" id="edit_category_name" class="form-input" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editCategoryModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function switchTab(tab) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -486,6 +572,22 @@
     function closeModal(modalId) {
         document.getElementById(modalId).classList.remove('active');
     }
+
+    function editCategory(category) {
+        document.getElementById('edit_category_id').value = category.id;
+        document.getElementById('edit_category_name').value = category.name;
+        document.getElementById('editCategoryForm').action = '/pos/stock/edit-category/' + category.id;
+        openModal('editCategoryModal');
+    }
+
+    // Close modal on outside click
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+    });
 </script>
 </body>
 </html>

@@ -8,12 +8,14 @@ use App\Models\Product;
 use App\Models\Receipt;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 
@@ -94,7 +96,10 @@ class PosController extends Controller
             ->orderBy('name')
             ->get();
 
-        $categories = Category::query()->orderBy('name')->get();
+        $categories = Category::query()
+            ->withCount('products')
+            ->orderBy('name')
+            ->get();
 
         return view('pos.stock', [
             'products' => $products,
@@ -135,6 +140,41 @@ class PosController extends Controller
         return redirect()->route('pos.stock')->with('success', 'Fournisseur ajouté avec succès!');
     }
 
+    public function addCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+        ]);
+
+        Category::query()->create($validated);
+
+        return redirect()->route('pos.stock')->with('success', 'Catégorie ajoutée avec succès!');
+    }
+
+    public function editCategory(Request $request, Category $category)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:categories,name,' . $category->id],
+        ]);
+
+        $category->update($validated);
+
+        return redirect()->route('pos.stock')->with('success', 'Catégorie modifiée avec succès!');
+    }
+
+    public function deleteCategory(Category $category)
+    {
+        $productsCount = $category->products()->count();
+
+        if ($productsCount > 0) {
+            return redirect()->route('pos.stock')->with('error', 'Impossible de supprimer cette catégorie car elle contient ' . $productsCount . ' produit(s).');
+        }
+
+        $category->delete();
+
+        return redirect()->route('pos.stock')->with('success', 'Catégorie supprimée avec succès!');
+    }
+
     public function notifications(): View
     {
         $lowStockProducts = Product::query()
@@ -151,7 +191,136 @@ class PosController extends Controller
     public function settings(): View
     {
         $users = User::orderBy('name')->get();
-        return view('pos.settings', compact('users'));
+        $printers = $this->getAvailablePrinters();
+        
+        $settings = [
+            'printer_name' => Setting::get('printer_name', 'Ticket POS Printer (USB)'),
+            'ticket_format' => Setting::get('ticket_format', '80mm thermal'),
+            'auto_print' => Setting::get('auto_print', 'true'),
+            'scanner_mode' => Setting::get('scanner_mode', 'Scan direct vers champ barcode'),
+            'scanner_beep' => Setting::get('scanner_beep', 'true'),
+            'currency' => Setting::get('currency', 'DZD'),
+            'low_stock_threshold' => Setting::get('low_stock_threshold', '10'),
+            'default_customer' => Setting::get('default_customer', 'Zbon عام (Cash)'),
+            'notification_email' => Setting::get('notification_email', 'admin@droguerie.com'),
+            'stock_check_frequency' => Setting::get('stock_check_frequency', 'Chaque heure'),
+        ];
+        
+        return view('pos.settings', compact('users', 'settings', 'printers'));
+    }
+
+    private function getAvailablePrinters(): array
+    {
+        $printers = [];
+        
+        try {
+            if (PHP_OS_FAMILY === 'Windows') {
+                // Use PowerShell to get printers
+                $command = 'powershell -Command "Get-Printer | Select-Object -ExpandProperty Name"';
+                $output = shell_exec($command);
+                
+                if ($output) {
+                    $printersList = explode("\n", trim($output));
+                    foreach ($printersList as $printer) {
+                        $printer = trim($printer);
+                        if (!empty($printer)) {
+                            $printers[] = $printer;
+                        }
+                    }
+                }
+            } else {
+                // For Linux/Unix systems
+                $output = shell_exec('lpstat -p -d 2>/dev/null | grep "^printer" | cut -d" " -f2');
+                if ($output) {
+                    $printersList = explode("\n", trim($output));
+                    foreach ($printersList as $printer) {
+                        $printer = trim($printer);
+                        if (!empty($printer)) {
+                            $printers[] = $printer;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // If we can't detect printers, return empty array
+            $printers = [];
+        }
+        
+        return $printers;
+    }
+
+    public function addUser(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:4',
+            'role' => 'required|in:admin,cashier,commercial',
+        ]);
+
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return redirect()->route('pos.settings')->with('success', 'Utilisateur ajouté avec succès');
+    }
+
+    public function editUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:4',
+        ]);
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        
+        $user->save();
+
+        return redirect()->route('pos.settings')->with('success', 'Utilisateur modifié avec succès');
+    }
+
+    public function deleteUser(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('pos.settings')->with('error', 'Vous ne pouvez pas supprimer votre propre compte');
+        }
+
+        $user->delete();
+
+        return redirect()->route('pos.settings')->with('success', 'Utilisateur supprimé avec succès');
+    }
+
+    public function updateSystemSettings(Request $request)
+    {
+        $settings = $request->validate([
+            'printer_name' => 'nullable|string',
+            'ticket_format' => 'nullable|string',  
+            'auto_print' => 'nullable|string',
+            'scanner_mode' => 'nullable|string',
+            'scanner_beep' => 'nullable|string',
+            'currency' => 'nullable|string',
+            'low_stock_threshold' => 'nullable|integer|min:1',
+            'default_customer' => 'nullable|string',
+            'notification_email' => 'nullable|email',
+            'stock_check_frequency' => 'nullable|string',
+        ]);
+
+        foreach ($settings as $key => $value) {
+            if ($value !== null) {
+                $type = is_numeric($value) ? 'integer' : 'string';
+                Setting::set($key, $value, $type);
+            }
+        }
+
+        return redirect()->route('pos.settings')->with('success', 'Paramètres mis à jour avec succès');
     }
 
     public function scan(string $barcode): JsonResponse

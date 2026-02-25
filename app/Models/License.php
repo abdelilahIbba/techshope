@@ -3,18 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class License extends Model
 {
+    private const CLOCK_ROLLBACK_TOLERANCE_MINUTES = 5;
+
     protected $fillable = [
         'key',
         'period',
         'activated_at',
+        'last_seen_at',
         'expires_at',
     ];
 
     protected $casts = [
         'activated_at' => 'datetime',
+        'last_seen_at' => 'datetime',
         'expires_at'   => 'datetime',
     ];
 
@@ -33,8 +38,21 @@ class License extends Model
     {
         $license = self::current();
 
-        return $license !== null
-            && $license->expires_at !== null
-            && $license->expires_at->isFuture();
+        if ($license === null || $license->expires_at === null) {
+            return false;
+        }
+
+        $now = now();
+
+        if ($license->last_seen_at instanceof Carbon
+            && $now->lt($license->last_seen_at->copy()->subMinutes(self::CLOCK_ROLLBACK_TOLERANCE_MINUTES))) {
+            return false;
+        }
+
+        if (! $license->last_seen_at || $now->gt($license->last_seen_at)) {
+            $license->forceFill(['last_seen_at' => $now])->saveQuietly();
+        }
+
+        return $license->expires_at->isFuture();
     }
 }

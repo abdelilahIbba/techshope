@@ -5,9 +5,6 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
-use Tests\TestCase;
-
-uses(TestCase::class)->in(__DIR__);
 
 beforeEach(function () {
     if (! Features::enabled(Features::emailVerification()) || ! Route::has('verification.send')) {

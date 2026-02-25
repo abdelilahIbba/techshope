@@ -125,3 +125,33 @@ test('activate returns error for tampered key without touching database', functi
     expect($result['valid'])->toBeFalse();
     expect(License::query()->where('id', 1)->exists())->toBeFalse();
 });
+
+test('active license is blocked when system clock is rolled back too far', function () {
+    Carbon::setTestNow(Carbon::parse('2026-03-01 12:00:00'));
+
+    $service = new LicenseService();
+    $service->activate($service->generate('1_year'));
+
+    expect(License::isActive())->toBeTrue();
+
+    Carbon::setTestNow(Carbon::parse('2026-03-01 11:40:00'));
+
+    expect(License::isActive())->toBeFalse();
+
+    Carbon::setTestNow();
+});
+
+test('small backward clock drift within tolerance does not block license', function () {
+    Carbon::setTestNow(Carbon::parse('2026-03-01 12:00:00'));
+
+    $service = new LicenseService();
+    $service->activate($service->generate('1_year'));
+
+    expect(License::isActive())->toBeTrue();
+
+    Carbon::setTestNow(Carbon::parse('2026-03-01 11:56:00'));
+
+    expect(License::isActive())->toBeTrue();
+
+    Carbon::setTestNow();
+});

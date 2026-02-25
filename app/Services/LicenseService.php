@@ -125,6 +125,7 @@ class LicenseService
             'key'          => trim($key),
             'period'       => $result['period'],
             'activated_at' => now(),
+            'last_seen_at' => now(),
             'expires_at'   => $result['expires_at'],
         ]);
 

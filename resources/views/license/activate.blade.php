@@ -102,7 +102,7 @@
                         id="license_key"
                         name="license_key"
                         rows="4"
-                        class="w-full border @error('license_key') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl p-3 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        class="w-full border rounded-xl p-3 text-sm font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none @error('license_key') border-red-500 bg-red-50 @else border-slate-200 @enderror"
                         placeholder="DRG-XXXX…"
                         autocomplete="off"
                         autocorrect="off"

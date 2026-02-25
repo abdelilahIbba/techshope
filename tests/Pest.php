@@ -45,3 +45,57 @@ function something()
 {
     // ..
 }
+
+// ─── Shared test helpers ──────────────────────────────────────────────────────
+
+use App\Models\License;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
+
+/**
+ * Insert/update a valid active license so CheckLicense middleware passes.
+ */
+function activeLicense(): void
+{
+    License::updateOrCreate(['id' => 1], [
+        'key'          => 'DRG-TEST',
+        'period'       => '1_year',
+        'activated_at' => now(),
+        'expires_at'   => now()->addYear(),
+    ]);
+}
+
+/**
+ * Create a User with the given role string (no 2FA).
+ */
+function userWithRole(string $role): User
+{
+    return User::factory()->withoutTwoFactor()->create(['role' => $role]);
+}
+
+/**
+ * Upsert a Role with exactly the given permission keys.
+ * Safe to call multiple times; uses firstOrCreate to avoid duplicate-name errors.
+ */
+function roleWith(string $roleName, array $permissionKeys): Role
+{
+    $role = Role::query()->firstOrCreate(
+        ['name' => $roleName],
+        ['description' => "Test: {$roleName}"]
+    );
+    $ids = Permission::query()->whereIn('key', $permissionKeys)->pluck('id');
+    $role->permissions()->sync($ids);
+    return $role;
+}
+
+/**
+ * Ensure a single permission row exists.
+ */
+function ensurePermission(string $key, string $page = 'Settings', string $action = 'Edit'): Permission
+{
+    return Permission::query()->firstOrCreate(
+        ['key' => $key],
+        ['label' => $key, 'page' => $page, 'action' => $action]
+    );
+}

@@ -41,8 +41,10 @@
         @endif
     </a>
     <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.settings') }}">Settings</a>
-    
-    <form method="POST" action="{{ route('logout') }}" class="ml-auto">
+
+    @include('partials.license-badge')
+
+    <form method="POST" action="{{ route('logout') }}" >
         @csrf
         <button type="submit" class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 cursor-pointer flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -124,7 +126,7 @@
                     </thead>
                     <tbody>
                         @forelse ($products as $product)
-                            <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
+                            <tr ondblclick='showProductDetails({{ json_encode($product) }})' class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
                                 <td class="px-6 py-4 font-bold text-slate-800">{{ $product->name }}</td>
                                 <td class="px-6 py-4"><span class="text-slate-400 font-mono tracking-wider text-xs">{{ $product->barcode }}</span></td>
                                 <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-semibold">{{ $product->category->name ?? 'N/A' }}</span></td>
@@ -171,6 +173,39 @@
             </div>
         </div>
     </div>
+
+<!-- Print Barcode Modal -->
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="printBarcodeModal">
+    <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-3">Imprimer tickets - <span id="print_product_name"></span></h3>
+        <form method="POST" id="printBarcodeForm" action="{{ route('pos.stock.print-barcodes') }}">
+            @csrf
+            <input type="hidden" name="product_id" id="print_product_id">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre de tickets</label>
+                <input type="text" name="quantity" id="print_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 outline-none cursor-pointer" value="1" readonly onclick="openNumericKeyboard('print_quantity_input')">
+            </div>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('printBarcodeModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Imprimer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Product Details Modal -->
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="productDetailsModal">
+    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <button type="button" class="absolute top-3 right-3 text-slate-400 hover:text-slate-700 text-xl" onclick="closeModal('productDetailsModal')">&times;</button>
+        <h3 class="text-xl font-bold text-slate-900 mb-2" id="detail_product_name"></h3>
+        <p class="text-sm text-slate-600 mb-3" id="detail_product_barcode"></p>
+        <p class="text-sm text-slate-600 mb-3">Stock: <span id="detail_product_stock"></span></p>
+        <div class="flex gap-2">
+            <button type="button" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg" onclick="openPrintFromDetails()">Imprimer barcode</button>
+            <button type="button" class="px-4 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg" onclick="closeModal('productDetailsModal')">Fermer</button>
+        </div>
+    </div>
+</div>
 
     <div class="tab-content" id="suppliers-tab">
         <div class="mb-6 flex justify-between items-center">
@@ -318,8 +353,55 @@
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale</label>
-                <input type="number" name="stock_quantity" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" value="0" required>
+                <input type="text" name="stock_quantity" id="stock_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none cursor-pointer" value="0" required readonly onclick="openNumericKeyboard('stock_quantity_input')">
             </div>
+            <!-- Numeric Keyboard Modal -->
+            <div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="numericKeyboardModal">
+                <div class="modal-content bg-white w-full max-w-xs rounded-2xl shadow-xl border border-slate-200 p-6 flex flex-col items-center gap-4 relative">
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">Entrer la quantité</h3>
+                    <input type="text" id="numericKeyboardInput" class="w-full text-center text-2xl font-bold bg-slate-100 border border-slate-300 rounded-lg p-2.5 mb-2" readonly>
+                    <div class="grid grid-cols-3 gap-2 w-full">
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('1')">1</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('2')">2</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('3')">3</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('4')">4</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('5')">5</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('6')">6</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('7')">7</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('8')">8</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('9')">9</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="clearNumericKey()">C</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('0')">0</button>
+                        <button type="button" class="bg-blue-600 text-white font-bold rounded-lg p-3" onclick="confirmNumericKey()">OK</button>
+                    </div>
+                    <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-slate-700 text-xl" onclick="closeModal('numericKeyboardModal')">&times;</button>
+                </div>
+            </div>
+            <script>
+                let numericTargetInput = null;
+                function openNumericKeyboard(inputId) {
+                    numericTargetInput = document.getElementById(inputId);
+                    document.getElementById('numericKeyboardInput').value = numericTargetInput.value || '';
+                    document.getElementById('numericKeyboardModal').classList.add('active');
+                }
+                function appendNumericKey(digit) {
+                    const input = document.getElementById('numericKeyboardInput');
+                    if (input.value.length < 6) {
+                        input.value = (input.value === '0') ? digit : input.value + digit;
+                    }
+                }
+                function clearNumericKey() {
+                    document.getElementById('numericKeyboardInput').value = '';
+                }
+                function confirmNumericKey() {
+                    if (numericTargetInput) {
+                        let val = document.getElementById('numericKeyboardInput').value;
+                        if (val === '' || isNaN(val)) val = '0';
+                        numericTargetInput.value = val;
+                    }
+                    closeModal('numericKeyboardModal');
+                }
+            </script>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat (DZD)</label>
@@ -607,6 +689,53 @@
             }
         }
     }
+
+    // Simple product lookup map for modal actions
+    @php
+        $products_for_js = $products->map(function($p) {
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'barcode' => $p->barcode,
+                'stock_quantity' => $p->stock_quantity,
+                'sale_price' => $p->sale_price,
+            ];
+        });
+    @endphp
+    const PRODUCTS = {!! $products_for_js->toJson() !!};
+
+    let currentDetailProduct = null;
+
+    function showProductDetails(product) {
+        currentDetailProduct = product;
+        document.getElementById('detail_product_name').textContent = product.name;
+        document.getElementById('detail_product_barcode').textContent = product.barcode;
+        document.getElementById('detail_product_stock').textContent = product.stock_quantity;
+        openModal('productDetailsModal');
+    }
+
+    function openPrintFromDetails() {
+        if (!currentDetailProduct) return;
+        document.getElementById('print_product_id').value = currentDetailProduct.id;
+        document.getElementById('print_product_name').textContent = currentDetailProduct.name;
+        document.getElementById('print_quantity_input').value = '1';
+        closeModal('productDetailsModal');
+        openModal('printBarcodeModal');
+    }
+
+    // If a new product was just created, open the print modal automatically
+    @if(session('new_product_id'))
+        (function() {
+            const newId = {{ session('new_product_id') }};
+            const p = PRODUCTS.find(x => x.id === newId);
+            if (p) {
+                document.getElementById('print_product_id').value = p.id;
+                document.getElementById('print_product_name').textContent = p.name;
+                document.getElementById('print_quantity_input').value = '1';
+                openModal('printBarcodeModal');
+            }
+        })();
+    @endif
 </script>
 </body>
 </html>

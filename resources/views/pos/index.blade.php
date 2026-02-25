@@ -55,8 +55,10 @@
         @endif
     </a>
     <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.settings') }}">Settings</a>
-    
-    <form method="POST" action="{{ route('logout') }}" class="ml-auto">
+
+    @include('partials.license-badge')
+
+    <form method="POST" action="{{ route('logout') }}">
         @csrf
         <button type="submit" class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 cursor-pointer flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -64,6 +66,13 @@
         </button>
     </form>
 </nav>
+
+@if(session('error'))
+    <div class="mx-4 mt-4 bg-red-50 text-red-700 border border-red-200 p-3 rounded-xl font-semibold text-sm flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+        {{ session('error') }}
+    </div>
+@endif
 
 <div class="layout flex-1 p-4 grid grid-cols-1 lg:grid-cols-[260px_1fr_380px] gap-5 h-[calc(100vh-73px)] min-h-0">
     

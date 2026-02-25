@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\CheckLicense;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        $middleware->alias([
+            'permission'    => CheckPermission::class,
+            'check.license' => CheckLicense::class,
+        ]);
 
         $middleware->web(append: [
             HandleAppearance::class,

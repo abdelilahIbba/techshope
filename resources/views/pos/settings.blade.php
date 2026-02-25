@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Settings - POS System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -38,8 +39,10 @@
         @endif
     </a>
     <a class="nav-link active px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-md border-blue-600" href="{{ route('pos.settings') }}">Settings</a>
-    
-    <form method="POST" action="{{ route('logout') }}" class="ml-auto">
+
+    @include('partials.license-badge')
+
+    <form method="POST" action="{{ route('logout') }}" >
         @csrf
         <button type="submit" class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 cursor-pointer flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -83,14 +86,14 @@
                 <p class="section-desc text-sm text-slate-500 mb-5">Paramètres pour l'impression de tickets de caisse</p>
                 
                 <div class="form-group mb-4">
-                    <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Imprimante par défaut</label>
-                    <select name="printer_name" class="form-select w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 p-3 outline-none transition-all">
+                    <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Imprimante Ventes (Valider &amp; Imprimer)</label>
+                    <select name="printer_name_sale" class="form-select w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 p-3 outline-none transition-all">
                         @if(count($printers) > 0)
                             @foreach($printers as $printer)
-                                <option value="{{ $printer }}" {{ $settings['printer_name'] == $printer ? 'selected' : '' }}>{{ $printer }}</option>
+                                <option value="{{ $printer }}" {{ ($settings['printer_name_sale'] ?? '') == $printer ? 'selected' : '' }}>{{ $printer }}</option>
                             @endforeach
                         @else
-                            <option value="Aucune imprimante détectée">Aucune imprimante détectée</option>
+                            <option value="">Aucune imprimante détectée</option>
                         @endif
                         <option value="Manuel">--- Saisie manuelle ---</option>
                     </select>
@@ -101,6 +104,21 @@
                             ⚠️ Aucune imprimante installée détectée
                         @endif
                     </small>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Imprimante Codes-barres</label>
+                    <select name="printer_name_barcode" class="form-select w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 p-3 outline-none transition-all">
+                        @if(count($printers) > 0)
+                            @foreach($printers as $printer)
+                                <option value="{{ $printer }}" {{ ($settings['printer_name_barcode'] ?? '') == $printer ? 'selected' : '' }}>{{ $printer }}</option>
+                            @endforeach
+                        @else
+                            <option value="">Aucune imprimante détectée</option>
+                        @endif
+                        <option value="Manuel">--- Saisie manuelle ---</option>
+                    </select>
+                    <small class="block text-slate-400 text-xs mt-1.5 font-medium">Sélectionnez l'imprimante dédiée à l'impression d'étiquettes / codes-barres.</small>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
@@ -204,6 +222,115 @@
         </div>
     </form>
 
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">Access Rights</h3>
+                <p class="text-sm text-slate-500 mt-1">Créer des rôles, configurer les permissions (pages + actions) et attribuer les accès.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form method="POST" action="{{ route('pos.settings.roles.create') }}" class="border border-slate-200 rounded-xl p-4 bg-slate-50">
+                @csrf
+                <h4 class="font-bold text-slate-900 mb-3">Créer un rôle</h4>
+                <div class="mb-3">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du rôle</label>
+                    <input type="text" name="name" required class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 outline-none">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Description</label>
+                    <input type="text" name="description" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 outline-none">
+                </div>
+                <div class="space-y-3 max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-white">
+                    @foreach($permissionsByPage as $page => $pagePermissions)
+                        <div>
+                            <p class="text-xs uppercase tracking-wide font-bold text-slate-500 mb-1">{{ $page }}</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                @foreach($pagePermissions as $permission)
+                                    <label class="flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="permission_keys[]" value="{{ $permission->key }}" class="rounded border-slate-300">
+                                        <span>{{ $permission->label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <button type="submit" class="mt-4 w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg px-4 py-2.5">Créer rôle</button>
+            </form>
+
+            <div class="space-y-4 max-h-[520px] overflow-y-auto pr-1">
+                @forelse($roles as $role)
+                    @php $rolePermissionKeys = $role->permissions->pluck('key')->all(); @endphp
+                    <div class="border border-slate-200 rounded-xl p-4">
+                        @if($role->name === 'Admin')
+                            {{-- Admin role is immutable --}}
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <p class="font-bold text-slate-900">{{ $role->name }}</p>
+                                    <p class="text-xs text-slate-500">{{ $role->description }}</p>
+                                </div>
+                                <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-3 py-1 text-xs font-semibold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1a2 2 0 002 2zm10-12V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    Rôle protégé — non modifiable
+                                </span>
+                            </div>
+                            <div class="space-y-1 max-h-40 overflow-y-auto border border-slate-100 rounded-lg p-3 bg-slate-50">
+                                @foreach($role->permissions->groupBy('page') as $page => $perms)
+                                    <p class="text-xs text-slate-500"><span class="font-semibold">{{ $page }}:</span> {{ $perms->pluck('label')->implode(', ') }}</p>
+                                @endforeach
+                            </div>
+                        @else
+                            <form method="POST" action="{{ route('pos.settings.roles.update', $role) }}">
+                                @csrf
+                                @method('PUT')
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1">Nom</label>
+                                        <input type="text" name="name" value="{{ $role->name }}" class="w-full bg-slate-50 border border-slate-300 text-sm rounded-lg p-2.5 outline-none" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1">Description</label>
+                                        <input type="text" name="description" value="{{ $role->description }}" class="w-full bg-slate-50 border border-slate-300 text-sm rounded-lg p-2.5 outline-none">
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3 max-h-52 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                    @foreach($permissionsByPage as $page => $pagePermissions)
+                                        <div>
+                                            <p class="text-xs uppercase tracking-wide font-bold text-slate-500 mb-1">{{ $page }}</p>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                @foreach($pagePermissions as $permission)
+                                                    <label class="flex items-center gap-2 text-sm text-slate-700">
+                                                        <input type="checkbox" name="permission_keys[]" value="{{ $permission->key }}" {{ in_array($permission->key, $rolePermissionKeys, true) ? 'checked' : '' }} class="rounded border-slate-300">
+                                                        <span>{{ $permission->label }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <div class="flex gap-2 mt-4">
+                                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-4 py-2.5 text-sm">Enregistrer permissions</button>
+                                </div>
+                            </form>
+
+                            <form method="POST" action="{{ route('pos.settings.roles.delete', $role) }}" class="mt-2" onsubmit="return confirm('Supprimer ce rôle ?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-lg px-4 py-2.5 text-sm">Supprimer rôle</button>
+                            </form>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">Aucun rôle défini.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
     <div class="users-table bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
@@ -221,7 +348,6 @@
                 <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                     <tr>
                         <th class="px-6 py-4 font-bold">Nom</th>
-                        <th class="px-6 py-4 font-bold">Email</th>
                         <th class="px-6 py-4 font-bold">Rôle</th>
                         <th class="px-6 py-4 font-bold">Dernière connexion</th>
                         <th class="px-6 py-4 font-bold text-right">Actions</th>
@@ -231,16 +357,29 @@
                     @forelse($users as $user)
                         <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
                             <td class="px-6 py-4 font-bold text-slate-800">{{ $user->name }}</td>
-                            <td class="px-6 py-4">{{ $user->email }}</td>
                             <td class="px-6 py-4">
-                                <span class="badge badge-admin bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
-                                    {{ $user->role ?? 'Admin' }}
-                                </span>
+                                <form method="POST" action="{{ route('pos.settings.user.assign-role', $user) }}" class="flex items-center gap-2">
+                                    @csrf
+                                    <select name="role_name" class="bg-slate-50 border border-slate-300 text-slate-900 text-xs rounded-lg p-2 min-w-32">
+                                        <option value="">Aucun rôle</option>
+                                        @foreach($roles as $role)
+                                            <option value="{{ $role->name }}" {{ $user->role === $role->name ? 'selected' : '' }}>{{ $role->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit" class="text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg px-2.5 py-2">OK</button>
+                                </form>
                             </td>
                             <td class="px-6 py-4 text-slate-400 font-medium">{{ $user->updated_at->diffForHumans() }}</td>
                             <td class="px-6 py-4">
+                                @php
+                                    $editUserPayload = [
+                                        'id' => $user->id,
+                                        'name' => $user->name,
+                                        'role_name' => $user->role,
+                                    ];
+                                @endphp
                                 <div class="flex gap-2 justify-end opacity-70 group-hover:opacity-100 transition-opacity">
-                                    <button class="flex items-center gap-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm" onclick='editUser({{ json_encode($user) }})'>
+                                    <button class="flex items-center gap-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm" onclick='editUser(@json($editUserPayload))'>
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                         Éditer
                                     </button>
@@ -257,7 +396,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500 font-medium">Aucun utilisateur trouvé</td>
+                            <td colspan="4" class="px-6 py-8 text-center text-slate-500 font-medium">Aucun utilisateur trouvé</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -271,13 +410,167 @@
             <div>
                 <strong class="block mb-2 font-bold text-blue-900">Rôles disponibles dans le système :</strong>
                 <ul class="space-y-1.5 font-medium">
-                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> <strong>Admin</strong> : Accès complet au système et aux paramètres.</li>
-                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> <strong>Cashier</strong> : Accès limité au POS et aux ventes uniquement.</li>
-                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> <strong>Commercial</strong> : POS, ventes et accès à ses propres rapports de CA.</li>
+                    @foreach($roles as $role)
+                        <li class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <strong>{{ $role->name }}</strong> : {{ $role->description ?: 'Aucune description' }}
+                        </li>
+                    @endforeach
                 </ul>
             </div>
         </div>
     </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+        <h3 class="text-xl font-bold text-slate-900 mb-1">Audit Log (RBAC)</h3>
+        <p class="text-sm text-slate-500 mb-4">Historique des assignations de rôles et modifications de permissions.</p>
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+            <table class="w-full text-sm text-left text-slate-600">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 font-bold">Date</th>
+                        <th class="px-4 py-3 font-bold">Événement</th>
+                        <th class="px-4 py-3 font-bold">Acteur</th>
+                        <th class="px-4 py-3 font-bold">Cible</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($auditLogs as $log)
+                        <tr class="border-b border-slate-100 last:border-0">
+                            <td class="px-4 py-3">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                            <td class="px-4 py-3 font-medium text-slate-800">{{ $log->event }}</td>
+                            <td class="px-4 py-3">{{ optional($log->actor)->name ?? 'Système' }}</td>
+                            <td class="px-4 py-3">{{ $log->target_type ? class_basename($log->target_type) . ' #' . $log->target_id : '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-center text-slate-500">Aucun événement RBAC pour le moment.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{-- ======================================================= --}}
+{{-- LICENSE MANAGEMENT SECTION (Admin only)                   --}}
+{{-- ======================================================= --}}
+@if(auth()->user()->role === 'Admin')
+<div class="fixed inset-0 z-0" style="display:none" id="licenseSection"></div>
+@endif
+
+<div class="container-license px-6 lg:px-8 pb-8 w-full max-w-7xl mx-auto">
+    {{-- ── Admin: Generate License ─────────────────────────── --}}
+    @if(auth()->user()->role === 'Admin')
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+        <div class="flex items-center gap-4 mb-5">
+            <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">Gestion des Licences</h3>
+                <p class="text-sm text-slate-500">Générez une clé de licence à envoyer au client pour activer le système.</p>
+            </div>
+        </div>
+
+        {{-- Current license status --}}
+        @if ($license && $license->expires_at && $license->expires_at->isFuture())
+            <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 mb-5 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <span class="font-semibold">Licence active</span> —
+                    Période: <strong>{{ $licensePeriods[$license->period] ?? $license->period }}</strong> —
+                    Expire le <strong>{{ $license->expires_at->format('d/m/Y à H:i') }}</strong>
+                    ({{ $license->expires_at->diffForHumans() }}).
+                </div>
+            </div>
+        @elseif ($license)
+            <div class="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-semibold">Dernière licence expirée</span>
+                @if($license->expires_at) — le {{ $license->expires_at->format('d/m/Y') }} @endif.
+                Générez une nouvelle clé.
+            </div>
+        @else
+            <div class="flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 mb-5 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-semibold">Aucune licence trouvée.</span> Générez une première clé pour activer le système chez le client.
+            </div>
+        @endif
+
+        {{-- Generator form --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="license_period">Période de validité</label>
+                <select id="license_period" class="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-500">
+                    @foreach($licensePeriods as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="button" onclick="generateLicenseKey()"
+                id="generateLicenseBtn"
+                class="h-12 bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm rounded-xl shadow-md shadow-purple-600/20 transition-all flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+                </svg>
+                <span id="generateLicenseBtnText">Générer la clé</span>
+            </button>
+        </div>
+
+        {{-- Generated key output --}}
+        <div id="generatedKeyBox" class="hidden mt-5">
+            <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-sm font-semibold text-slate-700">Clé générée – à envoyer au client</label>
+                <button type="button" onclick="copyLicenseKey()" id="copyBtn"
+                    class="text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copier
+                </button>
+            </div>
+            <textarea id="generatedKeyText" readonly rows="4"
+                class="w-full border border-purple-200 bg-purple-50 rounded-xl p-3 text-xs font-mono text-purple-900 resize-none focus:outline-none select-all"
+                onclick="this.select()"></textarea>
+            <p class="text-xs text-slate-500 mt-1.5">Copiez cette clé et envoyez-la au client. Il devra l'entrer sur la page d'activation.</p>
+        </div>
+    </div>
+    @endif
+
+    {{-- ── License activation link (always visible for non-admin) --}}
+    @if(auth()->user()->role !== 'Admin')
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-slate-900">Licence système</h3>
+                @if ($license && $license->expires_at && $license->expires_at->isFuture())
+                    <p class="text-sm text-emerald-600 font-medium">Active — expire le {{ $license->expires_at->format('d/m/Y') }} ({{ $license->expires_at->diffForHumans() }}).</p>
+                @else
+                    <p class="text-sm text-red-600 font-medium">Aucune licence active.</p>
+                @endif
+            </div>
+            <a href="{{ route('license.activate') }}"
+                class="text-sm font-semibold bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-xl px-4 py-2.5 transition-colors">
+                Activer / Renouveler
+            </a>
+        </div>
+    </div>
+    @endif
 </div>
 
 <div id="addUserModal" class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center">
@@ -295,19 +588,15 @@
                 <input type="text" name="name" class="form-input w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none" required>
             </div>
             <div>
-                <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
-                <input type="email" name="email" class="form-input w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none" required>
-            </div>
-            <div>
                 <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Code PIN (4 chiffres minimum)</label>
                 <input type="password" name="password" class="form-input w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none tracking-[0.3em] font-bold" required minlength="4">
             </div>
             <div>
                 <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Rôle</label>
-                <select name="role" class="form-select w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none font-semibold" required>
-                    <option value="admin">Admin</option>
-                    <option value="cashier">Cashier</option>
-                    <option value="commercial">Commercial</option>
+                <select name="role_name" class="form-select w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none font-semibold" required>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->name }}">{{ $role->name }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
@@ -334,12 +623,16 @@
                 <input type="text" name="name" id="edit_name" class="form-input w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none" required>
             </div>
             <div>
-                <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
-                <input type="email" name="email" id="edit_email" class="form-input w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none" required>
-            </div>
-            <div>
                 <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Nouveau code PIN <span class="text-slate-400 text-xs font-normal">(Optionnel)</span></label>
                 <input type="password" name="password" class="form-input w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none tracking-[0.3em] font-bold" minlength="4" placeholder="••••">
+            </div>
+            <div>
+                <label class="form-label block text-sm font-semibold text-slate-700 mb-1.5">Rôle</label>
+                <select name="role_name" id="edit_role_name" class="form-select w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 p-3 outline-none font-semibold" required>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->name }}">{{ $role->name }}</option>
+                    @endforeach
+                </select>
             </div>
             <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
                 <button type="button" class="btn btn-secondary px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeEditUserModal()">Annuler</button>
@@ -361,7 +654,7 @@ function closeAddUserModal() {
 function editUser(user) {
     document.getElementById('edit_user_id').value = user.id;
     document.getElementById('edit_name').value = user.name;
-    document.getElementById('edit_email').value = user.email;
+    document.getElementById('edit_role_name').value = user.role_name || '';
     document.getElementById('editUserForm').action = '/pos/settings/user/edit/' + user.id;
     document.getElementById('editUserModal').classList.add('active');
 }
@@ -378,6 +671,58 @@ document.querySelectorAll('.modal').forEach(modal => {
         }
     });
 });
+
+// ── License generation ────────────────────────────────────────
+async function generateLicenseKey() {
+    const period  = document.getElementById('license_period')?.value;
+    const btn     = document.getElementById('generateLicenseBtn');
+    const btnText = document.getElementById('generateLicenseBtnText');
+    const box     = document.getElementById('generatedKeyBox');
+    const textarea = document.getElementById('generatedKeyText');
+
+    if (!period) return;
+
+    btnText.textContent = 'Génération…';
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch(@json(route('license.generate')), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    || @json(csrf_token()),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ period }),
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.key) {
+            textarea.value = data.key;
+            box.classList.remove('hidden');
+            textarea.select();
+        } else {
+            alert('Erreur : ' + (data.message || 'Impossible de générer la licence.'));
+        }
+    } catch (e) {
+        alert('Erreur réseau : ' + e.message);
+    } finally {
+        btnText.textContent = 'Générer la clé';
+        btn.disabled = false;
+    }
+}
+
+function copyLicenseKey() {
+    const ta = document.getElementById('generatedKeyText');
+    ta.select();
+    document.execCommand('copy');
+
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.textContent = '✓ Copié !';
+    setTimeout(() => { copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>Copier'; }, 2000);
+}
 </script>
 </body>
 </html>

@@ -3,288 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - POS System</title>
+    <title>Connexion - Droguerie POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #f3f6fb;
-            --panel: #ffffff;
-            --line: #d7e1ef;
-            --ink: #1f2a44;
-            --muted: #5b6b88;
-            --primary: #3b82f6;
-            --danger: #dc2626;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body {
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            color: var(--ink);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: grid;
-            grid-template-rows: auto 1fr;
-        }
-
-        .login-header {
-            text-align: center;
-            padding: 15px 20px;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .logo-text {
-            font-size: 26px;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        .login-content {
-            display: grid;
-            grid-template-columns: 1.3fr 1fr;
-            gap: 20px;
-            padding: 20px;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .users-section {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 15px;
-            text-align: center;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        .users-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-        }
-
-        .user-card {
-            background: var(--panel);
-            border-radius: 12px;
-            padding: 20px 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            text-align: center;
-            border: 3px solid transparent;
-            user-select: none;
-        }
-
-        .user-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* تأثيرات البطاقة عند الاختيار */
+        .user-card { transition: all 0.2s ease-in-out; }
         .user-card.selected {
-            border-color: var(--primary);
-            background: #eff6ff;
+            border-color: #3b82f6; /* Blue-500 */
+            background-color: rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
         }
-
-        .user-number {
-            width: 50px;
-            height: 50px;
-            background: var(--primary);
+        .user-card.selected .user-avatar {
+            background-color: #3b82f6;
             color: white;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 10px;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
 
-        .user-card.selected .user-number {
-            animation: pulse 1s infinite;
-        }
+        /* تأثير أزرار الأرقام */
+        .pin-key { transition: transform 0.1s, background-color 0.1s; }
+        .pin-key:active { transform: scale(0.92); background-color: #e2e8f0; }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .user-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-
-        .pin-section {
-            background: var(--panel);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .pin-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--ink);
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .pin-display {
-            background: #f9fafb;
-            border: 2px solid var(--line);
-            border-radius: 10px;
-            padding: 15px;
-            font-size: 28px;
-            text-align: center;
-            letter-spacing: 12px;
-            margin-bottom: 15px;
-            min-height: 55px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-
-        .pin-keyboard {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .pin-key {
-            background: #f9fafb;
-            border: 2px solid var(--line);
-            border-radius: 10px;
-            padding: 18px;
-            font-size: 22px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.1s;
-            color: var(--ink);
-            user-select: none;
-        }
-
-        .pin-key:hover {
-            background: #e5e7eb;
-            transform: scale(1.05);
-        }
-
-        .pin-key:active {
-            transform: scale(0.95);
-        }
-
-        .pin-key.clear {
-            background: #fee2e2;
-            color: var(--danger);
-            border-color: #fca5a5;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-submit:hover {
-            background: #2563eb;
-        }
-
-        .btn-submit:active {
-            transform: scale(0.98);
-        }
-
-        .btn-submit:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .error-message {
-            background: #fee2e2;
-            border: 2px solid #fca5a5;
-            color: var(--danger);
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 14px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: 600;
-        }
+        /* شريط التمرير إذا كانت الشاشة صغيرة جداً */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
     </style>
 </head>
-<body>
-    <div class="login-header">
-        <h1 class="logo-text">🏪 POS System - Droguerie Management</h1>
-    </div>
+<body class="bg-slate-100 min-h-screen w-full flex items-center justify-center p-4 sm:p-6 antialiased text-slate-800">
 
-    <div class="login-content">
-        <div class="users-section">
+    <div class="bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row h-auto max-h-[95vh]">
+        
+        <div class="md:w-1/2 bg-slate-900 text-white p-6 sm:p-10 flex flex-col relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+            <div class="flex items-center gap-3 mb-8 relative z-10">
+                <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-600/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                </div>
+                <h1 class="text-2xl font-extrabold tracking-tight">Droguerie <span class="text-blue-400">POS</span></h1>
+            </div>
+
+            <div class="mb-6 relative z-10">
+                <h2 class="text-2xl sm:text-3xl font-bold mb-2">Qui êtes-vous ?</h2>
+                <p class="text-slate-400 text-sm">Sélectionnez votre profil pour accéder au système.</p>
+            </div>
+
             @if ($errors->any())
-                <div class="error-message">
-                    @foreach ($errors->all() as $error)
-                        {{ $error }}
-                    @endforeach
+                <div class="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 text-xs font-semibold flex items-start gap-3 relative z-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div>
+                        @foreach ($errors->all() as $error)
+                            <p>{{ $error }}</p>
+                        @endforeach
+                    </div>
                 </div>
             @endif
 
-            <h2 class="section-title">Sélectionner utilisateur</h2>
-            <div class="users-grid">
-                @foreach($users as $index => $user)
-                    <div class="user-card" onclick="selectUser({{ $user->id }}, this)">
-                        <div class="user-number">{{ $index + 1 }}</div>
-                        <div class="user-name">{{ $user->name }}</div>
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-2 pb-2 relative z-10 flex-1 content-start">
+                @foreach($users as $user)
+                    <div class="user-card border border-slate-700 bg-slate-800/40 hover:bg-slate-800 rounded-2xl p-4 cursor-pointer flex flex-col items-center gap-3" onclick="selectUser({{ $user->id }}, this)">
+                        <div class="user-avatar w-12 h-12 bg-slate-700 text-slate-300 rounded-full flex items-center justify-center text-lg font-bold transition-all duration-300">
+                            {{ strtoupper(substr($user->name, 0, 1)) }}
+                        </div>
+                        <div class="text-center">
+                            <div class="font-bold text-white text-sm line-clamp-1">{{ $user->name }}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{{ $user->role ?? 'Utilisateur' }}</div>
+                        </div>
                     </div>
                 @endforeach
             </div>
         </div>
 
-        <form method="POST" action="{{ route('login') }}" id="loginForm">
-            @csrf
-            <input type="hidden" name="user_id" id="user_id" value="">
-            <input type="hidden" name="password" id="password" value="">
+        <div class="md:w-1/2 bg-white p-6 sm:p-10 flex flex-col justify-center items-center overflow-y-auto">
+            
+            <form method="POST" action="{{ route('login') }}" id="loginForm" class="w-full max-w-[300px] py-4">
+                @csrf
+                <input type="hidden" name="user_id" id="user_id" value="">
+                <input type="hidden" name="password" id="password" value="">
 
-            <div class="pin-section" id="pinSection">
-                <h3 class="pin-title">Entrez votre mot de passe</h3>
-                <div class="pin-display" id="pinDisplay">••••</div>
-                <div class="pin-keyboard">
-                    <button type="button" class="pin-key" onclick="addPin('1')">1</button>
-                    <button type="button" class="pin-key" onclick="addPin('2')">2</button>
-                    <button type="button" class="pin-key" onclick="addPin('3')">3</button>
-                    <button type="button" class="pin-key" onclick="addPin('4')">4</button>
-                    <button type="button" class="pin-key" onclick="addPin('5')">5</button>
-                    <button type="button" class="pin-key" onclick="addPin('6')">6</button>
-                    <button type="button" class="pin-key" onclick="addPin('7')">7</button>
-                    <button type="button" class="pin-key" onclick="addPin('8')">8</button>
-                    <button type="button" class="pin-key" onclick="addPin('9')">9</button>
-                    <button type="button" class="pin-key clear" onclick="clearPin()">✕</button>
-                    <button type="button" class="pin-key" onclick="addPin('0')">0</button>
-                    <button type="button" class="pin-key" onclick="deletePin()">⌫</button>
+                <div class="text-center mb-6">
+                    <h3 class="text-xl font-bold text-slate-900 mb-1">Code d'accès</h3>
+                    <p class="text-slate-500 text-sm font-medium">Saisissez votre PIN</p>
                 </div>
-                <button type="submit" class="btn-submit" id="submitBtn" disabled>Se connecter</button>
-            </div>
-        </form>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl h-14 flex items-center justify-center text-2xl font-black tracking-[0.5em] text-slate-300 mb-6 transition-colors duration-300 shadow-inner" id="pinDisplay">
+                    ••••
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    @foreach(['1','2','3','4','5','6','7','8','9'] as $digit)
+                        <button type="button" class="pin-key h-12 sm:h-14 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xl font-bold text-slate-700 flex items-center justify-center shadow-sm" onclick="addPin('{{ $digit }}')">{{ $digit }}</button>
+                    @endforeach
+                    
+                    <button type="button" class="pin-key h-12 sm:h-14 bg-red-50 hover:bg-red-100 border border-red-100 text-red-500 rounded-xl flex items-center justify-center shadow-sm" onclick="clearPin()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    
+                    <button type="button" class="pin-key h-12 sm:h-14 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xl font-bold text-slate-700 flex items-center justify-center shadow-sm" onclick="addPin('0')">0</button>
+                    
+                    <button type="button" class="pin-key h-12 sm:h-14 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 rounded-xl flex items-center justify-center shadow-sm" onclick="deletePin()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" /></svg>
+                    </button>
+                </div>
+
+                <button type="submit" id="submitBtn" disabled class="w-full bg-blue-600 text-white font-bold text-base h-14 rounded-xl shadow-lg shadow-blue-600/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none hover:bg-blue-700 active:scale-[0.98] flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                    Se connecter
+                </button>
+            </form>
+
+        </div>
     </div>
 
     <script>
@@ -295,45 +128,64 @@
             selectedUserId = userId;
             document.getElementById('user_id').value = userId;
             
+            // إزالة التحديد عن الجميع
             document.querySelectorAll('.user-card').forEach(card => {
                 card.classList.remove('selected');
             });
             
+            // إضافة التحديد للعنصر الحالي
             element.classList.add('selected');
+            
+            // مسح الـ PIN عند تغيير المستخدم
             clearPin();
         }
 
         function addPin(digit) {
-            currentPin += digit;
-            updatePinDisplay();
-            document.getElementById('password').value = currentPin;
-            document.getElementById('submitBtn').disabled = currentPin.length === 0;
+            if(currentPin.length < 8) { // تحديد طول أقصى
+                currentPin += digit;
+                updatePinDisplay();
+                document.getElementById('password').value = currentPin;
+                checkSubmitState();
+            }
         }
 
         function deletePin() {
             currentPin = currentPin.slice(0, -1);
             updatePinDisplay();
             document.getElementById('password').value = currentPin;
-            document.getElementById('submitBtn').disabled = currentPin.length === 0;
+            checkSubmitState();
         }
 
         function clearPin() {
             currentPin = '';
             updatePinDisplay();
             document.getElementById('password').value = '';
-            document.getElementById('submitBtn').disabled = true;
+            checkSubmitState();
         }
 
         function updatePinDisplay() {
             const display = document.getElementById('pinDisplay');
             if (currentPin.length === 0) {
                 display.textContent = '••••';
-                display.style.color = '#9ca3af';
+                display.classList.remove('text-slate-800', 'border-blue-400');
+                display.classList.add('text-slate-300', 'border-slate-200');
             } else {
                 display.textContent = '•'.repeat(currentPin.length);
-                display.style.color = '#1f2a44';
+                display.classList.add('text-slate-800', 'border-blue-400');
+                display.classList.remove('text-slate-300', 'border-slate-200');
             }
         }
+
+        function checkSubmitState() {
+            const btn = document.getElementById('submitBtn');
+            if(currentPin.length > 0 && selectedUserId !== null) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        }
+        
+        checkSubmitState();
     </script>
 </body>
 </html>

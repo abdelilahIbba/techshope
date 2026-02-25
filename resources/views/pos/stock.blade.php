@@ -4,704 +4,514 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion de stock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #f3f6fb;
-            --panel: #ffffff;
-            --line: #d7e1ef;
-            --ink: #1f2a44;
-            --muted: #5b6b88;
-            --primary: #3b82f6;
-            --danger: #dc2626;
-            --warning: #f59e0b;
-            --success: #10b981;
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* الحفاظ على منطق الـ JavaScript الخاص بإظهار/إخفاء التبويبات والنوافذ */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .modal { display: none; }
+        .modal.active { display: flex; animation: fadeIn 0.2s ease-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
-        html, body { height: 100%; }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            color: var(--ink);
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .top-nav {
-            display: flex;
-            gap: 10px;
-            padding: 10px 16px 6px;
-            flex-wrap: nowrap;
-            flex: 0 0 auto;
-            align-items: center;
-        }
-
-        .nav-link {
-            text-decoration: none;
-            color: var(--ink);
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            padding: 8px 14px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .nav-link.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        .notification-badge {
-            position: relative;
-        }
-
-        .notification-badge .badge-count {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #dc2626;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            border: 2px solid var(--bg);
-        }
-
-        .container {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            min-height: 0;
-        }
-
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-
-        .page-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0 0 6px;
-        }
-
-        .page-subtitle {
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        .btn {
-            border: 0;
-            border-radius: 8px;
-            padding: 9px 18px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: #fff;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            border-bottom: 2px solid var(--line);
-        }
-
-        .tab-btn {
-            border: 0;
-            background: transparent;
-            padding: 10px 16px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--muted);
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-        }
-
-        .tab-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .table-container {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--line);
-            font-size: 13px;
-        }
-
-        th {
-            font-weight: 700;
-            background: #f9fafb;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-danger {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--panel);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 500px;
-            width: 90%;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0 0 16px;
-        }
-
-        .form-group {
-            margin-bottom: 14px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-
-        .form-input,
-        .form-select {
-            width: 100%;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        .btn-cancel {
-            background: #e5e7eb;
-            color: var(--ink);
-        }
-
-        .muted {
-            color: var(--muted);
-            font-size: 12px;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #10b981;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #dc2626;
-        }
+        /* تخصيص شريط التمرير */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body>
-<nav class="top-nav">
-    <a class="nav-link" href="{{ route('pos.dashboard') }}">Dashboard</a>
-    <a class="nav-link" href="{{ route('pos.index') }}">POS</a>
-    <a class="nav-link active" href="{{ route('pos.stock') }}">Gestion de stock</a>
-    <a class="nav-link notification-badge" href="{{ route('pos.notifications') }}">
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden antialiased">
+
+<nav class="top-nav flex items-center gap-2 p-4 bg-white border-b border-slate-200 shadow-sm shrink-0">
+    <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.dashboard') }}">Dashboard</a>
+    <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.index') }}">POS</a>
+    <a class="nav-link active px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-md border-blue-600" href="{{ route('pos.stock') }}">Gestion de stock</a>
+    <a class="nav-link notification-badge relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.notifications') }}">
         Notifications stock
         @if($notificationCount > 0)
-            <span class="badge-count">{{ $notificationCount }}</span>
+            <span class="badge-count absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm">{{ $notificationCount }}</span>
         @endif
     </a>
-    <a class="nav-link" href="{{ route('pos.settings') }}">Settings</a>
-    <form method="POST" action="{{ route('logout') }}" style="display: inline; margin-left: auto;">
+    <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.settings') }}">Settings</a>
+    
+    <form method="POST" action="{{ route('logout') }}" class="ml-auto">
         @csrf
-        <button type="submit" class="nav-link" style="background: #fee2e2; border-color: #fca5a5; color: #991b1b; cursor: pointer;">Déconnexion</button>
+        <button type="submit" class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 cursor-pointer flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Déconnexion
+        </button>
     </form>
 </nav>
 
-<div class="container">
-    <div class="page-header">
+<div class="container flex-1 p-6 lg:p-8 overflow-y-auto w-full max-w-7xl mx-auto">
+    
+    <div class="page-header flex justify-between items-start mb-6">
         <div>
-            <h1 class="page-title">Gestion de stock</h1>
-            <p class="page-subtitle">Gestion des produits, fournisseurs et livraisons</p>
+            <h1 class="page-title text-3xl font-extrabold text-slate-900 tracking-tight">Gestion de stock</h1>
+            <p class="page-subtitle text-slate-500 mt-1 font-medium">Gestion des produits, fournisseurs et livraisons</p>
         </div>
-        <button class="btn btn-primary" onclick="openModal('addProductModal')">+ Ajouter produit</button>
+        <button class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm px-6 py-3 shadow-sm transition-all flex items-center gap-2" onclick="openModal('addProductModal')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+            Ajouter produit
+        </button>
     </div>
 
     @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success bg-emerald-50 text-emerald-700 border border-emerald-200 p-4 rounded-xl mb-6 font-semibold flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+            {{ session('success') }}
+        </div>
     @endif
 
     @if (session('error'))
-        <div class="alert alert-error">{{ session('error') }}</div>
+        <div class="alert alert-error bg-red-50 text-red-700 border border-red-200 p-4 rounded-xl mb-6 font-semibold flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+            {{ session('error') }}
+        </div>
     @endif
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('products')">Produits</button>
-        <button class="tab-btn" onclick="switchTab('suppliers')">Fournisseurs</button>
-        <button class="tab-btn" onclick="switchTab('categories')">Catégories</button>
+    <div class="tabs flex gap-6 mb-6 border-b border-slate-200">
+        <button class="tab-btn active pb-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition-colors [&.active]:text-blue-600 [&.active]:border-blue-600" onclick="switchTab('products')">Produits</button>
+        <button class="tab-btn pb-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition-colors [&.active]:text-blue-600 [&.active]:border-blue-600" onclick="switchTab('suppliers')">Fournisseurs</button>
+        <button class="tab-btn pb-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-800 transition-colors [&.active]:text-blue-600 [&.active]:border-blue-600" onclick="switchTab('categories')">Catégories</button>
     </div>
 
     <div class="tab-content active" id="products-tab">
-        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="searchProduct" class="form-input" placeholder="🔍 Rechercher un produit (nom, barcode)..." style="flex: 1;" onkeyup="filterProducts()">
-            <select id="filterCategory" class="form-select" style="width: 200px;" onchange="filterProducts()">
+        <div class="mb-6 flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="relative flex-1 min-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <input type="text" id="searchProduct" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher un produit (nom, barcode)..." onkeyup="filterProducts()">
+            </div>
+            <select id="filterCategory" class="form-select bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full md:w-[200px] p-2.5 outline-none" onchange="filterProducts()">
                 <option value="">Toutes les catégories</option>
                 @foreach($categories as $category)
                     <option value="{{ $category->name }}">{{ $category->name }}</option>
                 @endforeach
             </select>
-            <select id="filterStatus" class="form-select" style="width: 150px;" onchange="filterProducts()">
+            <select id="filterStatus" class="form-select bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full md:w-[150px] p-2.5 outline-none" onchange="filterProducts()">
                 <option value="">Tous les statuts</option>
                 <option value="OK">OK</option>
                 <option value="Faible">Faible</option>
                 <option value="Critique">Critique</option>
             </select>
         </div>
-        <div class="table-container">
-            <table id="productsTable">
-                <thead>
-                    <tr>
-                        <th>Produit</th>
-                        <th>Barcode</th>
-                        <th>Catégorie</th>
-                        <th>Fournisseur</th>
-                        <th>Stock</th>
-                        <th>Prix achat</th>
-                        <th>Prix vente</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($products as $product)
+
+        <div class="table-container bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="productsTable" class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <td>{{ $product->name }}</td>
-                            <td><span class="muted">{{ $product->barcode }}</span></td>
-                            <td>{{ $product->category->name ?? 'N/A' }}</td>
-                            <td>{{ $product->supplier->name ?? 'Non assigné' }}</td>
-                            <td>{{ $product->stock_quantity }}</td>
-                            <td>{{ number_format($product->purchase_price, 2) }} DZD</td>
-                            <td>{{ number_format($product->sale_price, 2) }} DZD</td>
-                            <td>
-                                @if($product->stock_quantity <= 5)
-                                    <span class="badge badge-danger">Critique</span>
-                                @elseif($product->stock_quantity <= 10)
-                                    <span class="badge badge-warning">Faible</span>
-                                @else
-                                    <span class="badge badge-success">OK</span>
-                                @endif
-                            </td>
-                            <td>
-                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick='editProduct({{ json_encode($product) }})'>✏️</button>
-                                <button class="btn" style="background: var(--warning); color: white; padding: 4px 8px; font-size: 11px; margin-right: 4px;" onclick='adjustStock({{ json_encode($product) }})'>📦</button>
-                                <form method="POST" action="{{ route('pos.stock.delete-product', $product) }}" style="display: inline;" onsubmit="return confirm('Supprimer ce produit ?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn" style="background: var(--danger); color: white; padding: 4px 8px; font-size: 11px;">🗑️</button>
-                                </form>
-                            </td>
+                            <th class="px-6 py-4 font-bold">Produit</th>
+                            <th class="px-6 py-4 font-bold">Barcode</th>
+                            <th class="px-6 py-4 font-bold">Catégorie</th>
+                            <th class="px-6 py-4 font-bold">Fournisseur</th>
+                            <th class="px-6 py-4 font-bold">Stock</th>
+                            <th class="px-6 py-4 font-bold">Prix achat</th>
+                            <th class="px-6 py-4 font-bold">Prix vente</th>
+                            <th class="px-6 py-4 font-bold">Statut</th>
+                            <th class="px-6 py-4 font-bold text-right">Actions</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" style="text-align: center; color: var(--muted);">Aucun produit</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($products as $product)
+                            <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
+                                <td class="px-6 py-4 font-bold text-slate-800">{{ $product->name }}</td>
+                                <td class="px-6 py-4"><span class="text-slate-400 font-mono tracking-wider text-xs">{{ $product->barcode }}</span></td>
+                                <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-semibold">{{ $product->category->name ?? 'N/A' }}</span></td>
+                                <td class="px-6 py-4">{{ $product->supplier->name ?? 'Non assigné' }}</td>
+                                <td class="px-6 py-4 font-extrabold text-slate-900">{{ $product->stock_quantity }}</td>
+                                <td class="px-6 py-4">{{ number_format($product->purchase_price, 2) }} DZD</td>
+                                <td class="px-6 py-4 font-bold text-blue-600">{{ number_format($product->sale_price, 2) }} DZD</td>
+                                <td class="px-6 py-4">
+                                    @if($product->stock_quantity <= 5)
+                                        <span class="badge bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase">Critique</span>
+                                    @elseif($product->stock_quantity <= 10)
+                                        <span class="badge bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase">Faible</span>
+                                    @else
+                                        <span class="badge bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase">OK</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex gap-2 justify-end opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <button class="text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 p-2 rounded-lg transition-all shadow-sm group/btn relative" title="Éditer" onclick='editProduct({{ json_encode($product) }})'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover/btn:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                        
+                                        <button class="text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-700 p-2 rounded-lg transition-all shadow-sm group/btn" title="Ajuster Stock" onclick='adjustStock({{ json_encode($product) }})'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover/btn:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                        </button>
+                                        
+                                        <form method="POST" action="{{ route('pos.stock.delete-product', $product) }}" class="inline" onsubmit="return confirm('Voulez-vous vraiment supprimer ce produit ?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-500 bg-red-50 hover:bg-red-500 hover:text-white p-2 rounded-lg transition-all shadow-sm group/btn" title="Supprimer">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover/btn:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="px-6 py-8 text-center text-slate-500 font-medium">Aucun produit trouvé</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div class="tab-content" id="suppliers-tab">
-        <div style="margin-bottom: 16px;">
-            <button class="btn btn-success" onclick="openModal('addSupplierModal')">+ Ajouter fournisseur</button>
+        <div class="mb-6 flex justify-between items-center">
+             <h2 class="text-lg font-bold text-slate-900">Liste des Fournisseurs</h2>
+            <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm px-6 py-2.5 shadow-sm transition-all flex items-center gap-2" onclick="openModal('addSupplierModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                Ajouter fournisseur
+            </button>
         </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nom</th>
-                        <th>Contact</th>
-                        <th>Produits liés</th>
-                        <th>Notes</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($suppliers as $supplier)
+        <div class="table-container bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <td>{{ $supplier->name }}</td>
-                            <td>{{ $supplier->contact_info ?? 'N/A' }}</td>
-                            <td>{{ $supplier->products_count ?? 0 }}</td>
-                            <td><span class="muted">{{ $supplier->notes ?? '-' }}</span></td>
-                            <td>
-                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 6px;" onclick='editSupplier({{ json_encode($supplier) }})'>✏️ Éditer</button>
-                                <form method="POST" action="{{ route('pos.stock.delete-supplier', $supplier) }}" style="display: inline;" onsubmit="return confirm('Supprimer ce fournisseur ?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn" style="background: var(--danger); color: white; padding: 4px 10px; font-size: 12px;">🗑️ Supprimer</button>
-                                </form>
-                            </td>
+                            <th class="px-6 py-4 font-bold">Nom</th>
+                            <th class="px-6 py-4 font-bold">Contact</th>
+                            <th class="px-6 py-4 font-bold text-center">Produits liés</th>
+                            <th class="px-6 py-4 font-bold">Notes</th>
+                            <th class="px-6 py-4 font-bold text-right">Actions</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: var(--muted);">Aucun fournisseur</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($suppliers as $supplier)
+                            <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
+                                <td class="px-6 py-4 font-bold text-slate-800">{{ $supplier->name }}</td>
+                                <td class="px-6 py-4">{{ $supplier->contact_info ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold text-xs">{{ $supplier->products_count ?? 0 }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-400 italic text-xs">{{ $supplier->notes ?? '-' }}</td>
+                                <td class="px-6 py-4">
+                                    <div class="flex gap-2 justify-end opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <button class="flex items-center gap-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm" onclick='editSupplier({{ json_encode($supplier) }})'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            Éditer
+                                        </button>
+                                        <form method="POST" action="{{ route('pos.stock.delete-supplier', $supplier) }}" class="inline" onsubmit="return confirm('Supprimer ce fournisseur ?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="flex items-center gap-1.5 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-slate-500 font-medium">Aucun fournisseur</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div class="tab-content" id="categories-tab">
-        <div style="margin-bottom: 16px;">
-            <button class="btn btn-success" onclick="openModal('addCategoryModal')">+ Ajouter catégorie</button>
+        <div class="mb-6 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-slate-900">Liste des Catégories</h2>
+            <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm px-6 py-2.5 shadow-sm transition-all flex items-center gap-2" onclick="openModal('addCategoryModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                Ajouter catégorie
+            </button>
         </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nom de la catégorie</th>
-                        <th>Nombre de produits</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($categories as $category)
+        <div class="table-container bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <td><strong>{{ $category->name }}</strong></td>
-                            <td>{{ $category->products_count ?? 0 }} produit(s)</td>
-                            <td>
-                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; margin-right: 6px;" onclick='editCategory({{ json_encode($category) }})'>✏️ Éditer</button>
-                                <form method="POST" action="{{ route('pos.stock.delete-category', $category) }}" style="display: inline;" onsubmit="return confirm('Supprimer cette catégorie ?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn" style="background: var(--danger); color: white; padding: 4px 10px; font-size: 12px;">🗑️ Supprimer</button>
-                                </form>
-                            </td>
+                            <th class="px-6 py-4 font-bold">Nom de la catégorie</th>
+                            <th class="px-6 py-4 font-bold text-center">Nombre de produits</th>
+                            <th class="px-6 py-4 font-bold text-right">Actions</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: var(--muted);">Aucune catégorie</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($categories as $category)
+                            <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
+                                <td class="px-6 py-4 font-bold text-slate-800">{{ $category->name }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold text-xs">{{ $category->products_count ?? 0 }} produit(s)</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex justify-end gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <button class="flex items-center gap-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm" onclick='editCategory({{ json_encode($category) }})'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            Éditer
+                                        </button>
+                                        <form method="POST" action="{{ route('pos.stock.delete-category', $category) }}" class="inline" onsubmit="return confirm('Supprimer cette catégorie ?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="flex items-center gap-1.5 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-8 text-center text-slate-500 font-medium">Aucune catégorie</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Add Product Modal -->
-<div class="modal" id="addProductModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Ajouter un produit</h3>
-        <form method="POST" action="{{ route('pos.stock.add-product') }}">
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="addProductModal">
+    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter un produit</h3>
+        <form method="POST" action="{{ route('pos.stock.add-product') }}" class="flex flex-col gap-4">
             @csrf
-            <div class="form-group">
-                <label class="form-label">Nom du produit</label>
-                <input type="text" name="name" class="form-input" required>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
+                <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Barcode</label>
-                <input type="text" name="barcode" class="form-input" required>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode</label>
+                <input type="text" name="barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none font-mono" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Catégorie</label>
-                <select name="category_id" class="form-select" required>
-                    <option value="">Sélectionner</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                    @endforeach
-                </select>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Catégorie</label>
+                    <select name="category_id" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
+                        <option value="">Sélectionner</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Fournisseur</label>
+                    <select name="supplier_id" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none">
+                        <option value="">Aucun</option>
+                        @foreach($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Fournisseur</label>
-                <select name="supplier_id" class="form-select">
-                    <option value="">Aucun</option>
-                    @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                    @endforeach
-                </select>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale</label>
+                <input type="number" name="stock_quantity" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" value="0" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Quantité initiale</label>
-                <input type="number" name="stock_quantity" class="form-input" value="0" required>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat (DZD)</label>
+                    <input type="number" step="0.01" name="purchase_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix vente (DZD)</label>
+                    <input type="number" step="0.01" name="sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Prix d'achat (DZD)</label>
-                <input type="number" step="0.01" name="purchase_price" class="form-input" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Prix de vente (DZD)</label>
-                <input type="number" step="0.01" name="sale_price" class="form-input" required>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('addProductModal')">Annuler</button>
-                <button type="submit" class="btn btn-primary">Ajouter</button>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('addProductModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Add Supplier Modal -->
-<div class="modal" id="addSupplierModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Ajouter un fournisseur</h3>
-        <form method="POST" action="{{ route('pos.stock.add-supplier') }}">
-            @csrf
-            <div class="form-group">
-                <label class="form-label">Nom du fournisseur</label>
-                <input type="text" name="name" class="form-input" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Contact</label>
-                <input type="text" name="contact_info" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Notes</label>
-                <input type="text" name="notes" class="form-input">
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('addSupplierModal')">Annuler</button>
-                <button type="submit" class="btn btn-success">Ajouter</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Add Category Modal -->
-<div class="modal" id="addCategoryModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Ajouter une catégorie</h3>
-        <form method="POST" action="{{ route('pos.stock.add-category') }}">
-            @csrf
-            <div class="form-group">
-                <label class="form-label">Nom de la catégorie</label>
-                <input type="text" name="name" class="form-input" required placeholder="Ex: Produits d'entretien">
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('addCategoryModal')">Annuler</button>
-                <button type="submit" class="btn btn-success">Ajouter</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Edit Category Modal -->
-<div class="modal" id="editCategoryModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Modifier la catégorie</h3>
-        <form method="POST" id="editCategoryForm">
-            @csrf
-            @method('PUT')
-            <input type="hidden" id="edit_category_id">
-            <div class="form-group">
-                <label class="form-label">Nom de la catégorie</label>
-                <input type="text" name="name" id="edit_category_name" class="form-input" required>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('editCategoryModal')">Annuler</button>
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Edit Product Modal -->
-<div class="modal" id="editProductModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Modifier le produit</h3>
-        <form method="POST" id="editProductForm">
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="editProductModal">
+    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier le produit</h3>
+        <form method="POST" id="editProductForm" class="flex flex-col gap-4">
             @csrf
             @method('PUT')
             <input type="hidden" id="edit_product_id">
-            <div class="form-group">
-                <label class="form-label">Nom du produit</label>
-                <input type="text" name="name" id="edit_product_name" class="form-input" required>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
+                <input type="text" name="name" id="edit_product_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Barcode</label>
-                <input type="text" name="barcode" id="edit_product_barcode" class="form-input" required>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode</label>
+                <input type="text" name="barcode" id="edit_product_barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none font-mono" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Catégorie</label>
-                <select name="category_id" id="edit_product_category" class="form-select" required>
-                    <option value="">Sélectionner</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                    @endforeach
-                </select>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Catégorie</label>
+                    <select name="category_id" id="edit_product_category" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                        <option value="">Sélectionner</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Fournisseur</label>
+                    <select name="supplier_id" id="edit_product_supplier" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none">
+                        <option value="">Aucun</option>
+                        @foreach($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Fournisseur</label>
-                <select name="supplier_id" id="edit_product_supplier" class="form-select">
-                    <option value="">Aucun</option>
-                    @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                    @endforeach
-                </select>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat</label>
+                    <input type="number" step="0.01" name="purchase_price" id="edit_product_purchase_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix de vente</label>
+                    <input type="number" step="0.01" name="sale_price" id="edit_product_sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Prix d'achat (DZD)</label>
-                <input type="number" step="0.01" name="purchase_price" id="edit_product_purchase_price" class="form-input" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Prix de vente (DZD)</label>
-                <input type="number" step="0.01" name="sale_price" id="edit_product_sale_price" class="form-input" required>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('editProductModal')">Annuler</button>
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('editProductModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Enregistrer</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Adjust Stock Modal -->
-<div class="modal" id="adjustStockModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Ajuster le stock</h3>
-        <form method="POST" id="adjustStockForm">
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="adjustStockModal">
+    <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Ajuster le stock</h3>
+        <form method="POST" id="adjustStockForm" class="flex flex-col gap-4">
             @csrf
             <input type="hidden" id="adjust_product_id">
-            <div class="form-group">
-                <label class="form-label">Produit</label>
-                <input type="text" id="adjust_product_name" class="form-input" readonly style="background: #f9fafb;">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Produit</label>
+                <input type="text" id="adjust_product_name" class="w-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-sm rounded-lg p-2.5 cursor-not-allowed" readonly>
             </div>
-            <div class="form-group">
-                <label class="form-label">Stock actuel</label>
-                <input type="text" id="adjust_current_stock" class="form-input" readonly style="background: #f9fafb;">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Stock actuel</label>
+                <input type="text" id="adjust_current_stock" class="w-full bg-slate-100 border border-slate-200 text-slate-600 font-bold text-sm rounded-lg p-2.5 cursor-not-allowed" readonly>
             </div>
-            <div class="form-group">
-                <label class="form-label">Type d'ajustement</label>
-                <select name="adjustment_type" id="adjustment_type" class="form-select" required>
-                    <option value="add">Ajouter au stock</option>
-                    <option value="remove">Retirer du stock</option>
-                    <option value="set">Définir le stock</option>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Type d'ajustement</label>
+                <select name="adjustment_type" id="adjustment_type" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                    <option value="add">Ajouter au stock (+)</option>
+                    <option value="remove">Retirer du stock (-)</option>
+                    <option value="set">Définir le stock (=)</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label class="form-label">Quantité</label>
-                <input type="number" name="quantity" class="form-input" required min="0">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité</label>
+                <input type="number" name="quantity" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-lg font-bold rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required min="0">
             </div>
-            <div class="form-group">
-                <label class="form-label">Motif (optionnel)</label>
-                <input type="text" name="reason" class="form-input" placeholder="Ex: Inventaire, Casse, Réception...">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Motif (optionnel)</label>
+                <input type="text" name="reason" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" placeholder="Ex: Inventaire, Casse...">
             </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('adjustStockModal')">Annuler</button>
-                <button type="submit" class="btn" style="background: var(--warning); color: white;">Ajuster</button>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('adjustStockModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-bold text-amber-900 bg-amber-400 hover:bg-amber-500 rounded-lg shadow-sm transition-colors">Ajuster</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit Supplier Modal -->
-<div class="modal" id="editSupplierModal">
-    <div class="modal-content">
-        <h3 class="modal-title">Modifier le fournisseur</h3>
-        <form method="POST" id="editSupplierForm">
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="addSupplierModal">
+    <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter un fournisseur</h3>
+        <form method="POST" action="{{ route('pos.stock.add-supplier') }}" class="flex flex-col gap-4">
+            @csrf
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du fournisseur</label>
+                <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Contact</label>
+                <input type="text" name="contact_info" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Notes</label>
+                <input type="text" name="notes" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none">
+            </div>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('addSupplierModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm transition-colors">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="editSupplierModal">
+    <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier le fournisseur</h3>
+        <form method="POST" id="editSupplierForm" class="flex flex-col gap-4">
             @csrf
             @method('PUT')
             <input type="hidden" id="edit_supplier_id">
-            <div class="form-group">
-                <label class="form-label">Nom du fournisseur</label>
-                <input type="text" name="name" id="edit_supplier_name" class="form-input" required>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du fournisseur</label>
+                <input type="text" name="name" id="edit_supplier_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Contact</label>
-                <input type="text" name="contact_info" id="edit_supplier_contact" class="form-input">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Contact</label>
+                <input type="text" name="contact_info" id="edit_supplier_contact" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none">
             </div>
-            <div class="form-group">
-                <label class="form-label">Notes</label>
-                <input type="text" name="notes" id="edit_supplier_notes" class="form-input">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Notes</label>
+                <input type="text" name="notes" id="edit_supplier_notes" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none">
             </div>
-            <div class="form-actions">
-                <button type="button" class="btn btn-cancel" onclick="closeModal('editSupplierModal')">Annuler</button>
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('editSupplierModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="addCategoryModal">
+    <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter une catégorie</h3>
+        <form method="POST" action="{{ route('pos.stock.add-category') }}" class="flex flex-col gap-4">
+            @csrf
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom de la catégorie</label>
+                <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required placeholder="Ex: Produits d'entretien">
+            </div>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('addCategoryModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm transition-colors">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="editCategoryModal">
+    <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier la catégorie</h3>
+        <form method="POST" id="editCategoryForm" class="flex flex-col gap-4">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_category_id">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom de la catégorie</label>
+                <input type="text" name="name" id="edit_category_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+            </div>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('editCategoryModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Enregistrer</button>
             </div>
         </form>
     </div>
@@ -778,7 +588,6 @@
         const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
         
         for (let row of rows) {
-            // Skip empty state row
             if (row.cells.length === 1) continue;
             
             const productName = row.cells[0].textContent.toLowerCase();

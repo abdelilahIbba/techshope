@@ -16,7 +16,7 @@ use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\LicenseService;
-use Barryvdh\DomPDF\Facade\Pdf;
+
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -233,31 +233,28 @@ class PosController extends Controller
         return $barcode;
     }
 
-    public function printBarcodes(Request $request)
+    /**
+     * Render a clean browser-printable barcode page (no PDF, no layout).
+     * Accepts GET params: product_id, quantity.
+     */
+    public function barcodePrintPage(Request $request): View
     {
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
-            'quantity' => ['required', 'integer', 'min:1', 'max:500'],
+            'quantity'   => ['required', 'integer', 'min:1', 'max:500'],
         ]);
 
-        $product = Product::query()->findOrFail($validated['product_id']);
+        $product = Product::findOrFail($validated['product_id']);
 
-        $svgGenerator = new BarcodeGeneratorSVG();
+        // Generate the barcode SVG once — all labels are identical
+        $generator = new BarcodeGeneratorSVG();
+        $svg = $generator->getBarcode((string) $product->barcode, $generator::TYPE_CODE_128);
 
-        $tickets = [];
-        for ($i = 0; $i < $validated['quantity']; $i++) {
-            $svg = $svgGenerator->getBarcode($product->barcode, $svgGenerator::TYPE_CODE_128);
-            $tickets[] = [
-                'svg' => $svg,
-                'code' => (string) $product->barcode,
-            ];
-        }
-
-        $pdf = Pdf::loadView('pos.barcode-pdf', [
-            'tickets' => $tickets,
-        ])->setPaper('a6', 'portrait');
-
-        return $pdf->download('barcodes-'.$product->barcode.'.pdf');
+        return view('pos.barcode-print', [
+            'product'  => $product,
+            'svg'      => $svg,
+            'quantity' => (int) $validated['quantity'],
+        ]);
     }
 
     
@@ -742,28 +739,101 @@ class PosController extends Controller
             return [$sale->id, $receipt->id];
         });
 
-        return redirect()->route('pos.receipt.pdf', ['receipt' => $result[1]]);
+        return redirect()->route('pos.receipt.print', ['receipt' => $result[1]]);
     }
 
-    public function receiptPdf(Receipt $receipt)
+    public function receiptPrint(Receipt $receipt)
     {
         $receipt->load('sale.items.product');
 
-        $generator = new BarcodeGeneratorSVG();
-        $barcodeImages = [];
+        // ── Resolve printer name from settings ───────────────────────────────
+        // The actual Windows printer name is "printer WD8260"
+        $printerName = Setting::get('printer_name_sale', Setting::get('printer_name', 'printer WD8260'));
+
+        // ── Build a plain-text receipt (42 columns — standard thermal 80mm) ──
+        $w = 42; // characters per line
+        $divider = str_repeat('-', $w);
+        $doubleLine = str_repeat('=', $w);
+
+        $lines   = [];
+        $lines[] = $doubleLine;
+        $lines[] = str_pad('DROGUERIE S', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('Quincaillerie & Bricolage', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('Tel: +213 XX XX XX XX', $w, ' ', STR_PAD_BOTH);
+        $lines[] = $doubleLine;
+
+        $dateStr = optional($receipt->printed_at)->format('d/m/Y') ?? now()->format('d/m/Y');
+        $timeStr = optional($receipt->printed_at)->format('H:i') ?? now()->format('H:i');
+
+        $lines[] = 'Ticket N : ' . $receipt->receipt_number;
+        $lines[] = 'Date     : ' . $dateStr . '   Heure: ' . $timeStr;
+        $lines[] = 'Caisse   : Principal';
+        $lines[] = $divider;
+
+        // Column header: Article (28) | Qte (4) | Total (10)
+        $lines[] = str_pad('Article', 26) . str_pad('Qte', 6, ' ', STR_PAD_LEFT) . str_pad('Total', 10, ' ', STR_PAD_LEFT);
+        $lines[] = $divider;
+
+        $grandTotal = 0;
 
         foreach ($receipt->sale->items as $item) {
-            $barcodeImages[$item->product_id] = base64_encode(
-                $generator->getBarcode($item->product->barcode, $generator::TYPE_CODE_128)
-            );
+            $name = mb_substr($item->product->name, 0, 26);
+            $qty  = (string) $item->quantity;
+            $tot  = number_format($item->subtotal, 2);
+
+            $lines[] = str_pad($name, 26) . str_pad($qty, 6, ' ', STR_PAD_LEFT) . str_pad($tot, 10, ' ', STR_PAD_LEFT);
+
+            // Print unit price on next line if multi-unit
+            if ($item->quantity > 1) {
+                $lines[] = '  ' . str_pad('@ ' . number_format($item->unit_price, 2) . ' /u', 40);
+            }
+
+            if (mb_strlen($item->product->name) > 26) {
+                // Long name: print rest on next line
+                array_splice($lines, count($lines) - ($item->quantity > 1 ? 2 : 1), 0, [
+                    '  ' . mb_substr($item->product->name, 26, 40)
+                ]);
+            }
+
+            $grandTotal += $item->subtotal;
         }
 
-        $pdf = Pdf::loadView('pos.receipt-pdf', [
-            'receipt' => $receipt,
-            'barcodeImages' => $barcodeImages,
-        ])->setPaper('a5', 'portrait');
+        $lines[] = $divider;
+        $lines[] = str_pad('Sous-total :', 30) . str_pad(number_format($grandTotal, 2) . ' DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('TVA (0%)   :', 30) . str_pad('0.00 DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = $doubleLine;
+        $lines[] = str_pad('NET A PAYER:', 30) . str_pad(number_format($grandTotal, 2) . ' DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = $doubleLine;
+        $lines[] = '';
+        $lines[] = str_pad('Merci pour votre visite !', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('Articles vendus non repris apres 7j', $w, ' ', STR_PAD_BOTH);
+        $lines[] = '';
+        $lines[] = '';
+        $lines[] = ''; // feed lines for cut
 
-        return $pdf->download('receipt-'.$receipt->receipt_number.'.pdf');
+        $textReceipt = implode("\r\n", $lines);
+
+        // ── Write receipt to a temp .txt file ────────────────────────────────
+        $tmpTxt = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'receipt_' . $receipt->id . '_' . time() . '.txt';
+        file_put_contents($tmpTxt, $textReceipt);
+
+        // ── Write a .ps1 that sends the file directly to the printer ─────────
+        $tmpPs1 = str_replace('.txt', '.ps1', $tmpTxt);
+        $safeTxt     = str_replace("'", "''", $tmpTxt);
+        $safePrinter = str_replace("'", "''", $printerName);
+
+        $psContent  = "Get-Content -Path '{$safeTxt}' | Out-Printer -Name '{$safePrinter}'\r\n";
+        $psContent .= "Remove-Item -Force '{$safeTxt}' -ErrorAction SilentlyContinue\r\n";
+        $psContent .= "Remove-Item -Force '{$tmpPs1}' -ErrorAction SilentlyContinue\r\n";
+
+        file_put_contents($tmpPs1, $psContent);
+
+        // ── Run the .ps1 in background (non-blocking, no window) ─────────────
+        $cmd = 'powershell.exe -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' . $tmpPs1 . '"';
+        pclose(popen('start "" /b ' . $cmd, 'r'));
+
+        return redirect()->route('pos.index')
+            ->with('success', "✓ Ticket imprimé sur {$printerName}");
     }
 
     /**

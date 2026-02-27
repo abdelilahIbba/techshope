@@ -166,7 +166,7 @@
         function updatePinDisplay() {
             const display = document.getElementById('pinDisplay');
             if (currentPin.length === 0) {
-                display.textContent = '••••';
+                display.textContent = '••••'; 
                 display.classList.remove('text-slate-800', 'border-blue-400');
                 display.classList.add('text-slate-300', 'border-slate-200');
             } else {

@@ -178,16 +178,18 @@
 <div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="printBarcodeModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-3">Imprimer tickets - <span id="print_product_name"></span></h3>
-        <form method="POST" id="printBarcodeForm" action="{{ route('pos.stock.print-barcodes') }}">
-            @csrf
-            <input type="hidden" name="product_id" id="print_product_id">
+        <form id="printBarcodeForm" onsubmit="submitPrintForm(event)">
+            <input type="hidden" id="print_product_id">
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre de tickets</label>
                 <input type="text" name="quantity" id="print_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 outline-none cursor-pointer" value="1" readonly onclick="openNumericKeyboard('print_quantity_input')">
             </div>
             <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
                 <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('printBarcodeModal')">Annuler</button>
-                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Imprimer</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    Imprimer
+                </button>
             </div>
         </form>
     </div>
@@ -721,6 +723,15 @@
         document.getElementById('print_quantity_input').value = '1';
         closeModal('productDetailsModal');
         openModal('printBarcodeModal');
+    }
+
+    function submitPrintForm(e) {
+        e.preventDefault();
+        const id  = document.getElementById('print_product_id').value;
+        const qty = document.getElementById('print_quantity_input').value;
+        const url = '{{ route("pos.barcode.print") }}?product_id=' + encodeURIComponent(id) + '&quantity=' + encodeURIComponent(qty);
+        window.open(url, '_blank');
+        closeModal('printBarcodeModal');
     }
 
     // If a new product was just created, open the print modal automatically

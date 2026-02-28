@@ -185,6 +185,34 @@
             }
         }
         
+        // Keyboard support for PIN entry
+        document.addEventListener('keydown', function(event) {
+            // Prevent default for specific keys
+            if (['0','1','2','3','4','5','6','7','8','9','Backspace','Delete','Escape','Enter'].includes(event.key)) {
+                event.preventDefault();
+            }
+            
+            // Number keys (0-9)
+            if (event.key >= '0' && event.key <= '9') {
+                addPin(event.key);
+            }
+            // Backspace or Delete - remove last digit
+            else if (event.key === 'Backspace' || event.key === 'Delete') {
+                deletePin();
+            }
+            // Escape - clear all
+            else if (event.key === 'Escape') {
+                clearPin();
+            }
+            // Enter - submit form if ready
+            else if (event.key === 'Enter') {
+                const btn = document.getElementById('submitBtn');
+                if (!btn.disabled) {
+                    document.getElementById('loginForm').submit();
+                }
+            }
+        });
+        
         checkSubmitState();
     </script>
 </body>

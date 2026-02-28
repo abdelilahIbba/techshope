@@ -54,5 +54,27 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pos/receipt/{receipt}/print', [PosController::class, 'receiptPrint'])->middleware('permission:receipt.export')->name('pos.receipt.print');
         Route::get('/pos/barcode-print', [PosController::class, 'barcodePrintPage'])->middleware('permission:barcode.print')->name('pos.barcode.print');
         Route::get('/pos/product/{product}/barcode.png', [PosController::class, 'productBarcodeImage'])->middleware('permission:barcode.print')->name('pos.product.barcode.png');
+        
+        // ── Rapports & Historique ──
+        Route::get('/pos/reports', [PosController::class, 'reports'])->middleware('permission:reports.view')->name('pos.reports');
+        Route::get('/pos/reports/sales-by-product', [PosController::class, 'salesByProduct'])->middleware('permission:reports.view')->name('pos.reports.sales-by-product');
+        Route::get('/pos/reports/sales-by-cashier', [PosController::class, 'salesByCashier'])->middleware('permission:reports.view')->name('pos.reports.sales-by-cashier');
+        Route::get('/pos/reports/cancellations', [PosController::class, 'cancellations'])->middleware('permission:reports.view')->name('pos.reports.cancellations');
+        
+        // ── Annulations ──
+        Route::post('/pos/sales/{sale}/cancel', [PosController::class, 'cancelSale'])->middleware('permission:sale.cancel')->name('pos.sales.cancel');
+        Route::post('/pos/sales/{sale}/authorize-cancellation', [PosController::class, 'authorizeCancellation'])->middleware('permission:sale.cancel.authorize')->name('pos.sales.authorize-cancellation');
+        
+        // ── Dépenses ──
+        Route::get('/pos/expenses', [PosController::class, 'expenses'])->middleware('permission:expenses.view')->name('pos.expenses');
+        Route::post('/pos/expenses', [PosController::class, 'createExpense'])->middleware('permission:expenses.create')->name('pos.expenses.create');
+        Route::put('/pos/expenses/{expense}', [PosController::class, 'updateExpense'])->middleware('permission:expenses.edit')->name('pos.expenses.update');
+        Route::delete('/pos/expenses/{expense}', [PosController::class, 'deleteExpense'])->middleware('permission:expenses.delete')->name('pos.expenses.delete');
+        Route::post('/pos/expenses/{expense}/approve', [PosController::class, 'approveExpense'])->middleware('permission:expenses.approve')->name('pos.expenses.approve');
+        
+        // ── Export ──
+        Route::get('/pos/reports/export/sales-by-product', [PosController::class, 'exportSalesByProduct'])->middleware('permission:reports.export')->name('pos.reports.export.sales-by-product');
+        Route::get('/pos/reports/export/sales-by-cashier', [PosController::class, 'exportSalesByCashier'])->middleware('permission:reports.export')->name('pos.reports.export.sales-by-cashier');
+        Route::get('/pos/reports/export/expenses', [PosController::class, 'exportExpenses'])->middleware('permission:reports.export')->name('pos.reports.export.expenses');
     });
 });

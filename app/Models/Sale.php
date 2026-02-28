@@ -11,9 +11,12 @@ class Sale extends Model
 {
     protected $fillable = [
         'customer_id',
+        'cashier_user_id',
         'date',
         'total_amount',
         'payment_method',
+        'status',
+        'notes',
     ];
 
     protected $casts = [
@@ -34,5 +37,36 @@ class Sale extends Model
     public function receipt(): HasOne
     {
         return $this->hasOne(\App\Models\Receipt::class);
+    }
+
+    public function cashier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cashier_user_id');
+    }
+
+    public function cancellation(): HasOne
+    {
+        return $this->hasOne(SaleCancellation::class);
+    }
+
+    // Scopes utiles
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    public function scopeByCashier($query, int $userId)
+    {
+        return $query->where('cashier_user_id', $userId);
+    }
+
+    public function scopeDateRange($query, string $from, string $to)
+    {
+        return $query->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59']);
     }
 }

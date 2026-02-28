@@ -222,6 +222,97 @@
         </div>
     </form>
 
+    {{-- Historique & Reports Section --}}
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+        <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Rapports & Historique
+        </h3>
+        <p class="text-sm text-slate-500 mb-6">Accéder aux rapports de ventes, dépenses et annulations</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {{-- Main Reports --}}
+            <a href="{{ route('pos.reports') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+                <div class="bg-blue-100 p-2 rounded-lg group-hover:bg-blue-200 transition-colors">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">Tableau de bord</div>
+                    <div class="text-sm text-slate-500">Vue d'ensemble des rapports</div>
+                </div>
+            </a>
+
+            {{-- Sales by Product --}}
+            <a href="{{ route('pos.reports.sales-by-product') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+                <div class="bg-purple-100 p-2 rounded-lg group-hover:bg-purple-200 transition-colors">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">Ventes par Article</div>
+                    <div class="text-sm text-slate-500">Top produits & statistiques</div>
+                </div>
+            </a>
+            
+            {{-- Sales by Cashier --}}
+            <a href="{{ route('pos.reports.sales-by-cashier') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+                <div class="bg-green-100 p-2 rounded-lg group-hover:bg-green-200 transition-colors">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">Ventes par Caissier</div>
+                    <div class="text-sm text-slate-500">Performance des utilisateurs</div>
+                </div>
+            </a>
+            
+            {{-- Expenses --}}
+            <a href="{{ route('pos.expenses') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+                <div class="bg-red-100 p-2 rounded-lg group-hover:bg-red-200 transition-colors">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">Dépenses</div>
+                    <div class="text-sm text-slate-500">Suivi des coûts opérationnels</div>
+                </div>
+            </a>
+            
+            {{-- Cancellations --}}
+            <a href="{{ route('pos.reports.cancellations') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+                <div class="bg-yellow-100 p-2 rounded-lg group-hover:bg-yellow-200 transition-colors">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">Annulations</div>
+                    <div class="text-sm text-slate-500">Historique des ventes annulées</div>
+                </div>
+            </a>
+
+            {{-- Dashboard Sales View --}}
+            <a href="{{ route('pos.dashboard') }}" class="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group">
+                <div class="bg-indigo-100 p-2 rounded-lg group-hover:bg-indigo-200 transition-colors">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">Historique des Ventes</div>
+                    <div class="text-sm text-slate-500">Toutes les transactions</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
         <div class="flex items-center justify-between mb-6">
             <div>

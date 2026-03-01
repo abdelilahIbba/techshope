@@ -132,8 +132,8 @@
                                 <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-semibold">{{ $product->category->name ?? 'N/A' }}</span></td>
                                 <td class="px-6 py-4">{{ $product->supplier->name ?? 'Non assigné' }}</td>
                                 <td class="px-6 py-4 font-extrabold text-slate-900">{{ $product->stock_quantity }}</td>
-                                <td class="px-6 py-4">{{ number_format($product->purchase_price, 2) }} DZD</td>
-                                <td class="px-6 py-4 font-bold text-blue-600">{{ number_format($product->sale_price, 2) }} DZD</td>
+                                <td class="px-6 py-4">{{ number_format($product->purchase_price, 2) }} DH</td>
+                                <td class="px-6 py-4 font-bold text-blue-600">{{ number_format($product->sale_price, 2) }} DH</td>
                                 <td class="px-6 py-4">
                                     @if($product->stock_quantity <= 5)
                                         <span class="badge bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase">Critique</span>
@@ -406,11 +406,11 @@
             </script>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat (DZD)</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat (DH)</label>
                     <input type="number" step="0.01" name="purchase_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix vente (DZD)</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix vente (DH)</label>
                     <input type="number" step="0.01" name="sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
                 </div>
             </div>

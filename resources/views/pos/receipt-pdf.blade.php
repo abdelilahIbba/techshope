@@ -183,7 +183,7 @@
             </tr>
             <tr>
                 <td style="text-align: right; width: 70%;" class="grand-total">NET À PAYER :</td>
-                <td class="text-right grand-total">{{ number_format($receipt->sale->total_amount, 2) }} DZD</td>
+                <td class="text-right grand-total">{{ number_format($receipt->sale->total_amount, 2) }} DH</td>
             </tr>
         </table>
     </div>

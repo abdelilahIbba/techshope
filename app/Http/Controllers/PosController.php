@@ -418,7 +418,7 @@ class PosController extends Controller
             'auto_print' => Setting::get('auto_print', 'true'),
             'scanner_mode' => Setting::get('scanner_mode', 'Scan direct vers champ barcode'),
             'scanner_beep' => Setting::get('scanner_beep', 'true'),
-            'currency' => Setting::get('currency', 'DZD'),
+            'currency' => Setting::get('currency', 'DH'),
             'low_stock_threshold' => Setting::get('low_stock_threshold', '10'),
             'default_customer' => Setting::get('default_customer', 'Zbon عام (Cash)'),
             'notification_email' => Setting::get('notification_email', 'admin@droguerie.com'),
@@ -799,10 +799,10 @@ class PosController extends Controller
         }
 
         $lines[] = $divider;
-        $lines[] = str_pad('Sous-total :', 30) . str_pad(number_format($grandTotal, 2) . ' DZD', 12, ' ', STR_PAD_LEFT);
-        $lines[] = str_pad('TVA (0%)   :', 30) . str_pad('0.00 DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('Sous-total :', 30) . str_pad(number_format($grandTotal, 2) . ' DH', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('TVA (0%)   :', 30) . str_pad('0.00 DH', 12, ' ', STR_PAD_LEFT);
         $lines[] = $doubleLine;
-        $lines[] = str_pad('NET A PAYER:', 30) . str_pad(number_format($grandTotal, 2) . ' DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('NET A PAYER:', 30) . str_pad(number_format($grandTotal, 2) . ' DH', 12, ' ', STR_PAD_LEFT);
         $lines[] = $doubleLine;
         $lines[] = '';
         $lines[] = str_pad('Merci pour votre visite !', $w, ' ', STR_PAD_BOTH);

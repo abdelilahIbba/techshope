@@ -156,7 +156,7 @@
                     <span class="text-slate-500 font-bold uppercase tracking-wide text-sm">Total à payer</span>
                     <div class="text-right">
                         <span id="cart-total" class="text-4xl font-extrabold text-emerald-600 tracking-tight">0.00</span>
-                        <span class="text-emerald-500 font-bold ml-1">DZD</span>
+                        <span class="text-emerald-500 font-bold ml-1">DH</span>
                     </div>
                 </div>
 
@@ -252,7 +252,7 @@
                 
                 <div class="mt-2 mb-1 flex items-end gap-1">
                     <div class="font-extrabold text-blue-600 text-xl leading-none">${Number(product.price).toFixed(2)}</div>
-                    <div class="text-xs font-bold text-blue-400 mb-0.5">DZD</div>
+                    <div class="text-xs font-bold text-blue-400 mb-0.5">DH</div>
                 </div>
                 
                 <div class="flex justify-between items-center mb-3">

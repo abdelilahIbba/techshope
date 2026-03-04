@@ -915,10 +915,10 @@ class PosController extends Controller
         }
 
         $lines[] = $divider;
-        $lines[] = str_pad('Sous-total :', 30) . str_pad(number_format($grandTotal, 2) . ' DZD', 12, ' ', STR_PAD_LEFT);
-        $lines[] = str_pad('TVA (0%)   :', 30) . str_pad('0.00 DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('Sous-total :', 30) . str_pad(number_format($grandTotal, 2) . ' DH', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('TVA (0%)   :', 30) . str_pad('0.00 DH', 12, ' ', STR_PAD_LEFT);
         $lines[] = $doubleLine;
-        $lines[] = str_pad('NET A PAYER:', 30) . str_pad(number_format($grandTotal, 2) . ' DZD', 12, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad('NET A PAYER:', 30) . str_pad(number_format($grandTotal, 2) . ' DH', 12, ' ', STR_PAD_LEFT);
         $lines[] = $doubleLine;
         $lines[] = '';
         $lines[] = str_pad('Merci pour votre visite !', $w, ' ', STR_PAD_BOTH);

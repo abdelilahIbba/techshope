@@ -1,198 +1,332 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Reçu #{{ $receipt->receipt_number }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket #{{ $receipt->receipt_number }}</title>
     <style>
-        /* إعدادات عامة تتوافق مع محركات الـ PDF */
-        body { 
-            font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif; 
-            font-size: 12px; 
-            color: #334155; 
-            margin: 0; 
-            padding: 10px;
-            line-height: 1.4;
+        /* ── Screen preview ── */
+        @media screen {
+            body {
+                background: #e5e7eb;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 30px 10px;
+                min-height: 100vh;
+                margin: 0;
+            }
+            .receipt-wrapper {
+                background: #fff;
+                width: 80mm;
+                padding: 8mm 6mm;
+                border-radius: 4px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            }
+            .print-hint {
+                display: block;
+                margin-top: 14px;
+                font-size: 11px;
+                color: #6b7280;
+                font-family: Arial, sans-serif;
+                text-align: center;
+            }
         }
 
-        /* رأس الفاتورة (Header) */
+        /* ── Print styles — 80mm thermal ── */
+        @media print {
+            @page { 
+                size: 80mm auto;
+                margin: 3mm 2mm;
+            }
+            html, body {
+                width: 80mm;
+                margin: 0;
+                padding: 0;
+            }
+            .receipt-wrapper {
+                width: 100%;
+                padding: 0;
+            }
+            .print-hint { display: none !important; }
+        }
+
+        /* ── Base ── */
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #000;
+            font-weight: bold;
+            direction: rtl;
+        }
+
+        .receipt-wrapper { width: 100%; }
+
+        /* ── Dashed separator ── */
+        .dashed {
+            border: none;
+            border-top: 1.5px dashed #000;
+            margin: 6px 0;
+        }
+
+        /* ── Header ── */
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
         }
-        .header h1 {
-            margin: 0 0 5px 0;
-            font-size: 24px;
-            color: #0f172a;
+        .header .shop-name {
+            font-size: 18px;
+            font-weight: 900;
             letter-spacing: 1px;
-        }
-        .header p {
-            margin: 2px 0;
-            color: #64748b;
-            font-size: 11px;
-        }
-
-        /* الخط الفاصل */
-        .divider {
-            border-bottom: 1px dashed #cbd5e1;
-            margin: 15px 0;
-        }
-
-        /* معلومات الفاتورة */
-        .meta-table {
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .meta-table td {
-            border: none;
-            padding: 0;
-        }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-
-        /* جدول المنتجات */
-        .items-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-        }
-        .items-table th { 
-            background-color: #f8fafc;
-            color: #475569;
-            font-size: 10px;
+            margin: 0 0 3px 0;
             text-transform: uppercase;
-            border-bottom: 2px solid #e2e8f0;
-            padding: 8px 4px;
         }
-        .items-table td { 
-            border-bottom: 1px solid #f1f5f9; 
-            padding: 8px 4px; 
-            vertical-align: top;
-        }
-        
-        .product-name {
+        .header .shop-tagline {
+            font-size: 10px;
             font-weight: bold;
-            color: #1e293b;
-            margin-bottom: 3px;
+            margin: 2px 0;
         }
-        .barcode-text {
-            font-size: 9px;
-            color: #94a3b8;
-        }
-        .barcode-img { 
-            margin-top: 4px; 
-            max-width: 120px; 
-            height: auto;
+        .header .shop-phone {
+            font-size: 12px;
+            font-weight: 900;
+            margin: 3px 0 0 0;
         }
 
-        /* الإجماليات */
-        .totals-container {
-            width: 100%;
-            margin-top: 20px;
-        }
-        .totals-table {
+        /* ── Meta info (ticket #, date, time) ── */
+        .meta {
             width: 100%;
             border-collapse: collapse;
-        }
-        .totals-table td {
-            padding: 6px 0;
-            border: none;
-        }
-        .grand-total {
-            font-size: 18px;
+            font-size: 10px;
             font-weight: bold;
-            color: #0f172a;
-            border-top: 2px solid #1e293b;
-            padding-top: 10px;
+        }
+        .meta td {
+            padding: 2px 1px;
+            vertical-align: top;
+            color: #000;
+        }
+        /* LTR cells for numbers/dates */
+        .meta td.ltr {
+            direction: ltr;
+            text-align: left;
+        }
+        .meta td.rtl-label {
+            text-align: right;
         }
 
-        /* تذييل الفاتورة */
+        /* ── Items table ── */
+        .items {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            font-weight: bold;
+            margin: 4px 0;
+            direction: rtl;
+        }
+        .items thead tr {
+            border-bottom: 1.5px dashed #000;
+        }
+        .items th {
+            padding: 4px 2px;
+            font-size: 10px;
+            font-weight: 900;
+            color: #000;
+            text-align: right;
+        }
+        .items th.num { text-align: center; }
+        .items th.prix { text-align: left; direction: ltr; }
+
+        .items td {
+            padding: 4px 2px;
+            border-bottom: 1px dashed #000;
+            vertical-align: middle;
+            color: #000;
+            text-align: right;
+        }
+        .items td.num { text-align: center; }
+        .items td.prix { text-align: left; direction: ltr; }
+        .items tr:last-child td { border-bottom: none; }
+
+        .item-name {
+            font-weight: 900;
+            font-size: 10.5px;
+        }
+
+        /* ── Totals section ── */
+        .totals {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .totals td {
+            padding: 2px 1px;
+            color: #000;
+        }
+        .totals td.lbl { text-align: right; }
+        .totals td.val { text-align: left; direction: ltr; }
+
+        /* Big TOTAL box */
+        .total-box {
+            border-top: 1.5px dashed #000;
+            border-bottom: 1.5px dashed #000;
+            padding: 6px 4px;
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-label {
+            font-size: 17px;
+            font-weight: 900;
+            color: #000;
+        }
+        .total-amount {
+            font-size: 17px;
+            font-weight: 900;
+            color: #000;
+            direction: ltr;
+        }
+
+        /* ── Footer ── */
         .footer {
             text-align: center;
-            margin-top: 30px;
-            font-size: 11px;
-            color: #64748b;
+            margin-top: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #000;
+            direction: rtl;
         }
-        .qr-placeholder {
-            margin-top: 15px;
-            text-align: center;
+        .footer .amount-words {
+            font-size: 9.5px;
+            font-weight: bold;
+            margin: 3px 0;
+            font-style: italic;
+        }
+        .footer .thank-you {
+            font-size: 12px;
+            font-weight: 900;
+            margin: 5px 0 2px 0;
+        }
+        .footer .policy {
+            font-size: 9px;
+            font-weight: bold;
+            margin: 2px 0;
+        }
+        .footer .system-tag {
+            font-size: 8px;
+            color: #555;
+            margin-top: 5px;
+            font-weight: normal;
         }
     </style>
 </head>
 <body>
 
+<div class="receipt-wrapper">
+
+    {{-- ══ HEADER ══ --}}
     <div class="header">
-        <h1>Droguerie S</h1>
-        <p>Quincaillerie & Articles de bricolage</p>
-        <p>123 Rue de la République, Ville</p>
-        <p>Tél: +213 XX XX XX XX</p>
+        <p class="shop-name">DROGUERIE ALOUCHE</p>
+        <p class="shop-tagline">دروڤري علوش — قسنطينة</p>
+        <p class="shop-tagline">Quincaillerie & Articles de bricolage</p>
+        <p class="shop-phone">☎ 0XX XX XX XX XX</p>
     </div>
 
-    <div class="divider"></div>
+    <hr class="dashed">
 
-    <table class="meta-table">
+    {{-- ══ META ══ --}}
+    <table class="meta">
         <tr>
-            <td>
-                <strong>Ticket N° :</strong> {{ $receipt->receipt_number }}<br>
-                <strong>Caisse :</strong> Principal
-            </td>
-            <td class="text-right">
-                <strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}<br>
-                <strong>Heure :</strong> {{ optional($receipt->printed_at)->format('H:i') }}
-            </td>
+            <td class="rtl-label">: رقم الفاتورة</td>
+            <td class="ltr"><strong>{{ $receipt->receipt_number }}</strong></td>
+            <td class="rtl-label">: التاريخ</td>
+            <td class="ltr">{{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td class="rtl-label">: الصندوق</td>
+            <td class="ltr">Principal</td>
+            <td class="rtl-label">: الوقت</td>
+            <td class="ltr">{{ optional($receipt->printed_at)->format('H:i') }}</td>
         </tr>
     </table>
 
-    <table class="items-table">
+    <hr class="dashed">
+
+    {{-- ══ ITEMS TABLE ══ --}}
+    <table class="items">
         <thead>
             <tr>
-                <th style="text-align: left;">Article</th>
-                <th class="text-center">Qté</th>
-                <th class="text-right">Prix U.</th>
-                <th class="text-right">Total</th>
+                <th>المنتج / Article</th>
+                <th class="num">Qté</th>
+                <th class="prix">Total</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($receipt->sale->items as $item)
-                <tr>
-                    <td>
-                        <div class="product-name">{{ $item->product->name }}</div>
-                        <div class="barcode-text">Code: {{ $item->product->barcode }}</div>
-                        @if (isset($barcodeImages[$item->product_id]))
-                            <div>
-                                <img class="barcode-img" src="data:image/svg+xml;base64,{{ $barcodeImages[$item->product_id] }}" alt="barcode">
-                            </div>
-                        @endif
-                    </td>
-                    <td class="text-center">{{ $item->quantity }}</td>
-                    <td class="text-right">{{ number_format($item->unit_price, 2) }} {{ $currencySymbol }}</td>
-                    <td class="text-right" style="font-weight: bold;">{{ number_format($item->subtotal, 2) }} {{ $currencySymbol }}</td>
-                </tr>
+            <tr>
+                <td>
+                    <div class="item-name">{{ $item->product->name }}</div>
+                    <div style="font-size:8.5px; font-weight:normal; color:#333;">
+                        {{ number_format($item->unit_price, 2) }} {{ $currencySymbol }} × {{ $item->quantity }}
+                    </div>
+                </td>
+                <td class="num">{{ $item->quantity }}</td>
+                <td class="prix"><strong>{{ number_format($item->subtotal, 2) }}</strong></td>
+            </tr>
             @endforeach
         </tbody>
     </table>
 
-    <div class="totals-container">
-        <table class="totals-table">
-            <tr>
-                <td style="text-align: right; width: 70%;">Sous-total :</td>
-                <td class="text-right">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
-            </tr>
-            <tr>
-                <td style="text-align: right; width: 70%; padding-bottom: 10px;">TVA (0%) :</td>
-                <td class="text-right" style="padding-bottom: 10px;">0.00 {{ $currencySymbol }}</td>
-            </tr>
-            <tr>
-                <td style="text-align: right; width: 70%;" class="grand-total">NET À PAYER :</td>
-                <td class="text-right grand-total">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
-            </tr>
-        </table>
+    <hr class="dashed">
+
+    {{-- ══ SUB TOTALS ══ --}}
+    <table class="totals">
+        <tr>
+            <td class="lbl">Sous-total :</td>
+            <td class="val">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
+        </tr>
+        <tr>
+            <td class="lbl">TVA (0%) :</td>
+            <td class="val">0.00 {{ $currencySymbol }}</td>
+        </tr>
+    </table>
+
+    {{-- ══ BIG TOTAL BOX ══ --}}
+    <div class="total-box">
+        <span class="total-label">المجموع = Total</span>
+        <span class="total-amount">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</span>
     </div>
 
+    {{-- ══ FOOTER ══ --}}
     <div class="footer">
-        <p>Merci pour votre visite !</p>
-        <p>Les articles vendus ne sont ni repris ni échangés après 7 jours.</p>
-        <p style="font-size: 9px; margin-top: 10px; color: #cbd5e1;">Propulsé par Droguerie POS System</p>
+        <p class="amount-words">
+            {{-- Montant en toutes lettres: you can add a PHP helper here --}}
+            Arrêté à la somme de : <strong>{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</strong>
+        </p>
+        <p class="thank-you">شكراً لزيارتكم! — Merci pour votre visite !</p>
+        <p class="policy">البضاعة المباعة لا ترد ولا تستبدل بعد 7 أيام</p>
+        <p class="policy">Articles vendus ni repris, ni échangés après 7 jours.</p>
+        <p class="system-tag">Droguerie POS System</p>
     </div>
+
+</div>
+
+<span class="print-hint">🖨️ Impression automatique en cours…</span>
+
+<script>
+    window.addEventListener('load', function () {
+        setTimeout(function () {
+            window.print();
+        }, 350);
+    });
+
+    window.onafterprint = function () {
+        window.location.href = '{{ route("pos.index") }}';
+    };
+</script>
 
 </body>
 </html>

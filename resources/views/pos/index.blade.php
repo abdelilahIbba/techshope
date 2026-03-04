@@ -156,7 +156,7 @@
                     <span class="text-slate-500 font-bold uppercase tracking-wide text-sm">Total à payer</span>
                     <div class="text-right">
                         <span id="cart-total" class="text-4xl font-extrabold text-emerald-600 tracking-tight">0.00</span>
-                        <span class="text-emerald-500 font-bold ml-1">DZD</span>
+                        <span class="text-emerald-500 font-bold ml-1">{{ $currencySymbol }}</span>
                     </div>
                 </div>
 
@@ -174,6 +174,7 @@
 
 <script>
     const categories = @json($preparedCategories);
+    const currencySymbol = @json($currencySymbol);
     const categoryList = document.getElementById('category-list');
     const productsGrid = document.getElementById('products-grid');
     const activeCategoryName = document.getElementById('active-category-name');
@@ -252,7 +253,7 @@
                 
                 <div class="mt-2 mb-1 flex items-end gap-1">
                     <div class="font-extrabold text-blue-600 text-xl leading-none">${Number(product.price).toFixed(2)}</div>
-                    <div class="text-xs font-bold text-blue-400 mb-0.5">DZD</div>
+                    <div class="text-xs font-bold text-blue-400 mb-0.5">${currencySymbol}</div>
                 </div>
                 
                 <div class="flex justify-between items-center mb-3">
@@ -345,8 +346,8 @@
                     </div>
                 </td>
                 <td class="py-3 px-2 text-right align-top relative">
-                    <div class="font-extrabold text-slate-700">${lineTotal.toFixed(2)}</div>
-                    <div class="text-[10px] text-slate-400 font-medium">${item.price.toFixed(2)} / unité</div>
+                    <div class="font-extrabold text-slate-700">${lineTotal.toFixed(2)} ${currencySymbol}</div>
+                    <div class="text-[10px] text-slate-400 font-medium">${item.price.toFixed(2)} ${currencySymbol} / unité</div>
                     
                     <button type="button" class="qty-btn remove absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 w-7 h-7 flex items-center justify-center rounded-full bg-red-100 hover:bg-red-500 text-red-500 hover:text-white transition-all shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

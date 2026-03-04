@@ -164,8 +164,8 @@
                         @endif
                     </td>
                     <td class="text-center">{{ $item->quantity }}</td>
-                    <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                    <td class="text-right" style="font-weight: bold;">{{ number_format($item->subtotal, 2) }}</td>
+                    <td class="text-right">{{ number_format($item->unit_price, 2) }} {{ $currencySymbol }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ number_format($item->subtotal, 2) }} {{ $currencySymbol }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -175,15 +175,15 @@
         <table class="totals-table">
             <tr>
                 <td style="text-align: right; width: 70%;">Sous-total :</td>
-                <td class="text-right">{{ number_format($receipt->sale->total_amount, 2) }}</td>
+                <td class="text-right">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
             </tr>
             <tr>
                 <td style="text-align: right; width: 70%; padding-bottom: 10px;">TVA (0%) :</td>
-                <td class="text-right" style="padding-bottom: 10px;">0.00</td>
+                <td class="text-right" style="padding-bottom: 10px;">0.00 {{ $currencySymbol }}</td>
             </tr>
             <tr>
                 <td style="text-align: right; width: 70%;" class="grand-total">NET À PAYER :</td>
-                <td class="text-right grand-total">{{ number_format($receipt->sale->total_amount, 2) }} DZD</td>
+                <td class="text-right grand-total">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
             </tr>
         </table>
     </div>

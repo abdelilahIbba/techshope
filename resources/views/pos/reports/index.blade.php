@@ -71,7 +71,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalSales, 2) }} DZD</p>
+            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalSales, 2) }} {{ $currencySymbol }}</p>
             <p class="text-sm text-slate-500 mt-1">{{ $salesCount }} ventes</p>
         </div>
 
@@ -84,7 +84,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalExpenses, 2) }} DZD</p>
+            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalExpenses, 2) }} {{ $currencySymbol }}</p>
             <p class="text-sm text-slate-500 mt-1">Approuvées et payées</p>
         </div>
 
@@ -97,7 +97,7 @@
                     </svg>
                 </div>
             </div>
-            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalSales - $totalExpenses, 2) }} DZD</p>
+            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalSales - $totalExpenses, 2) }} {{ $currencySymbol }}</p>
             <p class="text-sm text-slate-500 mt-1">Marge: {{ $totalSales > 0 ? number_format((($totalSales - $totalExpenses) / $totalSales) * 100, 1) : 0 }}%</p>
         </div>
 

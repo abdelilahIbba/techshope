@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Expense;
 use App\Models\License;
 use App\Models\Product;
 use App\Models\Receipt;
 use App\Models\Sale;
+use App\Models\SaleCancellation;
 use App\Models\SaleItem;
 use App\Models\Role;
 use App\Models\Permission;
@@ -19,6 +21,7 @@ use App\Services\LicenseService;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -50,6 +53,15 @@ class PosController extends Controller
             ['key' => 'barcode.print', 'label' => 'Imprimer code-barres', 'page' => 'Stock', 'action' => 'Export'],
             ['key' => 'reports.view', 'label' => 'Voir rapports', 'page' => 'Reports', 'action' => 'View'],
             ['key' => 'reports.export', 'label' => 'Exporter rapports', 'page' => 'Reports', 'action' => 'Export'],
+            // Annulations
+            ['key' => 'sale.cancel', 'label' => 'Annuler vente', 'page' => 'POS', 'action' => 'Delete'],
+            ['key' => 'sale.cancel.authorize', 'label' => 'Autoriser annulation', 'page' => 'POS', 'action' => 'Approve'],
+            // Dépenses
+            ['key' => 'expenses.view', 'label' => 'Voir dépenses', 'page' => 'Expenses', 'action' => 'View'],
+            ['key' => 'expenses.create', 'label' => 'Créer dépense', 'page' => 'Expenses', 'action' => 'Create'],
+            ['key' => 'expenses.edit', 'label' => 'Modifier dépense', 'page' => 'Expenses', 'action' => 'Edit'],
+            ['key' => 'expenses.delete', 'label' => 'Supprimer dépense', 'page' => 'Expenses', 'action' => 'Delete'],
+            ['key' => 'expenses.approve', 'label' => 'Approuver dépense', 'page' => 'Expenses', 'action' => 'Approve'],
         ];
     }
 
@@ -715,9 +727,11 @@ class PosController extends Controller
 
             $sale = Sale::query()->create([
                 'customer_id' => $customerId,
+                'cashier_user_id' => Auth::id(),
                 'date' => now(),
                 'total_amount' => $totalAmount,
                 'payment_method' => $validated['payment_method'] ?? 'cash',
+                'status' => 'completed',
             ]);
 
             foreach ($resolvedItems as $row) {
@@ -846,5 +860,341 @@ class PosController extends Controller
 
         // Return raw SVG. The caller can embed or display it.
         return response($svg, 200)->header('Content-Type', 'image/svg+xml');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REPORTS & HISTORIQUE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Main reports dashboard
+     */
+    public function reports(Request $request): View
+    {
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+
+        // Calculate summary stats
+        $totalSales = Sale::query()
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'completed')
+            ->sum('total_amount');
+
+        $totalExpenses = Expense::query()
+            ->whereBetween('expense_date', [$from, $to])
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('amount');
+
+        $totalCancellations = Sale::query()
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'cancelled')
+            ->count();
+
+        $salesCount = Sale::query()
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'completed')
+            ->count();
+
+        return view('pos.reports.index', compact(
+            'from', 'to', 'totalSales', 'totalExpenses', 'totalCancellations', 'salesCount'
+        ));
+    }
+
+    /**
+     * Sales by product report
+     */
+    public function salesByProduct(Request $request): View
+    {
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+
+        $salesData = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->whereBetween('sales.date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('sales.status', 'completed')
+            ->select(
+                'products.id',
+                'products.name',
+                'products.category_id',
+                DB::raw('SUM(sale_items.quantity) as total_quantity'),
+                DB::raw('SUM(sale_items.subtotal) as total_revenue'),
+                DB::raw('MAX(sales.date) as last_sale_date')
+            )
+            ->groupBy('products.id', 'products.name', 'products.category_id')
+            ->orderByDesc('total_revenue')
+            ->get();
+
+        return view('pos.reports.sales-by-product', compact('salesData', 'from', 'to'));
+    }
+
+    /**
+     * Sales by cashier report
+     */
+    public function salesByCashier(Request $request): View
+    {
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+
+        $salesData = Sale::query()
+            ->with('cashier:id,name')
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'completed')
+            ->select(
+                'cashier_user_id',
+                DB::raw('COUNT(*) as total_sales'),
+                DB::raw('SUM(total_amount) as total_revenue'),
+                DB::raw('AVG(total_amount) as avg_basket')
+            )
+            ->groupBy('cashier_user_id')
+            ->orderByDesc('total_revenue')
+            ->get()
+            ->map(function($row) use ($from, $to) {
+                // Calculate cancellation rate
+                $cancellations = Sale::query()
+                    ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+                    ->where('cashier_user_id', $row->cashier_user_id)
+                    ->where('status', 'cancelled')
+                    ->count();
+                
+                $row->cancellation_rate = $row->total_sales > 0 
+                    ? round(($cancellations / ($row->total_sales + $cancellations)) * 100, 1) 
+                    : 0;
+                
+                return $row;
+            });
+
+        return view('pos.reports.sales-by-cashier', compact('salesData', 'from', 'to'));
+    }
+
+    /**
+     * Sales cancellations history
+     */
+    public function cancellations(Request $request): View
+    {
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+
+        $cancellations = SaleCancellation::query()
+            ->with(['sale', 'cancelledBy', 'authorizedBy'])
+            ->whereBetween('cancelled_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->orderByDesc('cancelled_at')
+            ->paginate(20);
+
+        return view('pos.reports.cancellations', compact('cancellations', 'from', 'to'));
+    }
+
+    /**
+     * Cancel a sale
+     */
+    public function cancelSale(Request $request, Sale $sale): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'required|in:client_request,error,fraud,return,other',
+            'notes' => 'nullable|string|max:500',
+            'refund_amount' => 'required|numeric|min:0|max:' . $sale->total_amount,
+            'refund_method' => 'required|in:cash,card,transfer',
+        ]);
+
+        // Check if already cancelled
+        if ($sale->status === 'cancelled') {
+            return back()->with('error', 'Cette vente est déjà annulée.');
+        }
+
+        DB::transaction(function () use ($sale, $validated) {
+            // Create cancellation record
+            SaleCancellation::create([
+                'sale_id' => $sale->id,
+                'cancelled_by_user_id' => Auth::id(),
+                'authorized_by_user_id' => Auth::id(),
+                'reason' => $validated['reason'],
+                'notes' => $validated['notes'] ?? null,
+                'refund_amount' => $validated['refund_amount'],
+                'refund_method' => $validated['refund_method'],
+                'cancelled_at' => now(),
+            ]);
+
+            // Update sale status
+            $sale->update(['status' => 'cancelled']);
+
+            // Restore stock
+            foreach ($sale->items as $item) {
+                $item->product->increment('stock_quantity', $item->quantity);
+            }
+
+            // Audit log
+            $this->writeAudit(
+                'sale.cancelled',
+                Sale::class,
+                $sale->id,
+                [
+                    'reason' => $validated['reason'],
+                    'refund_amount' => $validated['refund_amount'],
+                ]
+            );
+        });
+
+        return back()->with('success', 'Vente annulée avec succès. Stock restauré.');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EXPENSES MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Expenses management page
+     */
+    public function expenses(Request $request): View
+    {
+        $status = $request->input('status', 'all');
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+
+        $query = Expense::query()
+            ->with(['createdBy', 'approvedBy'])
+            ->whereBetween('expense_date', [$from, $to]);
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $expenses = $query->orderByDesc('expense_date')->paginate(20);
+
+        $totalPending = Expense::whereBetween('expense_date', [$from, $to])
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        $totalApproved = Expense::whereBetween('expense_date', [$from, $to])
+            ->where('status', 'approved')
+            ->sum('amount');
+
+        $totalPaid = Expense::whereBetween('expense_date', [$from, $to])
+            ->where('status', 'paid')
+            ->sum('amount');
+
+        return view('pos.reports.expenses', compact(
+            'expenses', 'status', 'from', 'to', 
+            'totalPending', 'totalApproved', 'totalPaid'
+        ));
+    }
+
+    /**
+     * Create new expense
+     */
+    public function createExpense(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'category' => 'required|in:rent,utilities,salaries,supplies,maintenance,marketing,other',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'expense_date' => 'required|date',
+            'payment_method' => 'required|in:cash,bank_transfer,check,card',
+            'notes' => 'nullable|string|max:500',
+            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB max
+        ]);
+
+        // Upload receipt if provided
+        $receiptPath = null;
+        if ($request->hasFile('receipt')) {
+            $receiptPath = $request->file('receipt')->store('receipts', 'private');
+        }
+
+        $expense = Expense::create([
+            'created_by_user_id' => Auth::id(),
+            'category' => $validated['category'],
+            'description' => $validated['description'],
+            'amount' => $validated['amount'],
+            'expense_date' => $validated['expense_date'],
+            'payment_method' => $validated['payment_method'],
+            'notes' => $validated['notes'] ?? null,
+            'receipt_path' => $receiptPath,
+            'status' => 'pending',
+        ]);
+
+        $this->writeAudit('expense.created', Expense::class, $expense->id, [
+            'category' => $validated['category'],
+            'amount' => $validated['amount'],
+        ]);
+
+        return back()->with('success', 'Dépense enregistrée. En attente d\'approbation.');
+    }
+
+    /**
+     * Update expense
+     */
+    public function updateExpense(Request $request, Expense $expense): RedirectResponse
+    {
+        // Only allow editing pending expenses
+        if ($expense->status !== 'pending') {
+            return back()->with('error', 'Seules les dépenses en attente peuvent être modifiées.');
+        }
+
+        $validated = $request->validate([
+            'category' => 'required|in:rent,utilities,salaries,supplies,maintenance,marketing,other',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'expense_date' => 'required|date',
+            'payment_method' => 'required|in:cash,bank_transfer,check,card',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $expense->update($validated);
+
+        $this->writeAudit('expense.updated', Expense::class, $expense->id, $validated);
+
+        return back()->with('success', 'Dépense mise à jour.');
+    }
+
+    /**
+     * Delete expense
+     */
+    public function deleteExpense(Expense $expense): RedirectResponse
+    {
+        // Only allow deleting pending or rejected expenses
+        if (!in_array($expense->status, ['pending', 'rejected'])) {
+            return back()->with('error', 'Seules les dépenses en attente ou rejetées peuvent être supprimées.');
+        }
+
+        $this->writeAudit('expense.deleted', Expense::class, $expense->id, [
+            'description' => $expense->description,
+            'amount' => $expense->amount,
+        ]);
+
+        $expense->delete();
+
+        return back()->with('success', 'Dépense supprimée.');
+    }
+
+    /**
+     * Approve or reject expense
+     */
+    public function approveExpense(Request $request, Expense $expense): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reject',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if ($expense->status !== 'pending') {
+            return back()->with('error', 'Cette dépense a déjà été traitée.');
+        }
+
+        $newStatus = $validated['action'] === 'approve' ? 'approved' : 'rejected';
+
+        $expense->update([
+            'status' => $newStatus,
+            'approved_by_user_id' => Auth::id(),
+            'notes' => $validated['notes'] ?? $expense->notes,
+        ]);
+
+        $this->writeAudit('expense.' . $validated['action'] . 'd', Expense::class, $expense->id, [
+            'status' => $newStatus,
+        ]);
+
+        $message = $validated['action'] === 'approve' 
+            ? 'Dépense approuvée.' 
+            : 'Dépense rejetée.';
+
+        return back()->with('success', $message);
     }
 }

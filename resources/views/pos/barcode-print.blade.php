@@ -67,40 +67,72 @@
         /* ── PRINT ── */
         @media print {
             @page {
-                size: 50mm 30mm;   /* Exact physical label size — no tricks, no transforms */
+                size: 50mm 30mm;
                 margin: 0;
             }
 
             html, body {
-                background: #fff !important;
                 width: 50mm !important;
+                height: 30mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                display: block !important;
+                background: #fff !important;
+                overflow: hidden !important;
             }
 
             #info, #btn-print { display: none !important; }
-            #labels-container { display: block !important; }
+            #labels-container { display: block !important; margin: 0; padding: 0; width: 50mm !important; }
 
             .label {
-                width: 30mm;
-                height: 20mm;
-                padding: 1.5mm 3mm;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 0.8mm;
-                page-break-after: always;
-                break-after: page;
-                overflow: hidden;
-                transform: rotate(-90deg);
-                transform-origin: center center;
+                width: 50mm !important;
+                height: 29.5mm !important;
+                box-sizing: border-box !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                overflow: hidden !important;
+                border: none !important;
             }
 
             .label:last-child {
-                page-break-after: avoid;
-                break-after: avoid;
+                page-break-after: auto !important;
+                break-after: auto !important;
+            }
+
+            .content-wrapper {
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* باركود بأقصى عرض ممكن */
+            .label-barcode {
+                width: 100% !important;
+                display: flex !important;
+                justify-content: center !important;
+            }
+
+            .label-barcode svg {
+                width: 42mm !important;
+                height: 14mm !important;
+                display: block !important;
+            }
+
+            .label-name, .label-code {
+                text-align: center !important;
+                width: 100% !important;
+                font-size: 8pt !important;
+                font-weight: bold !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
             }
         }
     </style>
@@ -120,9 +152,11 @@
     <div id="labels-container">
         @for ($i = 0; $i < $quantity; $i++)
             <div class="label">
-                <div class="label-name">{{ $product->name }}</div>
-                <div class="label-barcode">{!! $svg !!}</div>
-                <div class="label-code">{{ $product->barcode }}</div>
+                <div class="content-wrapper">
+                    <div class="label-name">{{ $product->name }}</div>
+                    <div class="label-barcode">{!! $svg !!}</div>
+                    <div class="label-code">{{ $product->barcode }}</div>
+                </div>
             </div>
         @endfor
     </div>

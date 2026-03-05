@@ -38,7 +38,7 @@ import AppLogoIcon from './app-logo-icon';
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Tableau de bord',
         href: dashboard(),
         icon: LayoutGrid,
     },
@@ -46,7 +46,7 @@ const mainNavItems: NavItem[] = [
 
 const rightNavItems: NavItem[] = [
     {
-        title: 'Repository',
+        title: 'Dépôt',
         href: 'https://github.com/laravel/react-starter-kit',
         icon: Folder,
     },
@@ -88,9 +88,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 side="left"
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
                             >
-                                <SheetTitle className="sr-only">
-                                    Navigation Menu
-                                </SheetTitle>
+                                Menu de navigation
                                 <SheetHeader className="flex justify-start text-left">
                                     <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
                                 </SheetHeader>

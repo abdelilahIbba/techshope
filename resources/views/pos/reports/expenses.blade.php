@@ -45,7 +45,7 @@
                 <h3 class="text-sm font-semibold text-slate-500 uppercase">En attente</h3>
                 <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Pending</span>
             </div>
-            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalPending, 2) }} DZD</p>
+            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalPending, 2) }} {{ $currencySymbol }}</p>
         </div>
 
         <div class="bg-white border border-slate-200 rounded-xl p-6">
@@ -53,7 +53,7 @@
                 <h3 class="text-sm font-semibold text-slate-500 uppercase">Approuvées</h3>
                 <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Approved</span>
             </div>
-            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalApproved, 2) }} DZD</p>
+            <p class="text-3xl font-bold text-slate-900">{{ number_format($totalApproved, 2) }} {{ $currencySymbol }}</p>
         </div>
 
         <div class="bg-white border border-slate-200 rounded-xl p-6">
@@ -61,7 +61,7 @@
                 <h3 class="text-sm font-semibold text-slate-500 uppercase">Payées</h3>
                 <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Paid</span>
             </div>
-            <p class="text-3xl font-bold text-red-600">{{ number_format($totalPaid, 2) }} DZD</p>
+            <p class="text-3xl font-bold text-red-600">{{ number_format($totalPaid, 2) }} {{ $currencySymbol }}</p>
         </div>
     </div>
 
@@ -133,10 +133,10 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="font-semibold text-slate-900">{{ $expense->createdBy->name ?? 'Inconnu' }}</div>
-                            <div class="text-sm text-slate-500">{{ $expense->payment_method }}</div>
+                            <div class="text-sm text-slate-500">{{ $expense->payment_method === 'cash' ? $cashPaymentLabel : ucfirst($expense->payment_method) }}</div>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <span class="font-bold text-red-600">{{ number_format($expense->amount, 2) }} DZD</span>
+                            <span class="font-bold text-red-600">{{ number_format($expense->amount, 2) }} {{ $currencySymbol }}</span>
                         </td>
                         <td class="px-6 py-4 text-center">
                             @php

@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="fr" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>Reçu #{{ $receipt->receipt_number }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket #{{ $receipt->receipt_number }}</title>
     <style>
-        /* ── Screen preview styles ── */
+        /* ── Screen preview ── */
         @media screen {
             body {
                 background: #f1f5f9;
@@ -56,7 +57,7 @@
         body {
             font-family: 'Courier New', Courier, monospace;
             font-size: 11px;
-            color: #1e293b;
+            color: #000;
         }
 
         .receipt-wrapper {
@@ -74,77 +75,166 @@
             letter-spacing: 1px;
             margin: 0 0 2px 0;
         }
-        .header .shop-sub {
+        .header .shop-tagline {
             font-size: 10px;
-            color: #475569;
+            margin: 1px 0;
+        }
+        .header .shop-phone {
+            font-size: 10px;
             margin: 1px 0;
         }
 
         /* Divider */
-        .dashed { border: none; border-top: 1px dashed #94a3b8; margin: 6px 0; }
+        .dashed { border: none; border-top: 1.5px dashed #000; margin: 6px 0; }
 
-        /* Meta info */
-        .meta { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 4px; }
-        .meta td { padding: 1px 0; vertical-align: top; }
-        .meta td:last-child { text-align: right; }
-
-        /* Items table */
-        .items { width: 100%; border-collapse: collapse; font-size: 10px; margin: 4px 0; }
-        .items thead tr { border-bottom: 1px solid #cbd5e1; }
-        .items th {
-            padding: 3px 2px;
-            text-align: left;
-            font-size: 9px;
-            text-transform: uppercase;
-            color: #475569;
+        /* ── Meta info (ticket #, date, time) ── */
+        .meta {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            font-weight: bold;
         }
-        .items th.right, .items td.right { text-align: right; }
-        .items th.center, .items td.center { text-align: center; }
-        .items td {
-            padding: 3px 2px;
-            border-bottom: 1px dotted #e2e8f0;
+        .meta td {
+            padding: 2px 1px;
             vertical-align: top;
+            color: #000;
         }
+        /* LTR cells for numbers/dates */
+        .meta td.ltr {
+            direction: ltr;
+            text-align: left;
+        }
+        .meta td.rtl-label {
+            text-align: right;
+        }
+
+        /* ── Items table ── */
+        .items {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            font-weight: bold;
+            margin: 4px 0;
+        }
+        .items thead tr {
+            border-bottom: 1.5px dashed #000;
+        }
+        .items th {
+            padding: 4px 2px;
+            font-size: 10px;
+            font-weight: 900;
+            color: #000;
+            text-align: left;
+        }
+        .items th.num { text-align: center; }
+        .items th.prix { text-align: right; }
+
+        .items td {
+            padding: 4px 2px;
+            border-bottom: 1px dashed #000;
+            vertical-align: middle;
+            color: #000;
+            text-align: left;
+        }
+        .items td.num { text-align: center; }
+        .items td.prix { text-align: right; }
         .items tr:last-child td { border-bottom: none; }
-        .item-name { font-weight: bold; font-size: 10px; }
-        .item-barcode { font-size: 8px; color: #94a3b8; }
 
-        /* Totals */
-        .totals { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px; }
-        .totals td { padding: 2px 0; }
-        .totals td:last-child { text-align: right; }
-        .totals .grand { font-size: 13px; font-weight: bold; border-top: 1px solid #1e293b; padding-top: 4px; }
+        .item-name {
+            font-weight: 900;
+            font-size: 10.5px;
+        }
 
-        /* Footer */
+        /* ── Totals section ── */
+        .totals {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .totals td {
+            padding: 2px 1px;
+            color: #000;
+        }
+        .totals td.lbl { text-align: left; }
+        .totals td.val { text-align: right; }
+
+        /* Big TOTAL box */
+        .total-box {
+            border-top: 1.5px dashed #000;
+            border-bottom: 1.5px dashed #000;
+            padding: 6px 4px;
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-label {
+            font-size: 17px;
+            font-weight: 900;
+            color: #000;
+        }
+        .total-amount {
+            font-size: 17px;
+            font-weight: 900;
+            color: #000;
+        }
+
+        /* ── Footer ── */
         .footer {
             text-align: center;
-            margin-top: 10px;
-            font-size: 9px;
-            color: #64748b;
+            margin-top: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #000;
         }
-        .footer p { margin: 2px 0; }
+        .footer .amount-words {
+            font-size: 9.5px;
+            font-weight: bold;
+            margin: 3px 0;
+            font-style: italic;
+        }
+        .footer .thank-you {
+            font-size: 12px;
+            font-weight: 900;
+            margin: 5px 0 2px 0;
+        }
+        .footer .policy {
+            font-size: 9px;
+            font-weight: bold;
+            margin: 2px 0;
+        }
+        .footer .system-tag {
+            font-size: 8px;
+            color: #555;
+            margin-top: 5px;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
 
+<div class="receipt-wrapper">
+
     {{-- ══ HEADER ══ --}}
     <div class="header">
         <p class="shop-name">DROGUERIE S</p>
-        <p class="shop-sub">Quincaillerie &amp; Articles de bricolage</p>
-        <p class="shop-sub">123 Rue de la République</p>
-        <p class="shop-sub">Tél : +213 XX XX XX XX</p>
+        <p class="shop-tagline">Quincaillerie & Articles de bricolage</p>
+        <p class="shop-phone">☎ 0XX XX XX XX XX</p>
     </div>
 
-    <div class="divider"></div>
+    <hr class="dashed">
 
+    {{-- ══ META ══ --}}
     <table class="meta">
         <tr>
             <td><strong>Ticket N° :</strong> {{ $receipt->receipt_number }}</td>
-            <td><strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
+            <td style="text-align: right;"><strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
         </tr>
         <tr>
             <td><strong>Caisse :</strong> Principal</td>
-            <td><strong>Heure :</strong> {{ optional($receipt->printed_at)->format('H:i') }}</td>
+            <td style="text-align: right;"><strong>Heure :</strong> {{ optional($receipt->printed_at)->format('H:i') }}</td>
         </tr>
     </table>
 
@@ -154,9 +244,8 @@
         <thead>
             <tr>
                 <th>Article</th>
-                <th class="center">Qté</th>
-                <th class="right">P.U</th>
-                <th class="right">Total</th>
+                <th class="num">Qté</th>
+                <th class="prix">Total</th>
             </tr>
         </thead>
         <tbody>
@@ -164,11 +253,12 @@
             <tr>
                 <td>
                     <div class="item-name">{{ $item->product->name }}</div>
-                    <div class="item-barcode">{{ $item->product->barcode }}</div>
+                    <div style="font-size:8.5px; font-weight:normal; color:#333;">
+                        {{ number_format($item->unit_price, 2) }} {{ $currencySymbol }} × {{ $item->quantity }}
+                    </div>
                 </td>
-                <td class="center">{{ $item->quantity }}</td>
-                <td class="right">{{ number_format($item->unit_price, 2) }}</td>
-                <td class="right"><strong>{{ number_format($item->subtotal, 2) }}</strong></td>
+                <td class="num">{{ $item->quantity }}</td>
+                <td class="prix"><strong>{{ number_format($item->subtotal, 2) }}</strong></td>
             </tr>
             @endforeach
         </tbody>
@@ -178,26 +268,28 @@
 
     <table class="totals">
         <tr>
-            <td>Sous-total :</td>
-            <td>{{ number_format($receipt->sale->total_amount, 2) }} DZD</td>
+            <td class="lbl">Sous-total :</td>
+            <td class="val">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
         </tr>
         <tr>
-            <td>TVA (0%) :</td>
-            <td>0.00 DZD</td>
-        </tr>
-        <tr class="grand">
-            <td>NET À PAYER :</td>
-            <td>{{ number_format($receipt->sale->total_amount, 2) }} DZD</td>
+            <td class="lbl">TVA (0%) :</td>
+            <td class="val">0.00 {{ $currencySymbol }}</td>
         </tr>
     </table>
 
-    <hr class="dashed">
+    {{-- ══ BIG TOTAL BOX ══ --}}
+    <div class="total-box">
+        <span class="total-label">Total</span>
+        <span class="total-amount">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</span>
+    </div>
 
     <div class="footer">
-        <p>Merci pour votre visite !</p>
-        <p>Les articles vendus ne sont ni repris</p>
-        <p>ni échangés après 7 jours.</p>
-        <p style="margin-top:6px; font-size:8px; color:#cbd5e1;">Droguerie POS System</p>
+        <p class="amount-words">
+            Arrêté à la somme de : <strong>{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</strong>
+        </p>
+        <p class="thank-you">Merci pour votre visite !</p>
+        <p class="policy">Articles vendus ni repris, ni échangés après 7 jours.</p>
+        <p class="system-tag">Droguerie POS System</p>
     </div>
 
 </div>

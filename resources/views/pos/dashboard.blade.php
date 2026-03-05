@@ -41,6 +41,7 @@
     <div class="page-header mb-8">
         <h1 class="page-title text-3xl font-extrabold text-slate-900 tracking-tight">Chiffre d'affaires (CA)</h1>
         <p class="page-subtitle text-slate-500 mt-1 font-medium">Tableau de bord des ventes et statistiques</p>
+        <p class="text-sm text-slate-400 mt-1">Utilisateur: {{ auth()->user()->name }}</p>
     </div>
 
     <div class="filter-section bg-white border border-slate-200 rounded-2xl p-5 mb-8 shadow-sm">
@@ -56,13 +57,16 @@
             <button type="submit" class="filter-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm px-6 py-2.5 transition-all shadow-sm focus:ring-4 focus:ring-blue-300">
                 Filtrer
             </button>
+            <button type="button" onclick="window.open('{{ route('pos.dashboard.print', ['from' => request('from', now()->format('Y-m-d')), 'to' => request('to', now()->format('Y-m-d'))]) }}', '_blank')" class="filter-btn bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-sm px-6 py-2.5 transition-all shadow-sm">
+                Imprimer ticket du jour
+            </button>
         </form>
     </div>
 
     <div class="stats-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="stat-card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="stat-label text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">CA Total (période)</div>
-            <div class="stat-value success text-3xl font-extrabold text-emerald-600">{{ number_format($totalRevenue, 2) }} <span class="text-xl text-emerald-500">DH</span></div>
+            <div class="stat-value success text-3xl font-extrabold text-emerald-600">{{ number_format($totalRevenue, 2) }} <span class="text-xl text-emerald-500">{{ $currencySymbol }}</span></div>
         </div>
         <div class="stat-card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="stat-label text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Ventes (période)</div>
@@ -97,10 +101,10 @@
                             <td class="px-6 py-4 font-medium text-slate-900">#{{ $sale->id }}</td>
                             <td class="px-6 py-4">{{ $sale->date->format('d/m/Y H:i') }}</td>
                             <td class="px-6 py-4">{{ $sale->customer->name ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 font-semibold text-slate-900">{{ number_format($sale->total_amount, 2) }} DH</td>
+                            <td class="px-6 py-4 font-semibold text-slate-900">{{ number_format($sale->total_amount, 2) }} {{ $currencySymbol }}</td>
                             <td class="px-6 py-4">
                                 <span class="badge badge-success bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                                    {{ ucfirst($sale->payment_method) }}
+                                    {{ $sale->payment_method === 'cash' ? $cashPaymentLabel : ucfirst($sale->payment_method) }}
                                 </span>
                             </td>
                         </tr>
@@ -133,7 +137,7 @@
                             <td class="px-6 py-4">
                                 <span class="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md font-semibold text-xs">{{ $item->total_quantity }}</span>
                             </td>
-                            <td class="px-6 py-4 font-semibold text-emerald-600">{{ number_format($item->total_revenue, 2) }} DH</td>
+                            <td class="px-6 py-4 font-semibold text-emerald-600">{{ number_format($item->total_revenue, 2) }} {{ $currencySymbol }}</td>
                             <td class="px-6 py-4"><span class="muted text-slate-400">{{ $item->seller_name ?? 'Multiple' }}</span></td>
                         </tr>
                     @empty

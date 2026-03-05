@@ -27,6 +27,7 @@ Route::middleware(['auth'])->group(function () {
     // ── POS routes — protected by license check for non-admin users ──
     Route::middleware(['check.license'])->group(function () {
         Route::get('/pos/dashboard', [PosController::class, 'dashboard'])->middleware('permission:dashboard.view')->name('pos.dashboard');
+        Route::get('/pos/dashboard/print', [PosController::class, 'dashboardPrint'])->middleware('permission:dashboard.view')->name('pos.dashboard.print');
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::get('/pos/stock', [PosController::class, 'stock'])->middleware('permission:stock.view')->name('pos.stock');
         Route::post('/pos/stock/add-product', [PosController::class, 'addProduct'])->middleware('permission:stock.create')->name('pos.stock.add-product');
@@ -41,6 +42,16 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/pos/stock/delete-category/{category}', [PosController::class, 'deleteCategory'])->middleware('permission:category.manage')->name('pos.stock.delete-category');
         Route::get('/pos/notifications', [PosController::class, 'notifications'])->middleware('permission:notifications.view')->name('pos.notifications');
         Route::get('/pos/settings', [PosController::class, 'settings'])->middleware('permission:settings.view')->name('pos.settings');
+        Route::get('/pos/settings/printer', [PosController::class, 'settingsPrinter'])->middleware('permission:settings.view')->name('pos.settings.printer');
+        Route::get('/pos/settings/barcode', [PosController::class, 'settingsBarcode'])->middleware('permission:settings.view')->name('pos.settings.barcode');
+        Route::get('/pos/settings/ticket-format', [PosController::class, 'settingsTicketFormat'])->middleware('permission:settings.view')->name('pos.settings.ticket-format');
+        Route::get('/pos/settings/auto-print', [PosController::class, 'settingsAutoPrint'])->middleware('permission:settings.view')->name('pos.settings.auto-print');
+        Route::get('/pos/settings/input-mode', [PosController::class, 'settingsInputMode'])->middleware('permission:settings.view')->name('pos.settings.input-mode');
+        Route::get('/pos/settings/sound', [PosController::class, 'settingsSound'])->middleware('permission:settings.view')->name('pos.settings.sound');
+        Route::get('/pos/settings/license', [PosController::class, 'settingsLicense'])->middleware('permission:settings.view')->name('pos.settings.license');
+        Route::get('/pos/settings/stock', [PosController::class, 'settingsStock'])->middleware('permission:settings.view')->name('pos.settings.stock');
+        Route::get('/pos/settings/users', [PosController::class, 'settingsUsers'])->middleware('permission:settings.view')->name('pos.settings.users');
+        Route::get('/pos/settings/taxes', [PosController::class, 'settingsTaxes'])->middleware('permission:settings.view')->name('pos.settings.taxes');
         Route::post('/pos/settings/user/add', [PosController::class, 'addUser'])->middleware('permission:users.manage')->name('pos.settings.user.add');
         Route::post('/pos/settings/user/edit/{user}', [PosController::class, 'editUser'])->middleware('permission:users.manage')->name('pos.settings.user.edit');
         Route::delete('/pos/settings/user/delete/{user}', [PosController::class, 'deleteUser'])->middleware('permission:users.manage')->name('pos.settings.user.delete');

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use App\Models\License;
 use App\Models\Product;
+use App\Models\Setting;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +28,16 @@ class AppServiceProvider extends ServiceProvider
             $notificationCount = Product::where('stock_quantity', '<=', 10)->count();
             $view->with('notificationCount', $notificationCount);
             $view->with('navLicense', License::current());
+            $currencySymbol = Setting::get('currency', 'DHs');
+            if (! $currencySymbol || $currencySymbol === 'DZD') {
+                $currencySymbol = 'DHs';
+            }
+            $cashLabel = Setting::get('cash_label', 'DHs');
+            if (! $cashLabel || $cashLabel === 'DZD') {
+                $cashLabel = 'DHs';
+            }
+            $view->with('currencySymbol', $currencySymbol);
+            $view->with('cashPaymentLabel', $cashLabel);
         });
     }
 }

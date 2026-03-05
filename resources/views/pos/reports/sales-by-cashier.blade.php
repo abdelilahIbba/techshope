@@ -73,11 +73,11 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-slate-600">CA généré</span>
-                        <span class="font-bold text-green-600">{{ number_format($cashier->total_revenue, 2) }} DZD</span>
+                        <span class="font-bold text-green-600">{{ number_format($cashier->total_revenue, 2) }} {{ $currencySymbol }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-slate-600">Panier moyen</span>
-                        <span class="font-bold text-blue-600">{{ number_format($cashier->avg_basket, 2) }} DZD</span>
+                        <span class="font-bold text-blue-600">{{ number_format($cashier->avg_basket, 2) }} {{ $currencySymbol }}</span>
                     </div>
                     <div class="flex justify-between items-center pt-3 border-t border-slate-100">
                         <span class="text-sm text-slate-600">Taux d'annulation</span>

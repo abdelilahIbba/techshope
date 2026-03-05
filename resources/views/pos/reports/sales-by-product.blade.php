@@ -72,7 +72,7 @@
                             {{ number_format($item->total_quantity) }}
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <span class="font-bold text-green-600">{{ number_format($item->total_revenue, 2) }} DZD</span>
+                            <span class="font-bold text-green-600">{{ number_format($item->total_revenue, 2) }} {{ $currencySymbol }}</span>
                         </td>
                         <td class="px-6 py-4 text-center text-sm text-slate-500">
                             {{ \Carbon\Carbon::parse($item->last_sale_date)->format('d/m/Y') }}

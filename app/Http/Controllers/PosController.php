@@ -164,6 +164,32 @@ class PosController extends Controller
         ]);
     }
 
+    public function dashboardPrint(Request $request): View
+    {
+        $from = $request->input('from', now()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+
+        $baseQuery = Sale::query()
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59']);
+
+        $totalRevenue = (clone $baseQuery)->sum('total_amount');
+        $salesCount = (clone $baseQuery)->count();
+
+        $paymentBreakdown = (clone $baseQuery)
+            ->select('payment_method', DB::raw('COUNT(*) as sale_count'), DB::raw('SUM(total_amount) as total_amount'))
+            ->groupBy('payment_method')
+            ->orderByDesc('total_amount')
+            ->get();
+
+        return view('pos.dashboard-print', [
+            'from' => $from,
+            'to' => $to,
+            'totalRevenue' => $totalRevenue,
+            'salesCount' => $salesCount,
+            'paymentBreakdown' => $paymentBreakdown,
+        ]);
+    }
+
     public function index(): View
     {
         $categories = Category::query()
@@ -409,19 +435,14 @@ class PosController extends Controller
         ]);
     }
 
-    public function settings(): View
+    private function settingsPayload(): array
     {
         $this->ensureDefaultAccessRights();
 
-        $users = User::query()->orderBy('name')->get();
-        $roles = Role::query()->with('permissions:id,key')->orderBy('name')->get();
-        $permissions = Permission::query()->orderBy('page')->orderBy('action')->get();
-        $permissionsByPage = $permissions->groupBy('page');
-        $auditLogs = AuditLog::query()->with('actor:id,name')->latest()->limit(20)->get();
         $printers = $this->getAvailablePrinters();
         $license = License::current();
         $licensePeriods = LicenseService::PERIODS;
-        
+
         $settings = [
             'printer_name' => Setting::get('printer_name', 'Ticket POS Printer (USB)'),
             'printer_name_sale' => Setting::get('printer_name_sale', Setting::get('printer_name', 'Ticket POS Printer (USB)')),
@@ -430,14 +451,88 @@ class PosController extends Controller
             'auto_print' => Setting::get('auto_print', 'true'),
             'scanner_mode' => Setting::get('scanner_mode', 'Scan direct vers champ barcode'),
             'scanner_beep' => Setting::get('scanner_beep', 'true'),
-            'currency' => Setting::get('currency', 'DH'),
+            'currency' => Setting::get('currency', 'DHs'),
+            'cash_label' => Setting::get('cash_label', 'DHs'),
             'low_stock_threshold' => Setting::get('low_stock_threshold', '10'),
             'default_customer' => Setting::get('default_customer', 'Zbon عام (Cash)'),
             'notification_email' => Setting::get('notification_email', 'admin@droguerie.com'),
             'stock_check_frequency' => Setting::get('stock_check_frequency', 'Chaque heure'),
+            'tax_enabled' => Setting::get('tax_enabled', 'false'),
+            'tax_rate' => Setting::get('tax_rate', '0'),
+            'tax_label' => Setting::get('tax_label', 'VAT'),
+            'tax_inclusive' => Setting::get('tax_inclusive', 'false'),
         ];
-        
-        return view('pos.settings', compact('users', 'settings', 'printers', 'roles', 'permissions', 'permissionsByPage', 'auditLogs', 'license', 'licensePeriods'));
+
+        return compact('settings', 'printers', 'license', 'licensePeriods');
+    }
+
+    private function userManagementPayload(): array
+    {
+        $users = User::query()->orderBy('name')->get();
+        $roles = Role::query()->with('permissions:id,key')->orderBy('name')->get();
+        $permissions = Permission::query()->orderBy('page')->orderBy('action')->get();
+        $permissionsByPage = $permissions->groupBy('page');
+        $auditLogs = AuditLog::query()->with('actor:id,name')->latest()->limit(20)->get();
+
+        return compact('users', 'roles', 'permissions', 'permissionsByPage', 'auditLogs');
+    }
+
+    public function settings(): View
+    {
+        return view('pos.settings.index', $this->settingsPayload());
+    }
+
+    public function settingsPrinter(): View
+    {
+        return view('pos.settings.printer', $this->settingsPayload());
+    }
+
+    public function settingsBarcode(): View
+    {
+        return view('pos.settings.barcode', $this->settingsPayload());
+    }
+
+    public function settingsTicketFormat(): View
+    {
+        return view('pos.settings.ticket-format', $this->settingsPayload());
+    }
+
+    public function settingsAutoPrint(): View
+    {
+        return view('pos.settings.auto-print', $this->settingsPayload());
+    }
+
+    public function settingsInputMode(): View
+    {
+        return view('pos.settings.input-mode', $this->settingsPayload());
+    }
+
+    public function settingsSound(): View
+    {
+        return view('pos.settings.sound', $this->settingsPayload());
+    }
+
+    public function settingsLicense(): View
+    {
+        return view('pos.settings.license', $this->settingsPayload());
+    }
+
+    public function settingsStock(): View
+    {
+        return view('pos.settings.stock', $this->settingsPayload());
+    }
+
+    public function settingsUsers(): View
+    {
+        return view('pos.settings.users', array_merge(
+            $this->settingsPayload(),
+            $this->userManagementPayload()
+        ));
+    }
+
+    public function settingsTaxes(): View
+    {
+        return view('pos.settings.taxes', $this->settingsPayload());
     }
 
     private function getAvailablePrinters(): array
@@ -634,20 +729,27 @@ class PosController extends Controller
             'scanner_mode' => 'nullable|string',
             'scanner_beep' => 'nullable|string',
             'currency' => 'nullable|string',
+            'cash_label' => 'nullable|string',
             'low_stock_threshold' => 'nullable|integer|min:1',
             'default_customer' => 'nullable|string',
             'notification_email' => 'nullable|email',
             'stock_check_frequency' => 'nullable|string',
+            'tax_enabled' => 'nullable|string',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'tax_label' => 'nullable|string',
+            'tax_inclusive' => 'nullable|string',
         ]);
+
+        $integerKeys = ['low_stock_threshold'];
 
         foreach ($settings as $key => $value) {
             if ($value !== null) {
-                $type = is_numeric($value) ? 'integer' : 'string';
+                $type = in_array($key, $integerKeys, true) ? 'integer' : 'string';
                 Setting::set($key, $value, $type);
             }
         }
 
-        return redirect()->route('pos.settings')->with('success', 'Paramètres mis à jour avec succès');
+        return back()->with('success', 'Paramètres mis à jour avec succès');
     }
 
     public function scan(string $barcode): JsonResponse

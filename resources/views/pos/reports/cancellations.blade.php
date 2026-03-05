@@ -93,7 +93,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <span class="font-bold text-red-600">{{ number_format($cancellation->refund_amount, 2) }} DZD</span>
+                            <span class="font-bold text-red-600">{{ number_format($cancellation->refund_amount, 2) }} {{ $currencySymbol }}</span>
                         </td>
                         <td class="px-6 py-4 text-center text-sm text-slate-500">
                             {{ \Carbon\Carbon::parse($cancellation->cancelled_at)->format('d/m/Y H:i') }}

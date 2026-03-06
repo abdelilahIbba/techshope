@@ -1,8 +1,8 @@
-<x-settings-layout title="Sound Settings" subtitle="Tune the scanner feedback" active="sound">
+<x-settings-layout title="Paramètres sonores" subtitle="Régler le retour du scanner" active="sound">
     <x-settings-breadcrumbs :items="[
-        ['label' => 'Dashboard', 'href' => route('pos.dashboard')],
-        ['label' => 'Settings', 'href' => route('pos.settings')],
-        ['label' => 'Sound Settings']
+        ['label' => 'Tableau de bord', 'href' => route('pos.dashboard')],
+        ['label' => 'Paramètres', 'href' => route('pos.settings')],
+        ['label' => 'Paramètres sonores']
     ]" />
 
     <form method="POST" action="{{ route('pos.settings.system.update') }}" class="mt-6">
@@ -17,14 +17,14 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold">Scanner Beep</h3>
-                    <p class="text-sm text-slate-500">Control the audible scan confirmation</p>
+                    <h3 class="text-lg font-semibold">Bip du scanner</h3>
+                    <p class="text-sm text-slate-500">Contrôler la confirmation sonore du scan</p>
                 </div>
             </div>
             <div class="mt-5 flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-slate-600">Enable beep</p>
-                    <p class="text-xs text-slate-400">Sound plays after a successful scan.</p>
+                    <p class="text-sm font-medium text-slate-600">Activer le bip</p>
+                    <p class="text-xs text-slate-400">Un son est émis après un scan réussi.</p>
                 </div>
                 <label class="relative inline-flex cursor-pointer items-center">
                     <input type="hidden" name="scanner_beep" value="false">
@@ -37,7 +37,7 @@
 
         <div class="fixed bottom-6 right-6 z-40">
             <button type="submit" class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800">
-                Save changes
+                Enregistrer les modifications
             </button>
         </div>
     </form>

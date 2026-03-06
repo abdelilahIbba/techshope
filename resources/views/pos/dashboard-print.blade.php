@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,8 +28,8 @@
 <body>
     <div class="ticket">
         <h1>Ticket Journalier</h1>
-        <div class="meta">Periode: {{ $from }} -> {{ $to }}</div>
-        <div class="meta">Imprime: {{ now()->format('Y-m-d H:i') }}</div>
+        <div class="meta">Période: {{ $from }} -> {{ $to }}</div>
+        <div class="meta">Imprimé: {{ now()->format('d/m/Y H:i') }}</div>
         <div class="meta">Utilisateur: {{ auth()->user()->name }}</div>
 
         <div class="divider"></div>

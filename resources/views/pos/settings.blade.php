@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Settings - POS System</title>
+    <title>Paramètres - POS System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -316,7 +316,7 @@
     <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h3 class="text-xl font-bold text-slate-900">Access Rights</h3>
+                <h3 class="text-xl font-bold text-slate-900">Droits d'accès</h3>
                 <p class="text-sm text-slate-500 mt-1">Créer des rôles, configurer les permissions (pages + actions) et attribuer les accès.</p>
             </div>
         </div>

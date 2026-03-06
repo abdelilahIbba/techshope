@@ -1,8 +1,8 @@
-<x-settings-layout title="Auto Print" subtitle="Control automatic printing after checkout" active="auto-print">
+<x-settings-layout title="Impression automatique" subtitle="Contrôler l'impression automatique après l'encaissement" active="auto-print">
     <x-settings-breadcrumbs :items="[
-        ['label' => 'Dashboard', 'href' => route('pos.dashboard')],
-        ['label' => 'Settings', 'href' => route('pos.settings')],
-        ['label' => 'Auto Print']
+        ['label' => 'Tableau de bord', 'href' => route('pos.dashboard')],
+        ['label' => 'Paramètres', 'href' => route('pos.settings')],
+        ['label' => 'Impression automatique']
     ]" />
 
     <form method="POST" action="{{ route('pos.settings.system.update') }}" class="mt-6">

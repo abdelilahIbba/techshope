@@ -1,312 +1,241 @@
 <!DOCTYPE html>
-<html lang="fr" dir="ltr">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ticket #{{ $receipt->receipt_number }}</title>
     <style>
-        /* ── Screen preview ── */
+        /* ── RESET & BASE ── */
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            color: #000;
+            line-height: 1.3;
+        }
+
+        /* ── SCREEN PREVIEW ── */
         @media screen {
             body {
                 background: #f1f5f9;
+                padding: 40px 10px;
                 display: flex;
-                justify-content: center;
-                align-items: flex-start;
-                padding: 30px 10px;
-                min-height: 100vh;
-                margin: 0;
+                flex-direction: column;
+                align-items: center;
             }
-            .receipt-wrapper {
+            .receipt-container {
                 background: #fff;
                 width: 80mm;
-                padding: 10mm;
-                border-radius: 6px;
-                box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+                padding: 10mm 8mm;
+                border-radius: 4px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             }
-            .print-hint {
-                display: block;
-                text-align: center;
-                margin-top: 18px;
-                font-size: 11px;
-                color: #94a3b8;
+            .no-print-hint {
+                margin-top: 20px;
+                color: #64748b;
+                font-size: 12px;
                 font-family: sans-serif;
             }
         }
 
-        /* ── Print styles — 80mm thermal receipt ── */
+        /* ── PRINT CONFIG ── */
         @media print {
             @page {
                 size: 80mm auto;
-                margin: 4mm 3mm;
+                margin: 0;
             }
-            html, body {
+            body {
                 width: 80mm;
                 margin: 0;
-                padding: 0;
+                padding: 4mm;
             }
-            .receipt-wrapper {
-                width: 100%;
-                padding: 0;
-            }
-            .print-hint {
+            .no-print-hint {
                 display: none !important;
             }
         }
 
-        /* ── Shared receipt content styles ── */
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
-            color: #000;
-        }
+        /* ── RECEIPT CONTENT ── */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
 
-        .receipt-wrapper {
-            box-sizing: border-box;
-        }
-
-        /* Header */
         .header {
-            text-align: center;
             margin-bottom: 8px;
         }
         .header .shop-name {
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin: 0 0 2px 0;
+            font-size: 18px;
+            font-weight: 900;
+            margin: 0;
         }
         .header .shop-tagline {
             font-size: 10px;
-            margin: 1px 0;
-        }
-        .header .shop-phone {
-            font-size: 10px;
-            margin: 1px 0;
+            margin: 2px 0;
         }
 
-        /* Divider */
-        .dashed { border: none; border-top: 1.5px dashed #000; margin: 6px 0; }
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 8px 0;
+        }
 
-        /* ── Meta info (ticket #, date, time) ── */
-        .meta {
+        table {
             width: 100%;
             border-collapse: collapse;
             font-size: 10px;
-            font-weight: bold;
         }
-        .meta td {
-            padding: 2px 1px;
+        table td, table th {
+            padding: 2px 0;
             vertical-align: top;
-            color: #000;
-        }
-        /* LTR cells for numbers/dates */
-        .meta td.ltr {
-            direction: ltr;
-            text-align: left;
-        }
-        .meta td.rtl-label {
-            text-align: right;
         }
 
-        /* ── Items table ── */
-        .items {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10px;
-            font-weight: bold;
-            margin: 4px 0;
-        }
-        .items thead tr {
-            border-bottom: 1.5px dashed #000;
-        }
-        .items th {
-            padding: 4px 2px;
-            font-size: 10px;
-            font-weight: 900;
-            color: #000;
-            text-align: left;
-        }
-        .items th.num { text-align: center; }
-        .items th.prix { text-align: right; }
+        .meta-table td { font-weight: bold; }
 
-        .items td {
-            padding: 4px 2px;
+        .items-table thead th {
             border-bottom: 1px dashed #000;
-            vertical-align: middle;
-            color: #000;
             text-align: left;
+            padding-bottom: 4px;
         }
-        .items td.num { text-align: center; }
-        .items td.prix { text-align: right; }
-        .items tr:last-child td { border-bottom: none; }
+        .items-table td {
+            padding: 6px 0;
+        }
 
         .item-name {
             font-weight: 900;
-            font-size: 10.5px;
+            font-size: 11px;
+            display: block;
+        }
+        .item-code {
+            font-size: 8px;
+            color: #333;
         }
 
-        /* ── Totals section ── */
-        .totals {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 11px;
-            font-weight: bold;
+        .totals-table {
             margin-top: 4px;
         }
-        .totals td {
-            padding: 2px 1px;
-            color: #000;
-        }
-        .totals td.lbl { text-align: left; }
-        .totals td.val { text-align: right; }
-
-        /* Big TOTAL box */
-        .total-box {
-            border-top: 1.5px dashed #000;
-            border-bottom: 1.5px dashed #000;
-            padding: 6px 4px;
-            margin: 6px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .total-label {
-            font-size: 17px;
-            font-weight: 900;
-            color: #000;
-        }
-        .total-amount {
-            font-size: 17px;
-            font-weight: 900;
-            color: #000;
+        .totals-table td {
+            padding: 1px 0;
         }
 
-        /* ── Footer ── */
+        .net-total-row {
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+            font-size: 15px;
+            font-weight: 900;
+            margin: 8px 0;
+            padding: 8px 0;
+            display: block;
+            width: 100%;
+        }
+
         .footer {
-            text-align: center;
-            margin-top: 8px;
+            margin-top: 15px;
             font-size: 10px;
-            font-weight: bold;
-            color: #000;
-        }
-        .footer .amount-words {
-            font-size: 9.5px;
-            font-weight: bold;
-            margin: 3px 0;
-            font-style: italic;
         }
         .footer .thank-you {
             font-size: 12px;
             font-weight: 900;
-            margin: 5px 0 2px 0;
-        }
-        .footer .policy {
-            font-size: 9px;
-            font-weight: bold;
-            margin: 2px 0;
-        }
-        .footer .system-tag {
-            font-size: 8px;
-            color: #555;
-            margin-top: 5px;
-            font-weight: normal;
+            margin-bottom: 4px;
         }
     </style>
 </head>
 <body>
 
-<div class="receipt-wrapper">
-
-    {{-- ══ HEADER ══ --}}
-    <div class="header">
-        <p class="shop-name">DROGUERIE S</p>
-        <p class="shop-tagline">Quincaillerie & Articles de bricolage</p>
-        <p class="shop-phone">☎ 0XX XX XX XX XX</p>
+<div class="receipt-container">
+    
+    <div class="header text-center">
+        <div class="shop-name">DROGUERIE S</div>
+        <div class="shop-tagline">Quincaillerie & Articles de bricolage</div>
+        <div class="shop-tagline">Tél: +213 XX XX XX XX</div>
     </div>
 
-    <hr class="dashed">
+    <div class="divider"></div>
 
-    {{-- ══ META ══ --}}
-    <table class="meta">
+    <table class="meta-table">
         <tr>
-            <td><strong>Ticket N° :</strong> {{ $receipt->receipt_number }}</td>
-            <td style="text-align: right;"><strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
+            <td>Ticket N° : {{ $receipt->receipt_number }}</td>
+            <td class="text-right">Date : {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
         </tr>
         <tr>
-            <td><strong>Caisse :</strong> Principal</td>
-            <td style="text-align: right;"><strong>Heure :</strong> {{ optional($receipt->printed_at)->format('H:i') }}</td>
+            <td>Caisse : Principal</td>
+            <td class="text-right">Heure : {{ optional($receipt->printed_at)->format('H:i') }}</td>
+        </tr>
+        <tr>
+            <td colspan="2">Caissier : {{ $receipt->sale->cashier->name ?? 'Caissier' }}</td>
         </tr>
     </table>
 
-    <hr class="dashed">
+    <div class="divider"></div>
 
-    <table class="items">
+    <table class="items-table">
         <thead>
             <tr>
-                <th>Article</th>
-                <th class="num">Qté</th>
-                <th class="prix">Total</th>
+                <th style="width: 45%;">Article</th>
+                <th class="text-center" style="width: 10%;">Qté</th>
+                <th class="text-right" style="width: 22%;">P.U</th>
+                <th class="text-right" style="width: 23%;">Total</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($receipt->sale->items as $item)
             <tr>
                 <td>
-                    <div class="item-name">{{ $item->product->name }}</div>
-                    <div style="font-size:8.5px; font-weight:normal; color:#333;">
-                        {{ number_format($item->unit_price, 2) }} {{ $currencySymbol }} × {{ $item->quantity }}
-                    </div>
+                    <span class="item-name">{{ $item->product->name }}</span>
+                    <span class="item-code">Code: {{ $item->product->barcode }}</span>
                 </td>
-                <td class="num">{{ $item->quantity }}</td>
-                <td class="prix"><strong>{{ number_format($item->subtotal, 2) }}</strong></td>
+                <td class="text-center">{{ $item->quantity }}</td>
+                <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
+                <td class="text-right font-bold">{{ number_format($item->subtotal, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
-    <hr class="dashed">
+    <div class="divider"></div>
 
-    <table class="totals">
+    <table class="totals-table">
         <tr>
-            <td class="lbl">Sous-total :</td>
-            <td class="val">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
+            <td>Sous-total :</td>
+            <td class="text-right">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
         </tr>
         <tr>
-            <td class="lbl">TVA (0%) :</td>
-            <td class="val">0.00 {{ $currencySymbol }}</td>
+            <td>TVA (0.00%) :</td>
+            <td class="text-right">0.00 {{ $currencySymbol }}</td>
         </tr>
     </table>
 
-    {{-- ══ BIG TOTAL BOX ══ --}}
-    <div class="total-box">
-        <span class="total-label">Total</span>
-        <span class="total-amount">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</span>
+    <div class="net-total-row">
+        <table style="font-size: inherit;">
+            <tr>
+                <td style="font-weight: 900;">NET À PAYER :</td>
+                <td class="text-right" style="font-weight: 900;">{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</td>
+            </tr>
+        </table>
     </div>
 
-    <div class="footer">
-        <p class="amount-words">
-            Arrêté à la somme de : <strong>{{ number_format($receipt->sale->total_amount, 2) }} {{ $currencySymbol }}</strong>
-        </p>
-        <p class="thank-you">Merci pour votre visite !</p>
-        <p class="policy">Articles vendus ni repris, ni échangés après 7 jours.</p>
-        <p class="system-tag">Droguerie POS System</p>
+    <div class="footer text-center">
+        <div class="thank-you">Merci pour votre visite !</div>
+        <div>Les articles vendus ne sont ni pris ni échangés après 7 jours.</div>
+        <div style="font-size: 8px; margin-top: 10px; opacity: 0.7;">Droguerie POS System</div>
     </div>
 
 </div>
 
-<span class="print-hint">Impression en cours... La fenêtre se fermera automatiquement.</span>
+<div class="no-print-hint">Impression en cours...</div>
 
 <script>
-    // Auto-print when page loads, then close the window/tab after printing.
-    window.addEventListener('load', function () {
-        setTimeout(function () {
+    window.addEventListener('load', function() {
+        setTimeout(function() {
             window.print();
-        }, 300); // short delay to ensure styles are applied
+        }, 500);
     });
 
-    window.onafterprint = function () {
-        // Return to POS after printing
-        window.location.href = '{{ route("pos.index") }}';
+    window.onafterprint = function() {
+        window.location.href = "{{ route('pos.index') }}";
     };
 </script>
 

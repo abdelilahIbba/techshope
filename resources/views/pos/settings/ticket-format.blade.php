@@ -1,8 +1,8 @@
-<x-settings-layout title="Ticket Format" subtitle="Choose the receipt paper size and layout" active="ticket-format">
+<x-settings-layout title="Format du ticket" subtitle="Choisissez la taille du papier et la mise en page du ticket" active="ticket-format">
     <x-settings-breadcrumbs :items="[
-        ['label' => 'Dashboard', 'href' => route('pos.dashboard')],
-        ['label' => 'Settings', 'href' => route('pos.settings')],
-        ['label' => 'Ticket Format']
+        ['label' => 'Tableau de bord', 'href' => route('pos.dashboard')],
+        ['label' => 'Paramètres', 'href' => route('pos.settings')],
+        ['label' => 'Format du ticket']
     ]" />
 
     <form method="POST" action="{{ route('pos.settings.system.update') }}" class="mt-6">
@@ -16,8 +16,8 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold">Receipt Format</h3>
-                    <p class="text-sm text-slate-500">Align format with your printer hardware</p>
+                    <h3 class="text-lg font-semibold">Format du ticket</h3>
+                    <p class="text-sm text-slate-500">Aligner le format avec votre matériel d'impression</p>
                 </div>
             </div>
             <div class="mt-5">
@@ -32,13 +32,13 @@
                         <path d="M6 9l6 6 6-6" />
                     </svg>
                 </div>
-                <p class="mt-2 text-xs text-slate-400">Changes apply to all new receipts.</p>
+                <p class="mt-2 text-xs text-slate-400">Les modifications s'appliquent à tous les nouveaux tickets.</p>
             </div>
         </section>
 
         <div class="fixed bottom-6 right-6 z-40">
             <button type="submit" class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800">
-                Save changes
+                Enregistrer les modifications
             </button>
         </div>
     </form>

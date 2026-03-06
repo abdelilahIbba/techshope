@@ -126,9 +126,8 @@
 <body>
 
     <div class="header">
-        <h1>Droguerie S</h1>
+        <h1>DROGUERIE S</h1>
         <p>Quincaillerie & Articles de bricolage</p>
-        <p>123 Rue de la République, Ville</p>
         <p>Tél: +213 XX XX XX XX</p>
     </div>
 
@@ -138,7 +137,8 @@
         <tr>
             <td>
                 <strong>Ticket N° :</strong> {{ $receipt->receipt_number }}<br>
-                <strong>Caisse :</strong> Principal
+                <strong>Caisse :</strong> Principal<br>
+                <strong>Caissier :</strong> {{ $receipt->sale->cashier->name ?? 'Caissier' }}
             </td>
             <td class="text-right">
                 <strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}<br>

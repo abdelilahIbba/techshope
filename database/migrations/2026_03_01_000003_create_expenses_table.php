@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('created_by_user_id')->constrained('users')->nullOnDelete();
+            $table->foreignId('created_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('approved_by_user_id')->nullable()
                   ->constrained('users')->nullOnDelete();
             $table->string('category'); // 'rent', 'utilities', 'salaries', 'supplies', 'maintenance', 'marketing', 'other'

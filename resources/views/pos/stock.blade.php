@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         
-        /* الحفاظ على منطق الـ JavaScript الخاص بإظهار/إخفاء التبويبات والنوافذ */
+        /* Maintenance de la logique JavaScript pour l'affichage/masquage des onglets et fenêtres */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
@@ -21,7 +21,7 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        /* تخصيص شريط التمرير */
+        /* Personnalisation de la barre de défilement */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -92,7 +92,7 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
-                <input type="text" id="searchProduct" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher un produit (nom, barcode)..." onkeyup="filterProducts()">
+                <!--<input type="text" id="searchProduct" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher un produit (nom, barcode)..." onkeyup="filterProducts()">-->
             </div>
             <select id="filterCategory" class="form-select bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full md:w-[200px] p-2.5 outline-none" onchange="filterProducts()">
                 <option value="">Toutes les catégories</option>
@@ -330,8 +330,8 @@
                 <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode</label>
-                <input type="text" name="barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none font-mono" required>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode (laisser vide pour auto-générer)</label>
+                <input type="hidden" name="barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" placeholder="Ex: 123456789012">
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -435,8 +435,9 @@
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode</label>
-                <input type="text" name="barcode" id="edit_product_barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none font-mono" required>
+                <input type="hidden" name="barcode" id="edit_product_barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
             </div>
+            
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Catégorie</label>

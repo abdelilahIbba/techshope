@@ -1,8 +1,8 @@
-<x-settings-layout title="Printer Settings" subtitle="Configure receipt printers and ticket output" active="printer">
+<x-settings-layout title="Paramètres d'impression" subtitle="Configurer les imprimantes de tickets et la sortie des tickets" active="printer">
     <x-settings-breadcrumbs :items="[
-        ['label' => 'Dashboard', 'href' => route('pos.dashboard')],
-        ['label' => 'Settings', 'href' => route('pos.settings')],
-        ['label' => 'Printer Settings']
+        ['label' => 'Tableau de bord', 'href' => route('pos.dashboard')],
+        ['label' => 'Paramètres', 'href' => route('pos.settings')],
+        ['label' => 'Paramètres d\'impression']
     ]" />
 
     <form method="POST" action="{{ route('pos.settings.system.update') }}" class="space-y-6 mt-6">
@@ -18,12 +18,12 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold">Primary Receipt Printer</h3>
-                        <p class="text-sm text-slate-500">Used for checkout receipts</p>
+                        <h3 class="text-lg font-semibold">Imprimante de tickets principale</h3>
+                        <p class="text-sm text-slate-500">Utilisée pour les tickets de caisse</p>
                     </div>
                 </div>
                 <div class="mt-5">
-                    <label class="block text-sm font-medium text-slate-600 mb-2">Printer device</label>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Périphérique d'impression</label>
                     <div class="relative">
                         <select name="printer_name_sale" class="w-full appearance-none rounded-xl bg-slate-100/70 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10">
                             @if(count($printers) > 0)
@@ -31,7 +31,7 @@
                                     <option value="{{ $printer }}" {{ ($settings['printer_name_sale'] ?? '') == $printer ? 'selected' : '' }}>{{ $printer }}</option>
                                 @endforeach
                             @else
-                                <option value="">Aucune imprimante detectee</option>
+                                <option value="">Aucune imprimante détectée</option>
                             @endif
                             <option value="Manuel">--- Saisie manuelle ---</option>
                         </select>
@@ -39,7 +39,7 @@
                             <path d="M6 9l6 6 6-6" />
                         </svg>
                     </div>
-                    <p class="mt-2 text-xs text-slate-400">Auto-detected devices from your system.</p>
+                    <p class="mt-2 text-xs text-slate-400">Appareils auto-détectés depuis votre système.</p>
                 </div>
             </section>
 
@@ -52,8 +52,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold">Ticket Format</h3>
-                        <p class="text-sm text-slate-500">Receipt paper size and layout</p>
+                        <h3 class="text-lg font-semibold">Format du ticket</h3>
+                        <p class="text-sm text-slate-500">Taille du papier et mise en page du ticket</p>
                     </div>
                 </div>
                 <div class="mt-5">
@@ -81,14 +81,14 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold">Auto Print</h3>
-                        <p class="text-sm text-slate-500">Print instantly after checkout</p>
+                        <h3 class="text-lg font-semibold">Impression automatique</h3>
+                        <p class="text-sm text-slate-500">Imprimer instantanément après l'encaissement</p>
                     </div>
                 </div>
                 <div class="mt-5 flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-slate-600">Enable automatic printing</p>
-                        <p class="text-xs text-slate-400">Reduces manual taps at the register.</p>
+                        <p class="text-sm font-medium text-slate-600">Activer l'impression automatique</p>
+                        <p class="text-xs text-slate-400">Réduit les manipulations manuelles à la caisse.</p>
                     </div>
                     <label class="relative inline-flex cursor-pointer items-center">
                         <input type="hidden" name="auto_print" value="false">
@@ -107,12 +107,12 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-semibold">Barcode Printer</h3>
-                        <p class="text-sm text-slate-500">Label printer for stock tags</p>
+                        <h3 class="text-lg font-semibold">Imprimante codes-barres</h3>
+                        <p class="text-sm text-slate-500">Imprimante d'étiquettes pour le stock</p>
                     </div>
                 </div>
                 <div class="mt-5">
-                    <label class="block text-sm font-medium text-slate-600 mb-2">Barcode device</label>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Périphérique codes-barres</label>
                     <div class="relative">
                         <select name="printer_name_barcode" class="w-full appearance-none rounded-xl bg-slate-100/70 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10">
                             @if(count($printers) > 0)
@@ -120,7 +120,7 @@
                                     <option value="{{ $printer }}" {{ ($settings['printer_name_barcode'] ?? '') == $printer ? 'selected' : '' }}>{{ $printer }}</option>
                                 @endforeach
                             @else
-                                <option value="">Aucune imprimante detectee</option>
+                                <option value="">Aucune imprimante détectée</option>
                             @endif
                             <option value="Manuel">--- Saisie manuelle ---</option>
                         </select>
@@ -134,7 +134,7 @@
 
         <div class="fixed bottom-6 right-6 z-40">
             <button type="submit" class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800">
-                Save changes
+                Enregistrer les modifications
             </button>
         </div>
     </form>

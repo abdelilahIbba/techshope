@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('sale_cancellations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sale_id')->constrained()->onDelete('cascade');
-            $table->foreignId('cancelled_by_user_id')->constrained('users')->nullOnDelete();
+            $table->foreignId('cancelled_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('authorized_by_user_id')->nullable()
                   ->constrained('users')->nullOnDelete();
             $table->string('reason'); // 'client_request', 'error', 'fraud', 'return', 'other'

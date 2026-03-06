@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -74,13 +74,6 @@
         </div>
     </div>
 
-        <div class="flex items-center bg-muted/30 p-1 rounded-xl">
-            <a href="{{ route('pos.dashboard') }}" class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Dashboard</a>
-            <a href="{{ route('pos.index') }}" class="px-5 py-2 rounded-lg text-sm font-bold text-indigo-600 bg-card shadow-sm ring-1 ring-black/5 transition-smooth">POS</a>
-            <a href="{{ route('pos.stock') }}" class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Stock</a>
-            <a href="{{ route('pos.settings') }}" class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Réglages</a>
-        </div>
-    </div>
 
     <div class="flex items-center gap-4">
         <a href="{{ route('pos.notifications') }}" class="relative w-10 h-10 flex items-center justify-center hover:bg-muted/20 rounded-xl transition-smooth text-muted-foreground hover:text-indigo-600">
@@ -218,7 +211,7 @@
 
                 <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]">
                     <span>Valider & Imprimer</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 0 00-2-2H5a2 0 00-2 2v6a2 0 002 2h2m2 4h10a2 0 002-2v-6a2 0 00-2-2H9a2 0 00-2 2v6a2 0 002 2zm7-5a2 0 11-4 0 2 0 014 0z" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 0 00-2-2H9a2 0 00-2 2v6a2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 </button>
             </div>
         </form>
@@ -533,6 +526,34 @@
             `;
         }
     }
+
+    // AZERTY to QWERTY mapping for numbers (Dual support: FR/EN)
+    // English keyboards send digits directly (1, 2, 3...) which are not in this map,
+    // so they remain unchanged. Only French layout symbols are corrected.
+    const azertyMap = {
+        '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
+        '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
+        '§': '!', '!' : '8' 
+    };
+
+    barcodeInput.addEventListener('input', (event) => {
+        let value = barcodeInput.value;
+        let corrected = '';
+        let changed = false;
+
+        for (let char of value) {
+            if (azertyMap[char]) {
+                corrected += azertyMap[char];
+                changed = true;
+            } else {
+                corrected += char;
+            }
+        }
+
+        if (changed) {
+            barcodeInput.value = corrected;
+        }
+    });
 
     scanBtn.addEventListener('click', scanAndAdd);
     barcodeInput.addEventListener('keypress', (event) => {

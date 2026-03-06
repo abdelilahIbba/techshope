@@ -1,7 +1,7 @@
-<x-settings-layout title="Settings" subtitle="Organize your POS configuration by module" active="index">
+<x-settings-layout title="Parametres" subtitle="Organisez la configuration de votre POS par module" active="index">
     <x-settings-breadcrumbs :items="[
-        ['label' => 'Dashboard', 'href' => route('pos.dashboard')],
-        ['label' => 'Settings']
+        ['label' => 'Tableau de bord', 'href' => route('pos.dashboard')],
+        ['label' => 'Parametres']
     ]" />
 
     <section class="mt-6">
@@ -11,7 +11,7 @@
             </svg>
             <h2 class="text-lg font-semibold text-slate-900">Rapports & Historique</h2>
         </div>
-        <p class="text-sm text-slate-500 mb-5">Acces rapide aux rapports et historiques de ventes.</p>
+        <p class="text-sm text-slate-500 mb-5">Accès rapide aux rapports et historiques de ventes.</p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             <x-settings-card title="Tableau de bord rapports" description="Vue globale et statistiques" :href="route('pos.reports')">
@@ -66,7 +66,7 @@
     </section>
 
     <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        <x-settings-card title="Printer Settings" description="Primary receipt printer and device defaults" :href="route('pos.settings.printer')">
+        <x-settings-card title="Paramètres de l'imprimante" description="Imprimante de reçus principale et paramètres par défaut" :href="route('pos.settings.printer')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2" />
@@ -76,7 +76,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Barcode Printer" description="Label printer selection and defaults" :href="route('pos.settings.barcode')">
+        <x-settings-card title="Imprimante codes-barres" description="Sélection de l'imprimante d'étiquettes et paramètres par défaut" :href="route('pos.settings.barcode')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 7h2v10H3zM7 7h2v10H7zM11 7h2v10h-2zM15 7h2v10h-2zM19 7h2v10h-2z" />
@@ -84,7 +84,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Ticket Format" description="Paper size and receipt layout" :href="route('pos.settings.ticket-format')">
+        <x-settings-card title="Format du ticket" description="Taille du papier et mise en page du reçu" :href="route('pos.settings.ticket-format')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M8 7h8M8 12h8M8 17h5" />
@@ -93,7 +93,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Auto Print" description="Instant printing after checkout" :href="route('pos.settings.auto-print')">
+        <x-settings-card title="Impression automatique" description="Impression instantanée après l'encaissement" :href="route('pos.settings.auto-print')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 9V4h12v5" />
@@ -103,7 +103,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Input Mode" description="Scanner mode and entry behavior" :href="route('pos.settings.input-mode')">
+        <x-settings-card title="Mode de saisie" description="Mode scanner et comportement de saisie" :href="route('pos.settings.input-mode')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 7h16M4 12h10M4 17h8" />
@@ -111,7 +111,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Sound Settings" description="Beep and alert feedback" :href="route('pos.settings.sound')">
+        <x-settings-card title="Paramètres sonores" description="Retour sonore et alertes" :href="route('pos.settings.sound')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 6v12" />
@@ -121,7 +121,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="License Management" description="Activation, status, and plan" :href="route('pos.settings.license')">
+        <x-settings-card title="Gestion de licence" description="Activation, statut et plan" :href="route('pos.settings.license')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 7v10" />
@@ -131,7 +131,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Stock" description="Default inventory settings" :href="route('pos.settings.stock')">
+        <x-settings-card title="Stock" description="Paramètres d'inventaire par défaut" :href="route('pos.settings.stock')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 7l9-4 9 4" />
@@ -141,7 +141,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Users" description="Access control and roles" :href="route('pos.settings.users')">
+        <x-settings-card title="Utilisateurs" description="Contrôle d'accès et rôles" :href="route('pos.settings.users')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -152,7 +152,7 @@
             </x-slot:icon>
         </x-settings-card>
 
-        <x-settings-card title="Taxes" description="Tax rules and rates" :href="route('pos.settings.taxes')">
+        <x-settings-card title="Taxes" description="Règles et taux de taxe" :href="route('pos.settings.taxes')">
             <x-slot:icon>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 6h18" />

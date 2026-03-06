@@ -860,96 +860,113 @@ class PosController extends Controller
 
     public function receiptPrint(Receipt $receipt)
     {
-        $receipt->load('sale.items.product');
+        $receipt->load(['sale.items.product', 'sale.cashier']);
 
-        // ── Resolve printer name from settings ───────────────────────────────
-        // The actual Windows printer name is "printer WD8260"
+        // ── Settings ────────────────────────────────────────────────────────
         $printerName = Setting::get('printer_name_sale', Setting::get('printer_name', 'printer WD8260'));
+        $currencySymbol = Setting::get('currency_symbol', 'DH');
 
-        // ── Build a plain-text receipt (42 columns — standard thermal 80mm) ──
-        $w = 42; // characters per line
+        // ── Exact Layout (42 columns standard for 80mm) ────────────────────
+        $w = 42; 
         $divider = str_repeat('-', $w);
-        $doubleLine = str_repeat('=', $w);
 
         $lines   = [];
-        $lines[] = $doubleLine;
+        $lines[] = ""; 
         $lines[] = str_pad('DROGUERIE S', $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad('Quincaillerie & Bricolage', $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad('Tel: +213 XX XX XX XX', $w, ' ', STR_PAD_BOTH);
-        $lines[] = $doubleLine;
+        $lines[] = str_pad('Quincaillerie & Articles de', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('bricolage', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('Tél: +213 XX XX XX XX', $w, ' ', STR_PAD_BOTH);
+        $lines[] = $divider;
 
         $dateStr = optional($receipt->printed_at)->format('d/m/Y') ?? now()->format('d/m/Y');
         $timeStr = optional($receipt->printed_at)->format('H:i') ?? now()->format('H:i');
+        $cashierName = $receipt->sale->cashier->name ?? 'Précisé';
 
-        $lines[] = 'Ticket N : ' . $receipt->receipt_number;
-        $lines[] = 'Date     : ' . $dateStr . '   Heure: ' . $timeStr;
-        $lines[] = 'Caisse   : Principal';
+        $lines[] = str_pad("Ticket N° : " . $receipt->receipt_number, 24) . str_pad("Date : " . $dateStr, 18, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("Caisse : Principal", 24) . str_pad("Heure : " . $timeStr, 18, ' ', STR_PAD_LEFT);
+        $lines[] = "Caissier : " . $cashierName;
         $lines[] = $divider;
 
-        // Column header: Article (28) | Qte (4) | Total (10)
-        $lines[] = str_pad('Article', 26) . str_pad('Qte', 6, ' ', STR_PAD_LEFT) . str_pad('Total', 10, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("Article", 18) . str_pad("Qté", 4, ' ', STR_PAD_BOTH) . str_pad("Prix U.", 10, ' ', STR_PAD_LEFT) . str_pad("Total", 10, ' ', STR_PAD_LEFT);
         $lines[] = $divider;
-
-        $grandTotal = 0;
 
         foreach ($receipt->sale->items as $item) {
-            $name = mb_substr($item->product->name, 0, 26);
-            $qty  = (string) $item->quantity;
-            $tot  = number_format($item->subtotal, 2);
+            $name  = $item->product->name;
+            $qty   = (string) $item->quantity;
+            $price = number_format($item->unit_price, 2);
+            $total = number_format($item->subtotal, 2);
 
-            $lines[] = str_pad($name, 26) . str_pad($qty, 6, ' ', STR_PAD_LEFT) . str_pad($tot, 10, ' ', STR_PAD_LEFT);
-
-            // Print unit price on next line if multi-unit
-            if ($item->quantity > 1) {
-                $lines[] = '  ' . str_pad('@ ' . number_format($item->unit_price, 2) . ' /u', 40);
-            }
-
-            if (mb_strlen($item->product->name) > 26) {
-                // Long name: print rest on next line
-                array_splice($lines, count($lines) - ($item->quantity > 1 ? 2 : 1), 0, [
-                    '  ' . mb_substr($item->product->name, 26, 40)
-                ]);
-            }
-
-            $grandTotal += $item->subtotal;
+            $lines[] = str_pad(mb_substr($name, 0, 18), 18) . str_pad($qty, 4, ' ', STR_PAD_BOTH) . str_pad($price, 10, ' ', STR_PAD_LEFT) . str_pad($total, 10, ' ', STR_PAD_LEFT);
+            if (mb_strlen($name) > 18) { $lines[] = "  " . mb_substr($name, 18, 40); }
+            $lines[] = "Code: " . $item->product->barcode;
         }
 
         $lines[] = $divider;
-        $lines[] = str_pad('Sous-total :', 30) . str_pad(number_format($grandTotal, 2) . ' DH', 12, ' ', STR_PAD_LEFT);
-        $lines[] = str_pad('TVA (0%)   :', 30) . str_pad('0.00 DH', 12, ' ', STR_PAD_LEFT);
-        $lines[] = $doubleLine;
-        $lines[] = str_pad('NET A PAYER:', 30) . str_pad(number_format($grandTotal, 2) . ' DH', 12, ' ', STR_PAD_LEFT);
-        $lines[] = $doubleLine;
-        $lines[] = '';
-        $lines[] = str_pad('Merci pour votre visite !', $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad('Articles vendus non repris apres 7j', $w, ' ', STR_PAD_BOTH);
-        $lines[] = '';
-        $lines[] = '';
-        $lines[] = ''; // feed lines for cut
+        $sum = number_format($receipt->sale->total_amount, 2);
+
+        $lines[] = str_pad("Sous-total :", 32, ' ', STR_PAD_LEFT) . str_pad($sum, 10, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("TVA (0%) :", 32, ' ', STR_PAD_LEFT) . str_pad("0.00", 10, ' ', STR_PAD_LEFT);
+        $lines[] = "";
+        $lines[] = str_pad("NET À PAYER :", 25, ' ', STR_PAD_LEFT) . str_pad($sum . " " . $currencySymbol, 17, ' ', STR_PAD_LEFT);
+        $lines[] = $divider;
+        
+        $lines[] = str_pad("Merci pour votre visite !", $w, ' ', STR_PAD_BOTH);
+        $lines[] = "";
+        $lines[] = str_pad("Les articles vendus ne sont ni repris ni", $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad("échangés après 7 jours.", $w, ' ', STR_PAD_BOTH);
+        $lines[] = "";
+        $lines[] = "";
+        $lines[] = ""; 
 
         $textReceipt = implode("\r\n", $lines);
 
-        // ── Write receipt to a temp .txt file ────────────────────────────────
-        $tmpTxt = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'receipt_' . $receipt->id . '_' . time() . '.txt';
-        file_put_contents($tmpTxt, $textReceipt);
+        // ── Direct Background Printing ───────────────────────────────────────
+        $tmpDir = sys_get_temp_dir();
+        $baseName = 'rcp_' . $receipt->id . '_' . time();
+        $tmpTxt = $tmpDir . DIRECTORY_SEPARATOR . $baseName . '.txt';
+        $tmpPs1 = $tmpDir . DIRECTORY_SEPARATOR . $baseName . '.ps1';
 
-        // ── Write a .ps1 that sends the file directly to the printer ─────────
-        $tmpPs1 = str_replace('.txt', '.ps1', $tmpTxt);
-        $safeTxt     = str_replace("'", "''", $tmpTxt);
-        $safePrinter = str_replace("'", "''", $printerName);
+        // Write content with UTF-8 BOM
+        file_put_contents($tmpTxt, "\xEF\xBB\xBF" . $textReceipt);
 
-        $psContent  = "Get-Content -Path '{$safeTxt}' | Out-Printer -Name '{$safePrinter}'\r\n";
-        $psContent .= "Remove-Item -Force '{$safeTxt}' -ErrorAction SilentlyContinue\r\n";
-        $psContent .= "Remove-Item -Force '{$tmpPs1}' -ErrorAction SilentlyContinue\r\n";
+        $printerSafe = str_replace("'", "''", $printerName);
+        $fileSafe    = str_replace("'", "''", $tmpTxt);
+
+        // This PowerShell script uses .NET Drawing with explicit PaperSize
+        $psContent = <<<PS
+Add-Type -AssemblyName System.Drawing
+\$text = Get-Content -Path '{$fileSafe}' -Raw
+\$printDoc = New-Object System.Drawing.Printing.PrintDocument
+\$printDoc.PrinterSettings.PrinterName = '{$printerSafe}'
+\$printDoc.PrintController = New-Object System.Drawing.Printing.StandardPrintController
+\$printDoc.DefaultPageSettings.Margins = New-Object System.Drawing.Printing.Margins(0, 0, 0, 0)
+
+# Set 80mm Custom Paper (approx 315 units)
+\$paperSize = New-Object System.Drawing.Printing.PaperSize('Custom', 315, 2000)
+\$printDoc.DefaultPageSettings.PaperSize = \$paperSize
+
+\$printDoc.Add_PrintPage({
+    param(\$sender, \$ev)
+    \$font = New-Object System.Drawing.Font('Consolas', 8.5)
+    \$brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::Black)
+    \$ev.Graphics.DrawString(\$text, \$font, \$brush, 0, 0)
+    \$ev.HasMorePages = \$false
+})
+\$printDoc.Print()
+\$printDoc.Dispose()
+Remove-Item -Force '{$fileSafe}'
+Remove-Item -Force '{$tmpPs1}'
+PS;
 
         file_put_contents($tmpPs1, $psContent);
 
-        // ── Run the .ps1 in background (non-blocking, no window) ─────────────
-        $cmd = 'powershell.exe -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' . $tmpPs1 . '"';
-        pclose(popen('start "" /b ' . $cmd, 'r'));
+        // Execute background without popen window issues
+        $psFile = str_replace('\\', '\\\\', $tmpPs1);
+        $cmd = "powershell -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File \"$psFile\"";
+        exec("start /B $cmd");
 
         return redirect()->route('pos.index')
-            ->with('success', "✓ Ticket imprimé sur {$printerName}");
+            ->with('success', "Ticket envoyé à l'imprimante.");
     }
 
     /**

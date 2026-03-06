@@ -1,8 +1,8 @@
-<x-settings-layout title="Input Mode" subtitle="Define barcode scanner input behavior" active="input-mode">
+<x-settings-layout title="Mode de saisie" subtitle="Définir le comportement de saisie du scanner de codes-barres" active="input-mode">
     <x-settings-breadcrumbs :items="[
-        ['label' => 'Dashboard', 'href' => route('pos.dashboard')],
-        ['label' => 'Settings', 'href' => route('pos.settings')],
-        ['label' => 'Input Mode']
+        ['label' => 'Tableau de bord', 'href' => route('pos.dashboard')],
+        ['label' => 'Paramètres', 'href' => route('pos.settings')],
+        ['label' => 'Mode de saisie']
     ]" />
 
     <form method="POST" action="{{ route('pos.settings.system.update') }}" class="mt-6">
@@ -15,20 +15,20 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold">Scanner Input Mode</h3>
-                    <p class="text-sm text-slate-500">Customize how scans fill fields</p>
+                    <h3 class="text-lg font-semibold">Mode de saisie du scanner</h3>
+                    <p class="text-sm text-slate-500">Personnalisez la façon dont les scans remplissent les champs</p>
                 </div>
             </div>
             <div class="mt-5">
                 <label class="block text-sm font-medium text-slate-600 mb-2">Mode</label>
                 <input type="text" name="scanner_mode" value="{{ $settings['scanner_mode'] }}" class="w-full rounded-xl bg-slate-100/70 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10" />
-                <p class="mt-2 text-xs text-slate-400">Example: Scan direct vers champ barcode</p>
+                <p class="mt-2 text-xs text-slate-400">Exemple: Scan direct vers champ barcode</p>
             </div>
         </section>
 
         <div class="fixed bottom-6 right-6 z-40">
             <button type="submit" class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-slate-800">
-                Save changes
+                Enregistrer les modifications
             </button>
         </div>
     </form>

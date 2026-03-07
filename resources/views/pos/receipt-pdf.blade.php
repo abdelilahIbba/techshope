@@ -27,18 +27,18 @@
         .header h1 {
             margin: 0 0 5px 0;
             font-size: 24px;
-            color: #0f172a;
+            color: #000;
             letter-spacing: 1px;
         }
         .header p {
             margin: 2px 0;
-            color: #64748b;
+            color: #000000ff;
             font-size: 11px;
         }
 
         /* الخط الفاصل */
         .divider {
-            border-bottom: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed #000;
             margin: 15px 0;
         }
 
@@ -61,27 +61,27 @@
             margin-top: 10px; 
         }
         .items-table th { 
-            background-color: #f8fafc;
-            color: #475569;
-            font-size: 10px;
+            background-color: #fff;
+            color: #000000ff;
+            font-size: 12px;
             text-transform: uppercase;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid #000;
             padding: 8px 4px;
         }
         .items-table td { 
-            border-bottom: 1px solid #f1f5f9; 
+            border-bottom: 1px solid #ccc; 
             padding: 8px 4px; 
             vertical-align: top;
         }
         
         .product-name {
             font-weight: bold;
-            color: #1e293b;
+            color: #000;
             margin-bottom: 3px;
         }
         .barcode-text {
             font-size: 9px;
-            color: #94a3b8;
+            color: #000000ff;
         }
         .barcode-img { 
             margin-top: 4px; 
@@ -105,8 +105,8 @@
         .grand-total {
             font-size: 18px;
             font-weight: bold;
-            color: #0f172a;
-            border-top: 2px solid #1e293b;
+            color: #000;
+            border-top: 2px solid #000;
             padding-top: 10px;
         }
 
@@ -115,7 +115,7 @@
             text-align: center;
             margin-top: 30px;
             font-size: 11px;
-            color: #64748b;
+            color: #000000ff;
         }
         .qr-placeholder {
             margin-top: 15px;
@@ -126,9 +126,9 @@
 <body>
 
     <div class="header">
-        <h1>DROGUERIE S</h1>
-        <p>Quincaillerie & Articles de bricolage</p>
-        <p>Tél: +213 XX XX XX XX</p>
+        <h1>D3 ALLOUACHE</h1>
+        <p>Tél: +212 0669112486</p>
+         <p>rue AHMED AL MOKRI</p>
     </div>
 
     <div class="divider"></div>
@@ -194,9 +194,9 @@
     </div>
 
     <div class="footer">
-        <p>Merci pour votre visite !</p>
-        <p>Les articles vendus ne sont ni repris ni échangés après 7 jours.</p>
-        <p style="font-size: 9px; margin-top: 10px; color: #cbd5e1;">Propulsé par Droguerie POS System</p>
+        <p>Merci</p>
+       
+        
     </div>
 
 </body>

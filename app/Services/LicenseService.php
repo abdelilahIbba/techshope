@@ -14,6 +14,7 @@ class LicenseService
         '3_months' => '3 Mois',
         '6_months' => '6 Mois',
         '1_year'   => '1 An',
+        'lifetime' => 'À Vie (Lifetime)',
     ];
 
     // ------------------------------------------------------------------
@@ -166,6 +167,7 @@ class LicenseService
             '3_months' => now()->addMonths(3),
             '6_months' => now()->addMonths(6),
             '1_year'   => now()->addYear(),
+            'lifetime' => now()->addYears(100),
             default    => throw new \InvalidArgumentException("Période invalide: {$period}"),
         };
     }

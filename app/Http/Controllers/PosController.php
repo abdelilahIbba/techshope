@@ -872,10 +872,10 @@ class PosController extends Controller
 
         $lines   = [];
         $lines[] = ""; 
-        $lines[] = str_pad('DROGUERIE S', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('D3 ALLOUCHE', $w, ' ', STR_PAD_BOTH);
         $lines[] = str_pad('Quincaillerie & Articles de', $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad('bricolage', $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad('Tél: +213 XX XX XX XX', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('rue AHMED AL MOKRI', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('Tél: +212 6699112486', $w, ' ', STR_PAD_BOTH);
         $lines[] = $divider;
 
         $dateStr = optional($receipt->printed_at)->format('d/m/Y') ?? now()->format('d/m/Y');
@@ -910,10 +910,8 @@ class PosController extends Controller
         $lines[] = str_pad("NET À PAYER :", 25, ' ', STR_PAD_LEFT) . str_pad($sum . " " . $currencySymbol, 17, ' ', STR_PAD_LEFT);
         $lines[] = $divider;
         
-        $lines[] = str_pad("Merci pour votre visite !", $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad("Merci", $w, ' ', STR_PAD_BOTH);
         $lines[] = "";
-        $lines[] = str_pad("Les articles vendus ne sont ni repris ni", $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad("échangés après 7 jours.", $w, ' ', STR_PAD_BOTH);
         $lines[] = "";
         $lines[] = "";
         $lines[] = ""; 

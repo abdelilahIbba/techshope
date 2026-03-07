@@ -13,6 +13,7 @@ class Product extends Model
         'supplier_id',
         'name',
         'barcode',
+        'barcode_type',
         'description',
         'purchase_price',
         'sale_price',

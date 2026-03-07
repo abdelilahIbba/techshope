@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion de stock</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         
@@ -31,6 +31,12 @@
 <body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden antialiased">
 
 <nav class="top-nav flex items-center gap-2 p-4 bg-white border-b border-slate-200 shadow-sm shrink-0">
+    <a href="{{ route('pos.dashboard') }}" style="display: flex; align-items: center; gap: 0px; text-decoration: none; margin-right: 20px;">
+        <img src="{{ asset('images/logo.png') }}" onerror="this.src='{{ asset('logo.svg') }}'" alt="TickDroguerie" style="width: 150px; height: auto; margin-right: -10px;">
+        <div style="font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 900; line-height: 1;">
+            <span style="color: #F27036;">Tick</span><span style="color: #1A476F;">Droguerie</span>
+        </div>
+    </a>
     <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.dashboard') }}">Tableau de bord</a>
     <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-transparent" href="{{ route('pos.index') }}">POS</a>
     <a class="nav-link active px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-md border-blue-600" href="{{ route('pos.stock') }}">Gestion de stock</a>
@@ -115,6 +121,7 @@
                         <tr>
                             <th class="px-6 py-4 font-bold">Produit</th>
                             <th class="px-6 py-4 font-bold">Barcode</th>
+                            <th class="px-6 py-4 font-bold">Type</th>
                             <th class="px-6 py-4 font-bold">Catégorie</th>
                             <th class="px-6 py-4 font-bold">Fournisseur</th>
                             <th class="px-6 py-4 font-bold">Stock</th>
@@ -129,6 +136,19 @@
                             <tr ondblclick='showProductDetails({{ json_encode($product) }})' class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
                                 <td class="px-6 py-4 font-bold text-slate-800">{{ $product->name }}</td>
                                 <td class="px-6 py-4"><span class="text-slate-400 font-mono tracking-wider text-xs">{{ $product->barcode }}</span></td>
+                                <td class="px-6 py-4">
+                                    @if(($product->barcode_type ?? 'internal') === 'scanned')
+                                        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-semibold border border-blue-100" title="Barcode scanné depuis le produit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                                            Scanné
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 bg-violet-50 text-violet-700 px-2 py-1 rounded-md text-xs font-semibold border border-violet-100" title="Barcode généré automatiquement">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                                            Interne
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-semibold">{{ $product->category->name ?? 'N/A' }}</span></td>
                                 <td class="px-6 py-4">{{ $product->supplier->name ?? 'Non assigné' }}</td>
                                 <td class="px-6 py-4 font-extrabold text-slate-900">{{ $product->stock_quantity }}</td>
@@ -329,9 +349,33 @@
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
                 <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
             </div>
+            {{-- ── Barcode Type Selector ── --}}
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode (laisser vide pour auto-générer)</label>
-                <input type="hidden" name="barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" placeholder="Ex: 123456789012">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Type de Barcode</label>
+                <div class="flex gap-2 mb-3" id="barcode_type_toggle">
+                    <label id="btn_scanned" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold text-sm transition-all">
+                        <input type="radio" name="barcode_type" value="scanned" class="sr-only" checked onchange="onBarcodeTypeChange('scanned')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                        Scanné (Produit avec barcode)
+                    </label>
+                    <label id="btn_internal" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                        <input type="radio" name="barcode_type" value="internal" class="sr-only" onchange="onBarcodeTypeChange('internal')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        Interne (Pas de barcode)
+                    </label>
+                </div>
+                {{-- Barcode input: only shown for 'scanned' type --}}
+                <div id="barcode_input_wrapper">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Scanner ou saisir le barcode du produit</label>
+                    <input type="text" name="barcode" id="add_barcode_input" class="w-full bg-slate-50 border border-blue-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none font-mono" placeholder="Ex: 6111250450232" autofocus>
+                    <p class="text-xs text-slate-400 mt-1">Utilisez votre lecteur de codes-barres ou saisissez manuellement.</p>
+                </div>
+                <div id="barcode_auto_notice" class="hidden">
+                    <div class="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        <span class="text-sm text-violet-700 font-semibold">Un barcode unique sera généré automatiquement pour ce produit.</span>
+                    </div>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -381,11 +425,44 @@
             </div>
             <script>
                 let numericTargetInput = null;
+                const azertyKeyMap = {
+                    '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
+                    '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
+                    ')': '°', '=': '+', '§': '!'
+                };
+
                 function openNumericKeyboard(inputId) {
                     numericTargetInput = document.getElementById(inputId);
                     document.getElementById('numericKeyboardInput').value = numericTargetInput.value || '';
                     document.getElementById('numericKeyboardModal').classList.add('active');
+                    
+                    // Add global keydown listener when modal is open
+                    document.addEventListener('keydown', handleKeydown);
                 }
+
+                function handleKeydown(e) {
+                    const modal = document.getElementById('numericKeyboardModal');
+                    if (!modal.classList.contains('active')) return;
+
+                    let key = e.key;
+                    
+                    // Handle AZERTY mapping
+                    if (azertyKeyMap[key]) {
+                        key = azertyKeyMap[key];
+                    }
+
+                    if (key >= '0' && key <= '9') {
+                        appendNumericKey(key);
+                    } else if (key === 'Backspace') {
+                        const input = document.getElementById('numericKeyboardInput');
+                        input.value = input.value.slice(0, -1);
+                    } else if (key === 'Enter') {
+                        confirmNumericKey();
+                    } else if (key === 'Escape') {
+                        closeModal('numericKeyboardModal');
+                    }
+                }
+
                 function appendNumericKey(digit) {
                     const input = document.getElementById('numericKeyboardInput');
                     if (input.value.length < 6) {
@@ -403,6 +480,15 @@
                     }
                     closeModal('numericKeyboardModal');
                 }
+                
+                // Override closeModal to remove listener
+                const originalCloseModal = closeModal;
+                window.closeModal = function(modalId) {
+                    if (modalId === 'numericKeyboardModal') {
+                        document.removeEventListener('keydown', handleKeydown);
+                    }
+                    originalCloseModal(modalId);
+                };
             </script>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -434,8 +520,30 @@
                 <input type="text" name="name" id="edit_product_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Barcode</label>
-                <input type="hidden" name="barcode" id="edit_product_barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Type de Barcode</label>
+                <div class="flex gap-2 mb-3">
+                    <label id="edit_btn_scanned" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                        <input type="radio" name="barcode_type" id="edit_type_scanned" value="scanned" class="sr-only" onchange="onEditBarcodeTypeChange('scanned')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                        Scanné
+                    </label>
+                    <label id="edit_btn_internal" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                        <input type="radio" name="barcode_type" id="edit_type_internal" value="internal" class="sr-only" onchange="onEditBarcodeTypeChange('internal')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        Interne
+                    </label>
+                </div>
+                <div id="edit_barcode_input_wrapper">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Barcode du produit</label>
+                    <input type="text" name="barcode" id="edit_product_barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none font-mono" required>
+                </div>
+                <div id="edit_barcode_auto_notice" class="hidden">
+                    <div class="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                        <span class="text-sm text-violet-700 font-semibold">Un nouveau barcode interne sera généré automatiquement.</span>
+                    </div>
+                    <input type="hidden" name="barcode" id="edit_product_barcode_hidden" value="">
+                </div>
             </div>
             
             <div class="grid grid-cols-2 gap-4">
@@ -603,14 +711,6 @@
 </div>
 
 <script>
-    function switchTab(tab) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-        event.target.classList.add('active');
-        document.getElementById(tab + '-tab').classList.add('active');
-    }
-
     function openModal(modalId) {
         document.getElementById(modalId).classList.add('active');
     }
@@ -619,13 +719,27 @@
         document.getElementById(modalId).classList.remove('active');
     }
 
+    function switchTab(tab, event) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        if (event && event.target) {
+            event.target.classList.add('active');
+        } else if (window.event && window.event.target) {
+             window.event.target.classList.add('active');
+        }
+        document.getElementById(tab + '-tab').classList.add('active');
+    }
+
+    const BASE_EDIT_CATEGORY = '{{ url("/pos/stock/edit-category") }}';
     function editCategory(category) {
         document.getElementById('edit_category_id').value = category.id;
         document.getElementById('edit_category_name').value = category.name;
-        document.getElementById('editCategoryForm').action = '/pos/stock/edit-category/' + category.id;
+        document.getElementById('editCategoryForm').action = BASE_EDIT_CATEGORY + '/' + category.id;
         openModal('editCategoryModal');
     }
 
+    const BASE_EDIT_PRODUCT = '{{ url("/pos/stock/edit-product") }}';
     function editProduct(product) {
         document.getElementById('edit_product_id').value = product.id;
         document.getElementById('edit_product_name').value = product.name;
@@ -634,24 +748,33 @@
         document.getElementById('edit_product_supplier').value = product.supplier_id || '';
         document.getElementById('edit_product_purchase_price').value = product.purchase_price;
         document.getElementById('edit_product_sale_price').value = product.sale_price;
-        document.getElementById('editProductForm').action = '/pos/stock/edit-product/' + product.id;
+        document.getElementById('editProductForm').action = BASE_EDIT_PRODUCT + '/' + product.id;
+
+        // Set barcode_type toggle
+        const barcodeType = product.barcode_type || 'internal';
+        document.getElementById('edit_type_scanned').checked = (barcodeType === 'scanned');
+        document.getElementById('edit_type_internal').checked = (barcodeType === 'internal');
+        onEditBarcodeTypeChange(barcodeType);
+
         openModal('editProductModal');
     }
 
+    const BASE_ADJUST_STOCK = '{{ url("/pos/stock/adjust-stock") }}';
     function adjustStock(product) {
         document.getElementById('adjust_product_id').value = product.id;
         document.getElementById('adjust_product_name').value = product.name;
         document.getElementById('adjust_current_stock').value = product.stock_quantity + ' unités';
-        document.getElementById('adjustStockForm').action = '/pos/stock/adjust-stock/' + product.id;
+        document.getElementById('adjustStockForm').action = BASE_ADJUST_STOCK + '/' + product.id;
         openModal('adjustStockModal');
     }
 
+    const BASE_EDIT_SUPPLIER = '{{ url("/pos/stock/edit-supplier") }}';
     function editSupplier(supplier) {
         document.getElementById('edit_supplier_id').value = supplier.id;
         document.getElementById('edit_supplier_name').value = supplier.name;
         document.getElementById('edit_supplier_contact').value = supplier.contact_info || '';
         document.getElementById('edit_supplier_notes').value = supplier.notes || '';
-        document.getElementById('editSupplierForm').action = '/pos/stock/edit-supplier/' + supplier.id;
+        document.getElementById('editSupplierForm').action = BASE_EDIT_SUPPLIER + '/' + supplier.id;
         openModal('editSupplierModal');
     }
 
@@ -697,15 +820,121 @@
     @php
         $products_for_js = $products->map(function($p) {
             return [
-                'id' => $p->id,
-                'name' => $p->name,
-                'barcode' => $p->barcode,
+                'id'             => $p->id,
+                'name'           => $p->name,
+                'barcode'        => $p->barcode,
+                'barcode_type'   => $p->barcode_type ?? 'internal',
                 'stock_quantity' => $p->stock_quantity,
-                'sale_price' => $p->sale_price,
+                'sale_price'     => $p->sale_price,
             ];
         });
     @endphp
     const PRODUCTS = {!! $products_for_js->toJson() !!};
+
+    // ── AZERTY → Numérique (pour les scanners de codes-barres sur clavier FR) ──
+    // Un scanner se comporte comme un clavier. Sur un clavier AZERTY, les touches
+    // du rang supérieur envoient des symboles (&, é, ", etc.) au lieu de chiffres.
+    // Ce mapping corrige automatiquement ces symboles en chiffres.
+    const azertyMap = {
+        '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
+        '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
+        ')': '°', '=': '+'
+    };
+
+    function applyAzertyMap(value) {
+        let corrected = '';
+        let changed = false;
+        for (let char of value) {
+            if (azertyMap[char] !== undefined) {
+                corrected += azertyMap[char];
+                changed = true;
+            } else {
+                corrected += char;
+            }
+        }
+        return changed ? corrected : null; // returns null if no change needed
+    }
+
+    // Apply to Add Product barcode input
+    document.addEventListener('DOMContentLoaded', function () {
+        const addBarcodeInput = document.getElementById('add_barcode_input');
+        if (addBarcodeInput) {
+            addBarcodeInput.addEventListener('input', function () {
+                const corrected = applyAzertyMap(this.value);
+                if (corrected !== null) this.value = corrected;
+            });
+        }
+
+        // Apply to Edit Product barcode input
+        const editBarcodeInput = document.getElementById('edit_product_barcode');
+        if (editBarcodeInput) {
+            editBarcodeInput.addEventListener('input', function () {
+                const corrected = applyAzertyMap(this.value);
+                if (corrected !== null) this.value = corrected;
+            });
+        }
+    });
+
+    // ── Barcode type toggle for ADD PRODUCT modal ──────────────────────
+    function onBarcodeTypeChange(type) {
+        const wrapper = document.getElementById('barcode_input_wrapper');
+        const notice  = document.getElementById('barcode_auto_notice');
+        const btnScanned  = document.getElementById('btn_scanned');
+        const btnInternal = document.getElementById('btn_internal');
+        const input = document.getElementById('add_barcode_input');
+
+        if (type === 'scanned') {
+            wrapper.classList.remove('hidden');
+            notice.classList.add('hidden');
+            btnScanned.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+            btnScanned.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            btnInternal.classList.remove('border-violet-500', 'bg-violet-50', 'text-violet-700');
+            btnInternal.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            if (input) input.focus();
+        } else {
+            wrapper.classList.add('hidden');
+            notice.classList.remove('hidden');
+            btnInternal.classList.add('border-violet-500', 'bg-violet-50', 'text-violet-700');
+            btnInternal.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            btnScanned.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
+            btnScanned.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+        }
+    }
+
+    // ── Barcode type toggle for EDIT PRODUCT modal ─────────────────────
+    function onEditBarcodeTypeChange(type) {
+        const wrapper = document.getElementById('edit_barcode_input_wrapper');
+        const notice  = document.getElementById('edit_barcode_auto_notice');
+        const btnScanned  = document.getElementById('edit_btn_scanned');
+        const btnInternal = document.getElementById('edit_btn_internal');
+        const visibleInput = document.getElementById('edit_product_barcode');
+        const hiddenInput  = document.getElementById('edit_product_barcode_hidden');
+
+        if (type === 'scanned') {
+            wrapper.classList.remove('hidden');
+            notice.classList.add('hidden');
+            // Restore name on visible input, remove from hidden
+            visibleInput.name = 'barcode';
+            if (hiddenInput) hiddenInput.removeAttribute('name');
+            btnScanned.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+            btnScanned.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            btnInternal.classList.remove('border-violet-500', 'bg-violet-50', 'text-violet-700');
+            btnInternal.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+        } else {
+            wrapper.classList.add('hidden');
+            notice.classList.remove('hidden');
+            // Move barcode to hidden input so form still sends it (server will regenerate)
+            if (hiddenInput) {
+                hiddenInput.name = 'barcode';
+                hiddenInput.value = visibleInput.value;
+            }
+            visibleInput.removeAttribute('name');
+            btnInternal.classList.add('border-violet-500', 'bg-violet-50', 'text-violet-700');
+            btnInternal.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            btnScanned.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
+            btnScanned.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+        }
+    }
 
     let currentDetailProduct = null;
 

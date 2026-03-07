@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Système POS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
@@ -56,15 +56,12 @@
 <!-- Top Navigation Bar -->
 <nav class="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0 z-20 shadow-sm relative">
     <div class="flex items-center gap-8">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 overflow-hidden ring-1 ring-black/5">
-                <img src="{{ asset('logo.svg') }}" onerror="this.src='{{ asset('favicon.svg') }}'" alt="Logo" class="w-8 h-8 object-contain" />
+        <a href="{{ route('pos.dashboard') }}" style="display: flex; align-items: center; gap: 0px; text-decoration: none;">
+            <img src="{{ asset('images/logo.png') }}" onerror="this.src='{{ asset('logo.svg') }}'" alt="TickDroguerie" style="width: 150px; height: auto; margin-right: -10px;">
+            <div style="font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 900; line-height: 1;">
+                <span style="color: #F27036;">Tick</span><span style="color: #1A476F;">Droguerie</span>
             </div>
-            <div>
-                <h1 class="font-extrabold text-lg text-foreground leading-tight tracking-tight">{{ config('app.name') }}</h1>
-                <div class="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest">System v2.0</div>
-            </div>
-        </div>
+        </a>
 
         <div class="flex items-center bg-muted/30 p-1 rounded-xl">
             <a href="{{ route('pos.dashboard') }}" class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Tableau de bord</a>
@@ -211,7 +208,7 @@
 
                 <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg py-4 rounded-2xl shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]">
                     <span>Valider & Imprimer</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 0 00-2-2H9a2 0 00-2 2v6a2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                 </button>
             </div>
         </form>
@@ -492,7 +489,7 @@
         `;
         
         try {
-            const response = await fetch(`/pos/scan/${barcode}`);
+            const response = await fetch("{{ route('pos.scan', ['barcode' => 'BARCODE_PLACEHOLDER']) }}".replace('BARCODE_PLACEHOLDER', barcode));
 
             if (!response.ok) {
                 // Show error effect on input
@@ -533,7 +530,7 @@
     const azertyMap = {
         '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
         '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
-        '§': '!', '!' : '8' 
+        ')': '°', '=': '+', '§': '!' 
     };
 
     barcodeInput.addEventListener('input', (event) => {
@@ -556,6 +553,21 @@
     });
 
     scanBtn.addEventListener('click', scanAndAdd);
+    
+    // Support AZERTY for scan quantity
+    scanQuantityInput.addEventListener('keydown', (event) => {
+        if (azertyMap[event.key]) {
+            event.preventDefault();
+            const start = scanQuantityInput.selectionStart;
+            const end = scanQuantityInput.selectionEnd;
+            const val = scanQuantityInput.value;
+            scanQuantityInput.value = val.slice(0, start) + azertyMap[event.key] + val.slice(end);
+            scanQuantityInput.setSelectionRange(start + 1, start + 1);
+            // Trigger input event
+            scanQuantityInput.dispatchEvent(new Event('input'));
+        }
+    });
+
     barcodeInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();

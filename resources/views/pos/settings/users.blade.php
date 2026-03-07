@@ -296,7 +296,7 @@
             document.getElementById('edit_user_id').value = user.id;
             document.getElementById('edit_name').value = user.name;
             document.getElementById('edit_role_name').value = user.role_name || '';
-            document.getElementById('editUserForm').action = '/pos/settings/user/edit/' + user.id;
+            document.getElementById('editUserForm').action = "{{ url('/pos/settings/user/edit') }}/" + user.id;
             document.getElementById('editUserModal').classList.add('active');
         }
 

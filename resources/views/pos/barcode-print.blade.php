@@ -51,6 +51,8 @@
         .label-name {
             font-family: Arial, sans-serif;
             font-size: 7pt; font-weight: bold;
+            margin-top: 3mm;
+            margin-bottom: 1mm;
             text-align: center; color: #000;
             direction: rtl; word-break: break-word;
             line-height: 1.2; width: 100%;
@@ -126,7 +128,17 @@
                 display: block !important;
             }
 
-            .label-name, .label-code {
+            .label-name {
+                text-align: center !important;
+                width: 100% !important;
+                font-size: 8pt !important;
+                font-weight: bold !important;
+                line-height: 1.2 !important;
+                margin-top: 3mm !important;
+                margin-bottom: 1mm !important;
+            }
+
+            .label-code {
                 text-align: center !important;
                 width: 100% !important;
                 font-size: 8pt !important;
@@ -155,7 +167,7 @@
                 <div class="content-wrapper">
                     <div class="label-name">{{ $product->name }}</div>
                     <div class="label-barcode">{!! $svg !!}</div>
-                    <div class="label-code">{{ $product->barcode }}</div>
+                    <div class="label-code" dir="ltr">{{ number_format($product->sale_price, 2) }} DH</div>
                 </div>
             </div>
         @endfor

@@ -69,7 +69,7 @@
             margin-bottom: 8px;
         }
         .header .shop-name {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 900;
             margin: 0;
         }
@@ -111,7 +111,7 @@
         }
         .item-code {
             font-size: 8px;
-            color: #333;
+            color: #000;
         }
 
         .totals-table {
@@ -148,9 +148,10 @@
 <div class="receipt-container">
     
     <div class="header text-center">
-        <div class="shop-name">DROGUERIE S</div>
+        <div class="shop-name">D3 ALLOUACHE</div>
         <div class="shop-tagline">Quincaillerie & Articles de bricolage</div>
-        <div class="shop-tagline">Tél: +213 XX XX XX XX</div>
+        <div class="shop-tagline">Tél: +212 0669112486</div>
+        <div class="shop-tagline">rue AHMED AL MOKRI</div>
     </div>
 
     <div class="divider"></div>
@@ -218,9 +219,7 @@
     </div>
 
     <div class="footer text-center">
-        <div class="thank-you">Merci pour votre visite !</div>
-        <div>Les articles vendus ne sont ni pris ni échangés après 7 jours.</div>
-        <div style="font-size: 8px; margin-top: 10px; opacity: 0.7;">Droguerie POS System</div>
+        <div class="thank-you">Merci</div> 
     </div>
 
 </div>

@@ -79,7 +79,7 @@ test('checkout creates a sale, sale items and a receipt', function () {
     $customer = makeCustomer();
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'          => [['barcode' => 'CHK001', 'quantity' => 2]],
+        'items'          => [['barcode' => 'CHK001', 'quantity' => 2, 'price' => 15.0]],
         'customer_id'    => $customer->id,
         'payment_method' => 'cash',
     ])->assertRedirect();   // redirects to receipt PDF route
@@ -95,7 +95,7 @@ test('checkout decrements product stock', function () {
     $customer = makeCustomer();
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'       => [['barcode' => 'CHK002', 'quantity' => 5]],
+        'items'       => [['barcode' => 'CHK002', 'quantity' => 5, 'price' => 10.0]],
         'customer_id' => $customer->id,
     ]);
 
@@ -108,12 +108,31 @@ test('checkout calculates total amount correctly', function () {
     $customer = makeCustomer();
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'       => [['barcode' => 'CHK003', 'quantity' => 3]],
+        'items'       => [['barcode' => 'CHK003', 'quantity' => 3, 'price' => 20.0]],
         'customer_id' => $customer->id,
     ]);
 
     $sale = Sale::query()->latest()->first();
     expect((float) $sale->total_amount)->toBe(60.0);
+});
+
+test('checkout uses custom manual price adjustment', function () {
+    $admin    = userWithRole('Admin');
+    $product  = makeProduct('CUSTOM_PRICE', 100, 100.0);
+    $customer = makeCustomer();
+
+    $this->actingAs($admin)->post(route('pos.checkout'), [
+        'items' => [
+            ['barcode' => 'CUSTOM_PRICE', 'quantity' => 1, 'price' => 85.50]
+        ],
+        'customer_id' => $customer->id,
+    ]);
+
+    $saleItem = SaleItem::query()->latest()->first();
+    expect((float) $saleItem->unit_price)->toBe(85.50);
+    
+    $sale = $saleItem->sale;
+    expect((float) $sale->total_amount)->toBe(85.50);
 });
 
 test('checkout assigns payment method', function () {
@@ -122,7 +141,7 @@ test('checkout assigns payment method', function () {
     $customer = makeCustomer();
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'          => [['barcode' => 'CHK004', 'quantity' => 1]],
+        'items'          => [['barcode' => 'CHK004', 'quantity' => 1, 'price' => 5.0]],
         'customer_id'    => $customer->id,
         'payment_method' => 'card',
     ]);
@@ -136,7 +155,7 @@ test('checkout picks the default customer when none specified', function () {
     makeCustomer(); // ensures at least one customer exists
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items' => [['barcode' => 'CHK005', 'quantity' => 1]],
+        'items' => [['barcode' => 'CHK005', 'quantity' => 1, 'price' => 5.0]],
         // no customer_id
     ])->assertRedirect();
 
@@ -151,8 +170,8 @@ test('checkout creates multi-item sale correctly', function () {
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
         'items' => [
-            ['barcode' => 'MULTI01', 'quantity' => 2],
-            ['barcode' => 'MULTI02', 'quantity' => 1],
+            ['barcode' => 'MULTI01', 'quantity' => 2, 'price' => 10.0],
+            ['barcode' => 'MULTI02', 'quantity' => 1, 'price' => 20.0],
         ],
         'customer_id' => $customer->id,
     ]);
@@ -169,7 +188,7 @@ test('checkout with unknown barcode aborts with 422', function () {
     $customer = makeCustomer();
 
     $response = $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'       => [['barcode' => 'GHOST999', 'quantity' => 1]],
+        'items'       => [['barcode' => 'GHOST999', 'quantity' => 1, 'price' => 10.0]],
         'customer_id' => $customer->id,
     ]);
 
@@ -183,7 +202,7 @@ test('checkout with insufficient stock aborts with 422', function () {
     $customer = makeCustomer();
 
     $response = $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'       => [['barcode' => 'LOW001', 'quantity' => 10]],
+        'items'       => [['barcode' => 'LOW001', 'quantity' => 10, 'price' => 5.0]],
         'customer_id' => $customer->id,
     ]);
 
@@ -216,7 +235,7 @@ test('checkout fails when no customer exists and none specified', function () {
     // No customer is created
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items' => [['barcode' => 'NOCUST', 'quantity' => 1]],
+        'items' => [['barcode' => 'NOCUST', 'quantity' => 1, 'price' => 5.0]],
     ])->assertSessionHasErrors('customer_id');
 });
 
@@ -229,7 +248,7 @@ test('user without checkout.create permission cannot checkout', function () {
     $customer = makeCustomer();
 
     $this->actingAs($viewer)->post(route('pos.checkout'), [
-        'items'       => [['barcode' => 'PERM01', 'quantity' => 1]],
+        'items'       => [['barcode' => 'PERM01', 'quantity' => 1, 'price' => 5.0]],
         'customer_id' => $customer->id,
     ])->assertStatus(403);
 

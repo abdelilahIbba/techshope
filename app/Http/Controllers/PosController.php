@@ -88,8 +88,17 @@ class PosController extends Controller
         $superUser->permissions()->sync($allPermissionIds);
 
         $editorKeys = [
-            'dashboard.view', 'pos.view', 'stock.view', 'stock.create', 'stock.edit', 'stock.adjust',
-            'supplier.manage', 'category.manage', 'notifications.view', 'checkout.create', 'receipt.export',
+            'dashboard.view',
+            'pos.view',
+            'stock.view',
+            'stock.create',
+            'stock.edit',
+            'stock.adjust',
+            'supplier.manage',
+            'category.manage',
+            'notifications.view',
+            'checkout.create',
+            'receipt.export',
             'barcode.print',
         ];
         $editorPermissionIds = Permission::query()->whereIn('key', $editorKeys)->pluck('id');
@@ -114,7 +123,7 @@ class PosController extends Controller
     private function generateInternalEmail(): string
     {
         do {
-            $email = 'user_'.Str::lower(Str::random(10)).'@local.pos';
+            $email = 'user_' . Str::lower(Str::random(10)) . '@local.pos';
         } while (User::query()->where('email', $email)->exists());
 
         return $email;
@@ -279,7 +288,7 @@ class PosController extends Controller
     {
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
-            'quantity'   => ['required', 'integer', 'min:1', 'max:500'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:500'],
         ]);
 
         $product = Product::findOrFail($validated['product_id']);
@@ -289,13 +298,13 @@ class PosController extends Controller
         $svg = $generator->getBarcode((string) $product->barcode, $generator::TYPE_CODE_128);
 
         return view('pos.barcode-print', [
-            'product'  => $product,
-            'svg'      => $svg,
+            'product' => $product,
+            'svg' => $svg,
             'quantity' => (int) $validated['quantity'],
         ]);
     }
 
-    
+
 
     public function addSupplier(Request $request)
     {
@@ -538,13 +547,13 @@ class PosController extends Controller
     private function getAvailablePrinters(): array
     {
         $printers = [];
-        
+
         try {
             if (PHP_OS_FAMILY === 'Windows') {
                 // Use PowerShell to get printers
                 $command = 'powershell -Command "Get-Printer | Select-Object -ExpandProperty Name"';
                 $output = shell_exec($command);
-                
+
                 if ($output) {
                     $printersList = explode("\n", trim($output));
                     foreach ($printersList as $printer) {
@@ -571,7 +580,7 @@ class PosController extends Controller
             // If we can't detect printers, return empty array
             $printers = [];
         }
-        
+
         return $printers;
     }
 
@@ -604,13 +613,13 @@ class PosController extends Controller
         ]);
 
         $user->name = $validated['name'];
-        
+
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
 
         $user->role = $validated['role_name'];
-        
+
         $user->save();
         $this->writeAudit('user.role.updated', User::class, $user->id, ['role_name' => $validated['role_name']]);
 
@@ -724,7 +733,7 @@ class PosController extends Controller
             'printer_name' => 'nullable|string',
             'printer_name_sale' => 'nullable|string',
             'printer_name_barcode' => 'nullable|string',
-            'ticket_format' => 'nullable|string',  
+            'ticket_format' => 'nullable|string',
             'auto_print' => 'nullable|string',
             'scanner_mode' => 'nullable|string',
             'scanner_beep' => 'nullable|string',
@@ -758,7 +767,7 @@ class PosController extends Controller
             ->where('barcode', $barcode)
             ->first();
 
-        if (! $product) {
+        if (!$product) {
             return response()->json([
                 'message' => 'Product not found for this barcode.',
             ], 404);
@@ -780,13 +789,14 @@ class PosController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.barcode' => ['required', 'string'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.price' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
         ]);
 
         $customerId = $validated['customer_id'] ?? Customer::query()->value('id');
 
-        if (! $customerId) {
+        if (!$customerId) {
             return back()->withErrors([
                 'customer_id' => 'No customer found. Create at least one customer before checkout.',
             ]);
@@ -802,17 +812,19 @@ class PosController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if (! $product) {
-                    abort(422, 'Product not found for barcode: '.$item['barcode']);
+                if (!$product) {
+                    abort(422, 'Product not found for barcode: ' . $item['barcode']);
                 }
 
                 $quantity = (int) $item['quantity'];
 
                 if ($product->stock_quantity < $quantity) {
-                    abort(422, 'Insufficient stock for: '.$product->name);
+                    abort(422, 'Insufficient stock for: ' . $product->name);
                 }
 
-                $unitPrice = (float) ($product->sale_price ?? $product->price ?? 0);
+                // Use custom price from request
+                $unitPrice = (float) $item['price'];
+
                 $subtotal = $unitPrice * $quantity;
 
                 $product->decrement('stock_quantity', $quantity);
@@ -848,7 +860,7 @@ class PosController extends Controller
 
             $receipt = Receipt::query()->create([
                 'sale_id' => $sale->id,
-                'receipt_number' => 'RCP-'.now()->format('Ymd').'-'.$sale->id,
+                'receipt_number' => 'RCP-' . now()->format('Ymd') . '-' . $sale->id,
                 'printed_at' => now(),
             ]);
 
@@ -867,11 +879,11 @@ class PosController extends Controller
         $currencySymbol = Setting::get('currency_symbol', 'DH');
 
         // ── Exact Layout (42 columns standard for 80mm) ────────────────────
-        $w = 42; 
+        $w = 42;
         $divider = str_repeat('-', $w);
 
-        $lines   = [];
-        $lines[] = ""; 
+        $lines = [];
+        $lines[] = "";
         $lines[] = str_pad('D3 ALLOUCHE', $w, ' ', STR_PAD_BOTH);
         $lines[] = str_pad('Quincaillerie & Articles de', $w, ' ', STR_PAD_BOTH);
         $lines[] = str_pad('rue AHMED AL MOKRI', $w, ' ', STR_PAD_BOTH);
@@ -891,13 +903,15 @@ class PosController extends Controller
         $lines[] = $divider;
 
         foreach ($receipt->sale->items as $item) {
-            $name  = $item->product->name;
-            $qty   = (string) $item->quantity;
+            $name = $item->product->name;
+            $qty = (string) $item->quantity;
             $price = number_format($item->unit_price, 2);
             $total = number_format($item->subtotal, 2);
 
             $lines[] = str_pad(mb_substr($name, 0, 18), 18) . str_pad($qty, 4, ' ', STR_PAD_BOTH) . str_pad($price, 10, ' ', STR_PAD_LEFT) . str_pad($total, 10, ' ', STR_PAD_LEFT);
-            if (mb_strlen($name) > 18) { $lines[] = "  " . mb_substr($name, 18, 40); }
+            if (mb_strlen($name) > 18) {
+                $lines[] = "  " . mb_substr($name, 18, 40);
+            }
             $lines[] = "Code: " . $item->product->barcode;
         }
 
@@ -909,12 +923,12 @@ class PosController extends Controller
         $lines[] = "";
         $lines[] = str_pad("NET À PAYER :", 25, ' ', STR_PAD_LEFT) . str_pad($sum . " " . $currencySymbol, 17, ' ', STR_PAD_LEFT);
         $lines[] = $divider;
-        
+
         $lines[] = str_pad("Merci", $w, ' ', STR_PAD_BOTH);
         $lines[] = "";
         $lines[] = "";
         $lines[] = "";
-        $lines[] = ""; 
+        $lines[] = "";
 
         $textReceipt = implode("\r\n", $lines);
 
@@ -928,7 +942,7 @@ class PosController extends Controller
         file_put_contents($tmpTxt, "\xEF\xBB\xBF" . $textReceipt);
 
         $printerSafe = str_replace("'", "''", $printerName);
-        $fileSafe    = str_replace("'", "''", $tmpTxt);
+        $fileSafe = str_replace("'", "''", $tmpTxt);
 
         // This PowerShell script uses .NET Drawing with explicit PaperSize
         $psContent = <<<PS
@@ -1013,7 +1027,12 @@ PS;
             ->count();
 
         return view('pos.reports.index', compact(
-            'from', 'to', 'totalSales', 'totalExpenses', 'totalCancellations', 'salesCount'
+            'from',
+            'to',
+            'totalSales',
+            'totalExpenses',
+            'totalCancellations',
+            'salesCount'
         ));
     }
 
@@ -1066,18 +1085,18 @@ PS;
             ->groupBy('cashier_user_id')
             ->orderByDesc('total_revenue')
             ->get()
-            ->map(function($row) use ($from, $to) {
+            ->map(function ($row) use ($from, $to) {
                 // Calculate cancellation rate
                 $cancellations = Sale::query()
                     ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
                     ->where('cashier_user_id', $row->cashier_user_id)
                     ->where('status', 'cancelled')
                     ->count();
-                
-                $row->cancellation_rate = $row->total_sales > 0 
-                    ? round(($cancellations / ($row->total_sales + $cancellations)) * 100, 1) 
+
+                $row->cancellation_rate = $row->total_sales > 0
+                    ? round(($cancellations / ($row->total_sales + $cancellations)) * 100, 1)
                     : 0;
-                
+
                 return $row;
             });
 
@@ -1190,8 +1209,13 @@ PS;
             ->sum('amount');
 
         return view('pos.reports.expenses', compact(
-            'expenses', 'status', 'from', 'to', 
-            'totalPending', 'totalApproved', 'totalPaid'
+            'expenses',
+            'status',
+            'from',
+            'to',
+            'totalPending',
+            'totalApproved',
+            'totalPaid'
         ));
     }
 
@@ -1308,8 +1332,8 @@ PS;
             'status' => $newStatus,
         ]);
 
-        $message = $validated['action'] === 'approve' 
-            ? 'Dépense approuvée.' 
+        $message = $validated['action'] === 'approve'
+            ? 'Dépense approuvée.'
             : 'Dépense rejetée.';
 
         return back()->with('success', $message);

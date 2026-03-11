@@ -39,7 +39,7 @@
             #labels-container { display:flex; flex-direction:column; align-items:center; gap:6px; }
             .label {
                 background:#fff;
-                width: 50mm; height: 30mm;
+                width: 50mm; height: 25mm;
                 border: 1px dashed #475569;
                 display: flex; flex-direction: column;
                 align-items: center; justify-content: center;
@@ -69,13 +69,13 @@
         /* ── PRINT ── */
         @media print {
             @page {
-                size: 50mm 30mm;
-                margin: 0;
+                size: 50mm 25mm;
+                margin: 0 !important; /* مهم جداً لمنع الهوامش الافتراضية */
             }
 
             html, body {
                 width: 50mm !important;
-                height: 30mm !important;
+                height: 25mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;
@@ -87,7 +87,7 @@
 
             .label {
                 width: 50mm !important;
-                height: 29.5mm !important;
+                height: 28.5mm !important; /* 👈 التعديل السحري: تقليل الارتفاع لمنع تخطي الورقة */
                 box-sizing: border-box !important;
                 padding: 0 !important;
                 margin: 0 !important;
@@ -115,7 +115,6 @@
                 justify-content: center !important;
             }
 
-            /* باركود بأقصى عرض ممكن */
             .label-barcode {
                 width: 100% !important;
                 display: flex !important;
@@ -123,8 +122,8 @@
             }
 
             .label-barcode svg {
-                width: 42mm !important;
-                height: 14mm !important;
+                max-width: 42mm !important; /* استخدام max-width بدلاً من width الثابت */
+                height: 13mm !important; /* تقليل الارتفاع قليلاً */
                 display: block !important;
             }
 
@@ -134,7 +133,7 @@
                 font-size: 8pt !important;
                 font-weight: bold !important;
                 line-height: 1.2 !important;
-                margin-top: 3mm !important;
+                margin-top: 1mm !important;
                 margin-bottom: 1mm !important;
             }
 
@@ -161,12 +160,14 @@
         🖨️ Imprimer {{ $quantity }} étiquette(s) sur WD8220
     </button>
 
-    <div id="labels-container">
+    <div id="labels-container"> 
         @for ($i = 0; $i < $quantity; $i++)
             <div class="label">
                 <div class="content-wrapper">
                     <div class="label-name">{{ $product->name }}</div>
+                    
                     <div class="label-barcode">{!! $svg !!}</div>
+                    
                     <div class="label-code" dir="ltr">{{ number_format($product->sale_price, 2) }} DH</div>
                 </div>
             </div>

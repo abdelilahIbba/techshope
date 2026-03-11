@@ -98,7 +98,7 @@
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
-                <!--<input type="text" id="searchProduct" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher un produit (nom, barcode)..." onkeyup="filterProducts()">-->
+                <input type="text" id="searchProduct" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher un produit (nom, barcode)..." onkeyup="filterProducts()">
             </div>
             <select id="filterCategory" class="form-select bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full md:w-[200px] p-2.5 outline-none" onchange="filterProducts()">
                 <option value="">Toutes les catégories</option>
@@ -230,8 +230,13 @@
 </div>
 
     <div class="tab-content" id="suppliers-tab">
-        <div class="mb-6 flex justify-between items-center">
-             <h2 class="text-lg font-bold text-slate-900">Liste des Fournisseurs</h2>
+        <div class="mb-6 flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="relative flex-1 min-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <input type="text" id="searchSupplier" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher un fournisseur (nom, contact)..." onkeyup="filterSuppliers()">
+            </div>
             <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm px-6 py-2.5 shadow-sm transition-all flex items-center gap-2" onclick="openModal('addSupplierModal')">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                 Ajouter fournisseur
@@ -287,8 +292,13 @@
     </div>
 
     <div class="tab-content" id="categories-tab">
-        <div class="mb-6 flex justify-between items-center">
-            <h2 class="text-lg font-bold text-slate-900">Liste des Catégories</h2>
+        <div class="mb-6 flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="relative flex-1 min-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <input type="text" id="searchCategory" class="pl-10 form-input bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none transition-all" placeholder="Rechercher une catégorie (nom)..." onkeyup="filterCategories()">
+            </div>
             <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl text-sm px-6 py-2.5 shadow-sm transition-all flex items-center gap-2" onclick="openModal('addCategoryModal')">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                 Ajouter catégorie
@@ -796,12 +806,12 @@
         const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
         
         for (let row of rows) {
-            if (row.cells.length === 1) continue;
+            if (row.cells.length <= 1) continue;
             
             const productName = row.cells[0].textContent.toLowerCase();
             const barcode = row.cells[1].textContent.toLowerCase();
-            const category = row.cells[2].textContent.toLowerCase();
-            const statusBadge = row.cells[7].querySelector('.badge');
+            const category = row.cells[3].textContent.toLowerCase(); // Category is index 3 in Products table
+            const statusBadge = row.cells[8].querySelector('.badge'); // Status is index 8 in Products table
             const status = statusBadge ? statusBadge.textContent.trim() : '';
             
             const matchesSearch = productName.includes(searchTerm) || barcode.includes(searchTerm);
@@ -809,6 +819,43 @@
             const matchesStatus = !statusFilter || status === statusFilter;
             
             if (matchesSearch && matchesCategory && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function filterSuppliers() {
+        const searchTerm = document.getElementById('searchSupplier').value.toLowerCase();
+        const table = document.querySelector('#suppliers-tab table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            if (row.cells.length <= 1) continue;
+            
+            const name = row.cells[0].textContent.toLowerCase();
+            const contact = row.cells[1].textContent.toLowerCase();
+            
+            if (name.includes(searchTerm) || contact.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function filterCategories() {
+        const searchTerm = document.getElementById('searchCategory').value.toLowerCase();
+        const table = document.querySelector('#categories-tab table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            if (row.cells.length <= 1) continue;
+            
+            const name = row.cells[0].textContent.toLowerCase();
+            
+            if (name.includes(searchTerm)) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';

@@ -158,12 +158,14 @@
 
     <table class="meta-table">
         <tr>
-            <td>Ticket N° : {{ $receipt->receipt_number }}</td>
-            <td class="text-right">Date : {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
+            <td colspan="2">Ticket N° : {{ $receipt->receipt_number }}</td>
         </tr>
         <tr>
-            <td>Caisse : Principal</td>
-            <td class="text-right">Heure : {{ optional($receipt->printed_at)->format('H:i') }}</td>
+            <td colspan="2">Date : {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td>Heure : {{ optional($receipt->printed_at)->format('H:i') }}</td>
+            <td class="text-right">Caisse : Principal</td>
         </tr>
         <tr>
             <td colspan="2">Caissier : {{ $receipt->sale->cashier->name ?? 'Caissier' }}</td>

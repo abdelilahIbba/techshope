@@ -151,7 +151,14 @@
                                 </td>
                                 <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-semibold">{{ $product->category->name ?? 'N/A' }}</span></td>
                                 <td class="px-6 py-4">{{ $product->supplier->name ?? 'Non assigné' }}</td>
-                                <td class="px-6 py-4 font-extrabold text-slate-900">{{ $product->stock_quantity }}</td>
+                                <td class="px-6 py-4 font-extrabold text-slate-900">
+                                    @if($product->sell_by_length)
+                                        {{ number_format((float)$product->stock_quantity, 3) }}
+                                        <span class="ml-1 text-xs font-bold text-teal-600 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded">{{ $product->length_unit }}</span>
+                                    @else
+                                        {{ (int) $product->stock_quantity }}
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4">{{ number_format($product->purchase_price, 2) }} {{ $currencySymbol }}</td>
                                 <td class="px-6 py-4 font-bold text-blue-600">{{ number_format($product->sale_price, 2) }} {{ $currencySymbol }}</td>
                                 <td class="px-6 py-4">
@@ -397,9 +404,35 @@
                     </select>
                 </div>
             </div>
+            {{-- ── Unit de vente ── --}}
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale</label>
-                <input type="text" name="stock_quantity" id="stock_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none cursor-pointer" value="0" required readonly onclick="openNumericKeyboard('stock_quantity_input')">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Unité de vente</label>
+                <div class="flex gap-2" id="unit_type_toggle">
+                    <label id="btn_pcs" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold text-sm transition-all">
+                        <input type="radio" name="sell_by_length" id="sell_by_length_no" value="0" class="sr-only" checked onchange="onUnitTypeChange(false)">
+                        📦 Par pièce
+                    </label>
+                    <label id="btn_length" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                        <input type="radio" name="sell_by_length" id="sell_by_length_yes" value="1" class="sr-only" onchange="onUnitTypeChange(true)">
+                        📏 Par longueur (m/cm)
+                    </label>
+                </div>
+                {{-- Length unit selector - only shown when sell_by_length is true --}}
+                <div id="length_unit_selector" class="hidden mt-2">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Unité de longueur</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer px-3 py-2 rounded-lg border-2 border-teal-500 bg-teal-50 text-teal-700 font-bold text-sm" id="btn_unit_m">
+                            <input type="radio" name="length_unit" value="m" class="sr-only" checked onchange="setLengthBtnActive('m')"> 📐 Mètre (m)
+                        </label>
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer px-3 py-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm" id="btn_unit_cm">
+                            <input type="radio" name="length_unit" value="cm" class="sr-only" onchange="setLengthBtnActive('cm')"> 📏 Centimètre (cm)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale <span id="add_qty_unit_label" class="text-xs font-normal text-slate-400"></span></label>
+                <input type="number" step="0.001" name="stock_quantity" id="stock_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" value="0" required min="0">
             </div>
             <!-- Numeric Keyboard Modal -->
             <div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="numericKeyboardModal">
@@ -545,6 +578,32 @@
                     <input type="hidden" name="barcode" id="edit_product_barcode_hidden" value="">
                 </div>
             </div>
+
+            {{-- ── Unité de vente (Edit) ── --}}
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Unité de vente</label>
+                <div class="flex gap-2">
+                    <label id="edit_btn_pcs" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold text-sm transition-all">
+                        <input type="radio" name="sell_by_length" id="edit_sell_by_length_no" value="0" class="sr-only" checked onchange="onEditUnitTypeChange(false)">
+                        📦 Par pièce
+                    </label>
+                    <label id="edit_btn_length" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                        <input type="radio" name="sell_by_length" id="edit_sell_by_length_yes" value="1" class="sr-only" onchange="onEditUnitTypeChange(true)">
+                        📏 Par longueur (m/cm)
+                    </label>
+                </div>
+                <div id="edit_length_unit_selector" class="hidden mt-2">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Unité de longueur</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer px-3 py-2 rounded-lg border-2 border-teal-500 bg-teal-50 text-teal-700 font-bold text-sm" id="edit_btn_unit_m">
+                            <input type="radio" name="edit_length_unit" value="m" class="sr-only" checked onchange="setEditLengthBtnActive('m')"> 📐 Mètre (m)
+                        </label>
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer px-3 py-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm" id="edit_btn_unit_cm">
+                            <input type="radio" name="edit_length_unit" value="cm" class="sr-only" onchange="setEditLengthBtnActive('cm')"> 📏 Centimètre (cm)
+                        </label>
+                    </div>
+                </div>
+            </div>
             
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -607,8 +666,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité</label>
-                <input type="number" name="quantity" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-lg font-bold rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required min="0">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité <span id="adjust_qty_unit_label" class="text-xs font-normal text-slate-400"></span></label>
+                <input type="number" name="quantity" id="adjust_qty_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-lg font-bold rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required min="0" step="0.001">
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Motif (optionnel)</label>
@@ -756,6 +815,17 @@
         document.getElementById('edit_type_internal').checked = (barcodeType === 'internal');
         onEditBarcodeTypeChange(barcodeType);
 
+        // Set sell_by_length toggle
+        const sellByLength = !!product.sell_by_length;
+        document.getElementById('edit_sell_by_length_no').checked  = !sellByLength;
+        document.getElementById('edit_sell_by_length_yes').checked = sellByLength;
+        onEditUnitTypeChange(sellByLength);
+        if (sellByLength && product.length_unit) {
+            const lu = product.length_unit;
+            document.querySelector(`input[name="edit_length_unit"][value="${lu}"]`).checked = true;
+            setEditLengthBtnActive(lu);
+        }
+
         openModal('editProductModal');
     }
 
@@ -763,8 +833,26 @@
     function adjustStock(product) {
         document.getElementById('adjust_product_id').value = product.id;
         document.getElementById('adjust_product_name').value = product.name;
-        document.getElementById('adjust_current_stock').value = product.stock_quantity + ' unités';
+        const unit = product.sell_by_length ? product.length_unit : 'unités';
+        const stockFormatted = product.sell_by_length
+            ? parseFloat(product.stock_quantity).toFixed(3) + ' ' + unit
+            : Math.round(product.stock_quantity) + ' ' + unit;
+        document.getElementById('adjust_current_stock').value = stockFormatted;
         document.getElementById('adjustStockForm').action = BASE_ADJUST_STOCK + '/' + product.id;
+
+        // Update quantity label and step
+        const qtyLabel = document.getElementById('adjust_qty_unit_label');
+        const qtyInput = document.getElementById('adjust_qty_input');
+        if (product.sell_by_length) {
+            qtyLabel.textContent = '(' + unit + ')';
+            qtyInput.step = '0.001';
+            qtyInput.placeholder = 'Ex: 2.500';
+        } else {
+            qtyLabel.textContent = '';
+            qtyInput.step = '1';
+            qtyInput.placeholder = '';
+        }
+
         openModal('adjustStockModal');
     }
 
@@ -816,7 +904,115 @@
         }
     }
 
+<<<<<<< Updated upstream
     // Simple product lookup map for modal actions
+=======
+    function filterSuppliers() {
+        const searchTerm = document.getElementById('searchSupplier').value.toLowerCase();
+        const table = document.querySelector('#suppliers-tab table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            if (row.cells.length <= 1) continue;
+            
+            const name = row.cells[0].textContent.toLowerCase();
+            const contact = row.cells[1].textContent.toLowerCase();
+            
+            if (name.includes(searchTerm) || contact.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    function filterCategories() {
+        const searchTerm = document.getElementById('searchCategory').value.toLowerCase();
+        const table = document.querySelector('#categories-tab table');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        
+        for (let row of rows) {
+            if (row.cells.length <= 1) continue;
+            
+            const name = row.cells[0].textContent.toLowerCase();
+            
+            if (name.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
+    // ── Add Product: Unit Type Toggle ───────────────────────────────────────
+    function onUnitTypeChange(isByLength) {
+        const btnPcs    = document.getElementById('btn_pcs');
+        const btnLength = document.getElementById('btn_length');
+        const selector  = document.getElementById('length_unit_selector');
+        const qtyLabel  = document.getElementById('add_qty_unit_label');
+        const qtyInput  = document.getElementById('stock_quantity_input');
+
+        if (isByLength) {
+            btnPcs.className    = btnPcs.className.replace('border-blue-500 bg-blue-50 text-blue-700', 'border-slate-200 bg-slate-50 text-slate-500');
+            btnLength.className = btnLength.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-blue-500 bg-blue-50 text-blue-700');
+            selector.classList.remove('hidden');
+            const checkedUnit = document.querySelector('input[name="length_unit"]:checked');
+            qtyLabel.textContent = checkedUnit ? '(' + checkedUnit.value + ')' : '(m)';
+            qtyInput.step = '0.001';
+            qtyInput.placeholder = 'Ex: 50.500';
+        } else {
+            btnPcs.className    = btnPcs.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-blue-500 bg-blue-50 text-blue-700');
+            btnLength.className = btnLength.className.replace('border-blue-500 bg-blue-50 text-blue-700', 'border-slate-200 bg-slate-50 text-slate-500');
+            selector.classList.add('hidden');
+            qtyLabel.textContent = '';
+            qtyInput.step = '1';
+            qtyInput.placeholder = '';
+        }
+    }
+
+    function setLengthBtnActive(unit) {
+        const btnM  = document.getElementById('btn_unit_m');
+        const btnCm = document.getElementById('btn_unit_cm');
+        const qtyLabel = document.getElementById('add_qty_unit_label');
+        if (unit === 'm') {
+            btnM.className  = btnM.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-teal-500 bg-teal-50 text-teal-700');
+            btnCm.className = btnCm.className.replace('border-teal-500 bg-teal-50 text-teal-700', 'border-slate-200 bg-slate-50 text-slate-500');
+            qtyLabel.textContent = '(m)';
+        } else {
+            btnCm.className = btnCm.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-teal-500 bg-teal-50 text-teal-700');
+            btnM.className  = btnM.className.replace('border-teal-500 bg-teal-50 text-teal-700', 'border-slate-200 bg-slate-50 text-slate-500');
+            qtyLabel.textContent = '(cm)';
+        }
+    }
+
+    // ── Edit Product: Unit Type Toggle ──────────────────────────────────────
+    function onEditUnitTypeChange(isByLength) {
+        const btnPcs    = document.getElementById('edit_btn_pcs');
+        const btnLength = document.getElementById('edit_btn_length');
+        const selector  = document.getElementById('edit_length_unit_selector');
+        if (isByLength) {
+            btnPcs.className    = btnPcs.className.replace('border-blue-500 bg-blue-50 text-blue-700', 'border-slate-200 bg-slate-50 text-slate-500');
+            btnLength.className = btnLength.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-blue-500 bg-blue-50 text-blue-700');
+            selector.classList.remove('hidden');
+        } else {
+            btnPcs.className    = btnPcs.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-blue-500 bg-blue-50 text-blue-700');
+            btnLength.className = btnLength.className.replace('border-blue-500 bg-blue-50 text-blue-700', 'border-slate-200 bg-slate-50 text-slate-500');
+            selector.classList.add('hidden');
+        }
+    }
+
+    function setEditLengthBtnActive(unit) {
+        const btnM  = document.getElementById('edit_btn_unit_m');
+        const btnCm = document.getElementById('edit_btn_unit_cm');
+        if (unit === 'm') {
+            btnM.className  = btnM.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-teal-500 bg-teal-50 text-teal-700 font-bold');
+            btnCm.className = btnCm.className.replace('border-teal-500 bg-teal-50 text-teal-700 font-bold', 'border-slate-200 bg-slate-50 text-slate-500');
+        } else {
+            btnCm.className = btnCm.className.replace('border-slate-200 bg-slate-50 text-slate-500', 'border-teal-500 bg-teal-50 text-teal-700 font-bold');
+            btnM.className  = btnM.className.replace('border-teal-500 bg-teal-50 text-teal-700 font-bold', 'border-slate-200 bg-slate-50 text-slate-500');
+        }
+    }
+>>>>>>> Stashed changes
     @php
         $products_for_js = $products->map(function($p) {
             return [
@@ -824,8 +1020,13 @@
                 'name'           => $p->name,
                 'barcode'        => $p->barcode,
                 'barcode_type'   => $p->barcode_type ?? 'internal',
-                'stock_quantity' => $p->stock_quantity,
+                'stock_quantity' => (float) $p->stock_quantity,
                 'sale_price'     => $p->sale_price,
+                'sell_by_length' => (bool) $p->sell_by_length,
+                'length_unit'    => $p->length_unit,
+                'category_id'    => $p->category_id,
+                'supplier_id'    => $p->supplier_id,
+                'purchase_price' => $p->purchase_price,
             ];
         });
     @endphp
@@ -855,24 +1056,31 @@
         return changed ? corrected : null; // returns null if no change needed
     }
 
-    // Apply to Add Product barcode input
+    // Apply to inputs where barcode scanners might be used
     document.addEventListener('DOMContentLoaded', function () {
-        const addBarcodeInput = document.getElementById('add_barcode_input');
-        if (addBarcodeInput) {
-            addBarcodeInput.addEventListener('input', function () {
-                const corrected = applyAzertyMap(this.value);
-                if (corrected !== null) this.value = corrected;
-            });
-        }
+        const inputsToCorrect = [
+            'add_barcode_input',
+            'edit_product_barcode',
+            'searchProduct',
+            'searchSupplier',
+            'searchCategory'
+        ];
 
-        // Apply to Edit Product barcode input
-        const editBarcodeInput = document.getElementById('edit_product_barcode');
-        if (editBarcodeInput) {
-            editBarcodeInput.addEventListener('input', function () {
-                const corrected = applyAzertyMap(this.value);
-                if (corrected !== null) this.value = corrected;
-            });
-        }
+        inputsToCorrect.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', function () {
+                    const corrected = applyAzertyMap(this.value);
+                    if (corrected !== null) {
+                        this.value = corrected;
+                        // For search inputs, trigger the filter function manually since we changed the value
+                        if (id === 'searchProduct') filterProducts();
+                        if (id === 'searchSupplier') filterSuppliers();
+                        if (id === 'searchCategory') filterCategories();
+                    }
+                });
+            }
+        });
     });
 
     // ── Barcode type toggle for ADD PRODUCT modal ──────────────────────

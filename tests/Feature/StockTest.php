@@ -31,16 +31,40 @@ test('admin can add a product', function () {
     $category = Category::query()->create(['name' => 'Paint', 'description' => '']);
 
     $this->actingAs($admin)->post(route('pos.stock.add-product'), [
-        'name'           => 'White Paint 5L',
+        'name'           => 'White Paint 5.5L',
         'barcode'        => '555001',
         'category_id'    => $category->id,
-        'stock_quantity' => 50,
+        'stock_quantity' => 50.5,
         'purchase_price' => 100.00,
         'sale_price'     => 130.00,
     ])->assertRedirect(route('pos.stock'))
       ->assertSessionHas('success');
 
-    expect(Product::query()->where('barcode', '555001')->exists())->toBeTrue();
+    $product = Product::query()->where('barcode', '555001')->first();
+    expect($product)->not->toBeNull();
+    expect((float)$product->stock_quantity)->toBe(50.5);
+});
+
+test('admin can add a length-based product (meters)', function () {
+    $admin    = userWithRole('Admin');
+    $category = Category::query()->create(['name' => 'Hardware', 'description' => '']);
+
+    $this->actingAs($admin)->post(route('pos.stock.add-product'), [
+        'name'           => 'Aluminum Profile',
+        'barcode'        => 'ALU001',
+        'category_id'    => $category->id,
+        'stock_quantity' => 100.25,
+        'purchase_price' => 20.00,
+        'sale_price'     => 35.00,
+        'sell_by_length' => 1,
+        'length_unit'    => 'm',
+    ])->assertRedirect(route('pos.stock'));
+
+    $product = Product::query()->where('barcode', 'ALU001')->first();
+    expect($product->sell_by_length)->toBeTrue();
+    expect($product->length_unit)->toBe('m');
+    expect($product->unit)->toBe('m');
+    expect((float)$product->stock_quantity)->toBe(100.25);
 });
 
 test('add product auto-generates barcode when omitted', function () {
@@ -122,11 +146,11 @@ test('admin can add to stock quantity', function () {
 
     $this->actingAs($admin)->post(route('pos.stock.adjust-stock', $product), [
         'adjustment_type' => 'add',
-        'quantity'        => 20,
+        'quantity'        => 20.5,
     ])->assertRedirect(route('pos.stock'))
       ->assertSessionHas('success');
 
-    expect($product->fresh()->stock_quantity)->toBe(30);
+    expect((float)$product->fresh()->stock_quantity)->toBe(30.5);
 });
 
 test('admin can remove from stock quantity', function () {
@@ -142,7 +166,7 @@ test('admin can remove from stock quantity', function () {
         'quantity'        => 5,
     ]);
 
-    expect($product->fresh()->stock_quantity)->toBe(15);
+    expect((float)$product->fresh()->stock_quantity)->toBe(15.0);
 });
 
 test('removing more than available stock sets quantity to zero', function () {
@@ -158,7 +182,7 @@ test('removing more than available stock sets quantity to zero', function () {
         'quantity'        => 100,
     ]);
 
-    expect($product->fresh()->stock_quantity)->toBe(0);
+    expect((float)$product->fresh()->stock_quantity)->toBe(0.0);
 });
 
 test('admin can set stock to an absolute value', function () {
@@ -174,7 +198,7 @@ test('admin can set stock to an absolute value', function () {
         'quantity'        => 42,
     ]);
 
-    expect($product->fresh()->stock_quantity)->toBe(42);
+    expect((float)$product->fresh()->stock_quantity)->toBe(42.0);
 });
 
 // ─── Suppliers ────────────────────────────────────────────────────────────────

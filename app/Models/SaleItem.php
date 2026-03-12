@@ -15,6 +15,12 @@ class SaleItem extends Model
         'subtotal',
     ];
 
+    protected $casts = [
+        'quantity'   => 'decimal:3',
+        'unit_price' => 'decimal:2',
+        'subtotal'   => 'decimal:2',
+    ];
+
     public function sale(): BelongsTo
     {
         return $this->belongsTo(Sale::class);

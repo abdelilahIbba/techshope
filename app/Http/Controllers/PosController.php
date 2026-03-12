@@ -207,7 +207,7 @@ class PosController extends Controller
             ->with([
                 'products' => function ($query) {
                     $query
-                        ->select('id', 'name', 'barcode', 'sale_price', 'stock_quantity', 'category_id')
+                        ->select('id', 'name', 'barcode', 'purchase_price', 'sale_price', 'stock_quantity', 'category_id')
                         ->orderBy('name');
                 },
             ])
@@ -245,16 +245,24 @@ class PosController extends Controller
     public function addProduct(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'barcode' => ['nullable', 'string', 'unique:products,barcode'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'supplier_id' => ['nullable', 'exists:suppliers,id'],
-            'stock_quantity' => ['required', 'integer', 'min:0'],
+            'name'           => ['required', 'string', 'max:255'],
+            'barcode'        => ['nullable', 'string', 'unique:products,barcode'],
+            'category_id'    => ['required', 'exists:categories,id'],
+            'supplier_id'    => ['nullable', 'exists:suppliers,id'],
+            'stock_quantity' => ['required', 'numeric', 'min:0'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'sale_price' => ['required', 'numeric', 'min:0'],
+            'sale_price'     => ['required', 'numeric', 'min:0'],
+            'sell_by_length' => ['nullable', 'boolean'],
+            'length_unit'    => ['nullable', 'in:m,cm'],
         ]);
 
-        $validated['unit'] = 'unité';
+        $sellByLength = (bool) ($validated['sell_by_length'] ?? false);
+        $lengthUnit   = $sellByLength ? ($validated['length_unit'] ?? 'm') : null;
+
+        // Set the display unit
+        $validated['unit'] = $sellByLength ? $lengthUnit : 'unité';
+        $validated['sell_by_length'] = $sellByLength;
+        $validated['length_unit']    = $lengthUnit;
 
         // Auto-generate barcode if not provided
         if (empty($validated['barcode'])) {
@@ -263,9 +271,8 @@ class PosController extends Controller
 
         $product = Product::query()->create($validated);
 
-        // After creation, redirect back and pass the new product id to allow printing
         return redirect()->route('pos.stock')->with([
-            'success' => 'Produit ajouté avec succès!',
+            'success'        => 'Produit ajouté avec succès!',
             'new_product_id' => $product->id,
         ]);
     }
@@ -322,13 +329,22 @@ class PosController extends Controller
     public function editProduct(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'barcode' => ['required', 'string', 'unique:products,barcode,' . $product->id],
-            'category_id' => ['required', 'exists:categories,id'],
-            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'name'           => ['required', 'string', 'max:255'],
+            'barcode'        => ['required', 'string', 'unique:products,barcode,' . $product->id],
+            'category_id'    => ['required', 'exists:categories,id'],
+            'supplier_id'    => ['nullable', 'exists:suppliers,id'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'sale_price' => ['required', 'numeric', 'min:0'],
+            'sale_price'     => ['required', 'numeric', 'min:0'],
+            'sell_by_length' => ['nullable', 'boolean'],
+            'length_unit'    => ['nullable', 'in:m,cm'],
         ]);
+
+        $sellByLength = (bool) ($validated['sell_by_length'] ?? false);
+        $lengthUnit   = $sellByLength ? ($validated['length_unit'] ?? 'm') : null;
+
+        $validated['unit']           = $sellByLength ? $lengthUnit : 'unité';
+        $validated['sell_by_length'] = $sellByLength;
+        $validated['length_unit']    = $lengthUnit;
 
         $product->update($validated);
 
@@ -346,28 +362,32 @@ class PosController extends Controller
     {
         $validated = $request->validate([
             'adjustment_type' => ['required', 'in:add,remove,set'],
-            'quantity' => ['required', 'integer', 'min:0'],
-            'reason' => ['nullable', 'string', 'max:255'],
+            'quantity'        => ['required', 'numeric', 'min:0'],
+            'reason'          => ['nullable', 'string', 'max:255'],
         ]);
 
-        $currentStock = $product->stock_quantity;
-        $newStock = $currentStock;
+        $currentStock = (float) $product->stock_quantity;
+        $qty          = (float) $validated['quantity'];
+        $newStock     = $currentStock;
 
         switch ($validated['adjustment_type']) {
             case 'add':
-                $newStock = $currentStock + $validated['quantity'];
+                $newStock = $currentStock + $qty;
                 break;
             case 'remove':
-                $newStock = max(0, $currentStock - $validated['quantity']);
+                $newStock = max(0, $currentStock - $qty);
                 break;
             case 'set':
-                $newStock = $validated['quantity'];
+                $newStock = $qty;
                 break;
         }
 
         $product->update(['stock_quantity' => $newStock]);
 
-        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . $newStock . ' unités');
+        $unit   = $product->sell_by_length ? $product->length_unit : 'unités';
+        $label  = number_format($newStock, $product->sell_by_length ? 3 : 0);
+
+        return redirect()->route('pos.stock')->with('success', "Stock ajusté avec succès! Nouveau stock: {$label} {$unit}");
     }
 
     public function editSupplier(Request $request, Supplier $supplier)
@@ -774,24 +794,27 @@ class PosController extends Controller
         }
 
         return response()->json([
-            'id' => $product->id,
-            'name' => $product->name,
-            'barcode' => $product->barcode,
-            'category_id' => $product->category_id,
-            'price' => (float) ($product->sale_price ?? $product->price ?? 0),
-            'stock_quantity' => $product->stock_quantity,
+            'id'             => $product->id,
+            'name'           => $product->name,
+            'barcode'        => $product->barcode,
+            'category_id'    => $product->category_id,
+            'price'          => (float) ($product->sale_price ?? $product->price ?? 0),
+            'purchase_price' => (float) ($product->purchase_price ?? 0),
+            'stock_quantity' => (float) $product->stock_quantity,
+            'sell_by_length' => (bool)  $product->sell_by_length,
+            'length_unit'    => $product->length_unit,
         ]);
     }
 
     public function checkout(Request $request)
     {
         $validated = $request->validate([
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.barcode' => ['required', 'string'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.price' => ['required', 'numeric', 'min:0'],
-            'payment_method' => ['nullable', 'string', 'max:255'],
-            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'items'            => ['required', 'array', 'min:1'],
+            'items.*.barcode'  => ['required', 'string'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'items.*.price'    => ['required', 'numeric', 'min:0'],
+            'payment_method'   => ['nullable', 'string', 'max:255'],
+            'customer_id'      => ['nullable', 'integer', 'exists:customers,id'],
         ]);
 
         $customerId = $validated['customer_id'] ?? Customer::query()->value('id');
@@ -816,9 +839,9 @@ class PosController extends Controller
                     abort(422, 'Product not found for barcode: ' . $item['barcode']);
                 }
 
-                $quantity = (int) $item['quantity'];
+                $quantity = (float) $item['quantity'];
 
-                if ($product->stock_quantity < $quantity) {
+                if ((float) $product->stock_quantity < $quantity) {
                     abort(422, 'Insufficient stock for: ' . $product->name);
                 }
 
@@ -885,7 +908,8 @@ class PosController extends Controller
         $lines = [];
         $lines[] = "";
         $lines[] = str_pad('D3 ALLOUCHE', $w, ' ', STR_PAD_BOTH);
-        $lines[] = str_pad('Quincaillerie & Articles de', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('Quincaillerie & Articles', $w, ' ', STR_PAD_BOTH);
+        $lines[] = str_pad('de bricolage', $w, ' ', STR_PAD_BOTH);
         $lines[] = str_pad('rue AHMED AL MOKRI', $w, ' ', STR_PAD_BOTH);
         $lines[] = str_pad('Tél: +212 6699112486', $w, ' ', STR_PAD_BOTH);
         $lines[] = $divider;
@@ -894,8 +918,9 @@ class PosController extends Controller
         $timeStr = optional($receipt->printed_at)->format('H:i') ?? now()->format('H:i');
         $cashierName = $receipt->sale->cashier->name ?? 'Précisé';
 
-        $lines[] = str_pad("Ticket N° : " . $receipt->receipt_number, 24) . str_pad("Date : " . $dateStr, 18, ' ', STR_PAD_LEFT);
-        $lines[] = str_pad("Caisse : Principal", 24) . str_pad("Heure : " . $timeStr, 18, ' ', STR_PAD_LEFT);
+        $lines[] = "Ticket N° : " . $receipt->receipt_number;
+        $lines[] = "Date : " . $dateStr . "   Heure : " . $timeStr;
+        $lines[] = "Caisse : Principal";
         $lines[] = "Caissier : " . $cashierName;
         $lines[] = $divider;
 

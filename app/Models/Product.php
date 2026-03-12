@@ -19,6 +19,15 @@ class Product extends Model
         'sale_price',
         'stock_quantity',
         'unit',
+        'sell_by_length',
+        'length_unit',
+    ];
+
+    protected $casts = [
+        'sell_by_length'  => 'boolean',
+        'stock_quantity'  => 'decimal:3',
+        'purchase_price'  => 'decimal:2',
+        'sale_price'      => 'decimal:2',
     ];
 
     public function saleItems(): HasMany

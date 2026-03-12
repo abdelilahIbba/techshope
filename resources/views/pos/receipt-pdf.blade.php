@@ -53,6 +53,7 @@
         }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
+        .text-rightt { text-align: left; }
 
         /* جدول المنتجات */
         .items-table { 
@@ -135,15 +136,15 @@
 
     <table class="meta-table">
         <tr>
-            <td>
-                <strong>Ticket N° :</strong> {{ $receipt->receipt_number }}<br>
-                <strong>Caisse :</strong> Principal<br>
-                <strong>Caissier :</strong> {{ $receipt->sale->cashier->name ?? 'Caissier' }}
-            </td>
-            <td class="text-right">
-                <strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}<br>
-                <strong>Heure :</strong> {{ optional($receipt->printed_at)->format('H:i') }}
-            </td>
+            <td colspan="2"><strong>Ticket N° :</strong> {{ $receipt->receipt_number }}</td>
+        </tr>
+        <tr>
+            <td class="text-rightt"><strong>Date :</strong> {{ optional($receipt->printed_at)->format('d/m/Y') }}</td>
+            <td class="text-right"><strong>Heure :</strong> {{ optional($receipt->printed_at)->format('H:i') }}</td>
+        </tr>
+        <tr>
+            <td><strong>Caisse :</strong> Principal</td>
+            <td class="text-right"><strong>Caissier :</strong> {{ $receipt->sale->cashier->name ?? 'Caissier' }}</td>
         </tr>
     </table>
 

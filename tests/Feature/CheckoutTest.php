@@ -22,7 +22,7 @@ beforeEach(function () {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeProduct(string $barcode = 'PROD001', int $stock = 100, float $price = 15.0): Product
+function makeProduct(string $barcode = 'PROD001', float $stock = 100, float $price = 15.0): Product
 {
     $category = Category::query()->firstOrCreate(['name' => 'Test Category'], ['description' => '']);
     return Product::query()->create([
@@ -91,15 +91,42 @@ test('checkout creates a sale, sale items and a receipt', function () {
 
 test('checkout decrements product stock', function () {
     $admin    = userWithRole('Admin');
-    $product  = makeProduct('CHK002', 50, 10.0);
+    $product  = makeProduct('CHK002', 50.5, 10.0);
     $customer = makeCustomer();
 
     $this->actingAs($admin)->post(route('pos.checkout'), [
-        'items'       => [['barcode' => 'CHK002', 'quantity' => 5, 'price' => 10.0]],
+        'items'       => [['barcode' => 'CHK002', 'quantity' => 2.5, 'price' => 10.0]],
         'customer_id' => $customer->id,
     ]);
 
-    expect($product->fresh()->stock_quantity)->toBe(45);
+    expect((float)$product->fresh()->stock_quantity)->toBe(48.0);
+});
+
+test('checkout handles length-based products correctly', function () {
+    $admin    = userWithRole('Admin');
+    $category = Category::query()->create(['name' => 'Hardware', 'description' => '']);
+    $product  = Product::query()->create([
+        'name'           => 'Edge Banding',
+        'barcode'        => 'EDGE001',
+        'category_id'    => $category->id,
+        'stock_quantity' => 100.0,
+        'purchase_price' => 5.0,
+        'sale_price'     => 10.0,
+        'sell_by_length' => true,
+        'length_unit'    => 'm',
+        'unit'           => 'm',
+    ]);
+    $customer = makeCustomer();
+
+    $this->actingAs($admin)->post(route('pos.checkout'), [
+        'items'       => [['barcode' => 'EDGE001', 'quantity' => 12.75, 'price' => 10.0]],
+        'customer_id' => $customer->id,
+    ]);
+
+    expect((float)$product->fresh()->stock_quantity)->toBe(87.25);
+    $saleItem = SaleItem::query()->where('product_id', $product->id)->first();
+    expect((float)$saleItem->quantity)->toBe(12.75);
+    expect((float)$saleItem->subtotal)->toBe(127.5);
 });
 
 test('checkout calculates total amount correctly', function () {
@@ -207,7 +234,7 @@ test('checkout with insufficient stock aborts with 422', function () {
     ]);
 
     $response->assertStatus(422);
-    expect($product->fresh()->stock_quantity)->toBe(3); // untouched
+    expect((float)$product->fresh()->stock_quantity)->toBe(3.0); // untouched
 });
 
 test('checkout fails validation when items array is empty', function () {

@@ -62,15 +62,13 @@
                 'name' => $category->name,
                 'products' => $category->products->map(function ($product) {
                     return [
-                        'id'             => $product->id,
-                        'name'           => $product->name,
-                        'barcode'        => $product->barcode,
-                        'category_id'    => $product->category_id,
-                        'price'          => (float) ($product->sale_price ?? $product->price ?? 0),
-                        'purchase_price' => (float) ($product->purchase_price ?? 0),
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'barcode' => $product->barcode,
+                        'category_id' => $product->category_id,
+                        'price' => (float) ($product->sale_price ?? $product->price ?? 0),
                         'stock_quantity' => (float) $product->stock_quantity,
-                        'sell_by_length' => (bool) $product->sell_by_length,
-                        'length_unit'    => $product->length_unit,
+                        'unit' => $product->unit ?? 'unité',
                     ];
                 })->values(),
             ];
@@ -183,13 +181,12 @@
                             placeholder="Scanner ou rechercher..." autofocus>
                     </div>
 
-                    <div class="flex items-center relative w-36 group">
+                    <div class="flex items-center relative w-28 group">
                         <div
                             class="absolute left-3 text-xs font-bold text-muted-foreground/70 group-focus-within:text-indigo-600 pointer-events-none z-10 transition-colors">
                             QTÉ</div>
                         <input id="scan-quantity" type="number" min="0.001" step="0.001" value="1"
                             class="w-full h-12 pl-10 pr-2 bg-muted/20/50 border border-border rounded-2xl text-center font-bold text-card-foreground focus:ring-2 focus:ring-indigo-500 focus:bg-card focus:border-transparent outline-none transition-all">
-                        <span id="scan-qty-unit" class="absolute right-3 text-[10px] font-bold text-teal-600 pointer-events-none hidden"></span>
                     </div>
 
                     <button type="button" id="scan-btn"
@@ -417,13 +414,13 @@
                 // Modern Product Card
                 card.className = 'group bg-card border border-border/60 rounded-3xl p-4 flex flex-col gap-2 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none h-44';
 
+                let isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
+                let stockFormatted = isLengthProduct ? Number(product.stock_quantity).toFixed(3) : Math.floor(product.stock_quantity);
                 let stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
-                const unitLabel = product.sell_by_length ? product.length_unit : '';
-                const stockDisplay = product.sell_by_length
-                    ? product.stock_quantity.toFixed(3) + ' ' + unitLabel
-                    : product.stock_quantity;
-                let stockText = product.stock_quantity > 5 ? `En stock: ${stockDisplay}` : `Faible: ${stockDisplay}`;
-                const lengthBadge = product.sell_by_length ? `<span class="inline-block ml-1 bg-teal-100 text-teal-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-teal-200 uppercase">${product.length_unit}</span>` : '';
+                let stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
+                let unitBadge = '';
+                if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📏 m</span>';
+                if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📐 cm</span>';
 
                 card.innerHTML = `
                 <!-- Hover Add Icon (Top Left for LTR, Top Right for RTL visual balance) -->
@@ -436,10 +433,11 @@
                 <!-- Product Content -->
                 <div class="flex-1 flex flex-col relative z-0">
                     <!-- Title with auto-RTL detection support via CSS dir=auto typically, but here we enforce right align if arabic? No, let's keep it standard but give breathing room -->
-                    <div class="product-name font-bold text-card-foreground text-[16px] leading-[1.3] line-clamp-2 h-[2.6em] mb-1" dir="auto">${product.name}${lengthBadge}</div>
+                    <div class="product-name font-bold text-card-foreground text-[16px] leading-[1.3] line-clamp-2 h-[2.6em] mb-1" dir="auto">${product.name}</div>
                     
                     <div class="flex items-center gap-2 mt-auto">
                         <div class="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 truncate max-w-[120px]">${product.barcode}</div>
+                        ${unitBadge}
                     </div>
                 </div>
                 
@@ -457,8 +455,8 @@
                     </div>
                 </div>
 
-                <!-- Cart Quantity Badge (Top Left to avoid overlapping add button or price) -->
-                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${cartQty}</div>` : ''}
+                <!-- Cart Quantity Badge -->
+                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${isLengthProduct ? cartQty.toFixed(1) : cartQty}</div>` : ''}
             `;
 
                 card.addEventListener('click', () => {
@@ -471,38 +469,41 @@
 
         function addProductToCart(product, quantityToAdd) {
             const currentQuantity = cart[product.barcode]?.quantity || 0;
-            const nextQuantity = parseFloat((currentQuantity + quantityToAdd).toFixed(3));
+            const nextQuantity = currentQuantity + quantityToAdd;
 
             if (nextQuantity > product.stock_quantity) {
+                // Toast notification instead of alert could be better, but sticking to alert for simplicity unless upgrade desired
                 alert('Stock insuffisant !');
                 return;
             }
 
             cart[product.barcode] = {
-                barcode:         product.barcode,
-                name:            product.name,
-                price:           Number(product.price),
-                purchase_price:  Number(product.purchase_price),
-                unit_price:      Number(product.price),
-                quantity:        nextQuantity,
-                stock_quantity:  product.stock_quantity,
-                category_id:     product.category_id,
-                sell_by_length:  product.sell_by_length || false,
-                length_unit:     product.length_unit || null,
+                barcode: product.barcode,
+                name: product.name,
+                price: Number(product.price),
+                unit_price: Number(product.price), // Custom price (editable)
+                quantity: nextQuantity,
+                stock_quantity: product.stock_quantity,
+                category_id: product.category_id,
+                unit: product.unit || 'unité',
             };
 
             renderCart();
-            renderProducts();
+            renderProducts(); // To update badges
         }
 
         function changeQuantity(barcode, delta) {
             const item = cart[barcode];
-            if (!item) return;
 
-            // For length products, delta is 0.1 or -0.1 (10cm step)
-            const step = item.sell_by_length ? 0.1 : 1;
-            const actualDelta = delta > 0 ? step : -step;
-            const nextQuantity = parseFloat((item.quantity + actualDelta).toFixed(3));
+            if (!item) {
+                return;
+            }
+
+            const isLength = item.unit === 'metre' || item.unit === 'cm';
+            const defaultDelta = isLength ? 0.1 : 1;
+            const finalDelta = typeof delta === 'number' ? delta : defaultDelta;
+            
+            const nextQuantity = Math.max(0, item.quantity + finalDelta);
 
             if (nextQuantity <= 0) {
                 delete cart[barcode];
@@ -510,7 +511,7 @@
                 alert('Stock limite atteint');
                 return;
             } else {
-                item.quantity = nextQuantity;
+                item.quantity = Number(nextQuantity.toFixed(3));
             }
 
             renderCart();
@@ -565,10 +566,6 @@
                 const row = document.createElement('tr');
                 const lineTotal = item.unit_price * item.quantity;
                 total += lineTotal;
-                const unitLabel = item.sell_by_length ? item.length_unit : '';
-                const qtyDisplay = item.sell_by_length ? item.quantity.toFixed(3) + ' ' + unitLabel : item.quantity;
-                const qtyStep   = item.sell_by_length ? '0.001' : '1';
-                const qtyMin    = item.sell_by_length ? '0.001' : '1';
 
                 // Updated Cart Item Design
                 row.className = 'flex items-center gap-3 p-3 bg-card border border-border/60 rounded-2xl mb-2 hover:border-primary/30 hover:shadow-md transition-all group';
@@ -576,15 +573,12 @@
 
                 row.innerHTML = `
                 <div class="flex-1 min-w-0">
-                    <div class="font-bold text-sm text-card-foreground truncate">${item.name}${ item.sell_by_length ? ` <span class="text-[9px] font-bold bg-teal-100 text-teal-700 px-1 py-0.5 rounded">${item.length_unit}</span>` : ''}</div>
-                    <div class="flex items-center gap-2 mt-1">
-                         <input type="number" class="price-input w-20 bg-gray-50 border border-gray-200 text-center font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 rounded-lg text-[11px] py-1" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
-                         <div class="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-500 flex items-center gap-1" title="Prix d'achat">
-                            <span>Origine:</span>
-                            <span class="text-indigo-500">${item.purchase_price.toFixed(2)}</span>
-                         </div>
-                         <div class="text-[10px] text-muted-foreground/70 font-mono tracking-wider">${item.barcode}</div>
-                    </div>
+                    <div class="font-bold text-sm text-card-foreground truncate">${item.name}</div>
+                     <div class="flex items-center gap-2 mt-1">
+                          <input type="number" class="price-input w-20 bg-gray-50 border border-gray-200 text-center font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 rounded-lg text-[11px] py-1" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
+                          <div class="text-[10px] text-muted-foreground/70 font-mono tracking-wider">${item.barcode}</div>
+                          ${item.unit === 'metre' ? '<span class="text-[9px] bg-amber-50 text-amber-600 font-bold px-1 rounded border border-amber-100/50">📏 m</span>' : (item.unit === 'cm' ? '<span class="text-[9px] bg-cyan-50 text-cyan-600 font-bold px-1 rounded border border-cyan-100/50">📐 cm</span>' : '')}
+                     </div>
                 </div>
                 
                 <div class="flex flex-col items-end gap-1">
@@ -594,7 +588,10 @@
                         <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-red-500 transition-colors qty-minus">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
                         </button>
-                        <input type="number" class="qty-direct-input text-xs font-bold w-14 text-center text-slate-700 bg-transparent outline-none" value="${item.quantity}" min="${qtyMin}" step="${qtyStep}" data-barcode="${item.barcode}">
+                        <input type="number" class="qty-direct-input text-[11px] font-bold w-14 text-center text-indigo-700 bg-indigo-50/50 border border-indigo-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-400 py-0.5" 
+                                  step="0.001" min="0.001" 
+                                  max="${item.stock_quantity}" 
+                                  value="${item.unit === 'unité' ? item.quantity : item.quantity}">
                         <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-green-600 transition-colors qty-plus">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                         </button>
@@ -605,19 +602,6 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
             `;
-
-                // Handle quantity direct input  
-                const qtyDirectInput = row.querySelector('.qty-direct-input');
-                qtyDirectInput.addEventListener('change', (e) => {
-                    const newQty = parseFloat(e.target.value);
-                    if (!isNaN(newQty) && newQty > 0 && newQty <= item.stock_quantity) {
-                        item.quantity = parseFloat(newQty.toFixed(3));
-                        renderCart();
-                        renderProducts();
-                    } else {
-                        e.target.value = item.quantity; // revert
-                    }
-                });
 
                 // Handle price input changes
                 const priceInput = row.querySelector('.price-input');
@@ -643,8 +627,47 @@
                     barcodeInput.blur();
                 });
 
-                row.querySelector('.qty-minus').addEventListener('click', () => changeQuantity(item.barcode, -1));
-                row.querySelector('.qty-plus').addEventListener('click', () => changeQuantity(item.barcode, 1));
+                row.querySelector('.qty-minus').addEventListener('click', () => {
+                    const delta = (item.unit === 'metre' || item.unit === 'cm') ? -0.1 : -1;
+                    changeQuantity(item.barcode, delta);
+                });
+                row.querySelector('.qty-plus').addEventListener('click', () => {
+                    const delta = (item.unit === 'metre' || item.unit === 'cm') ? 0.1 : 1;
+                    changeQuantity(item.barcode, delta);
+                });
+
+                // Handle direct quantity input
+                const directInput = row.querySelector('.qty-direct-input');
+                if (directInput) {
+                    directInput.addEventListener('change', () => {
+                        const newQty = parseFloat(parseFloat(directInput.value).toFixed(3));
+                        
+                        if (isNaN(newQty) || newQty <= 0) {
+                            delete cart[item.barcode];
+                        } else if (newQty > item.stock_quantity) {
+                            alert(`Stock insuffisant! Max: ${item.stock_quantity}`);
+                            directInput.value = item.quantity;
+                            return;
+                        } else {
+                            item.quantity = newQty;
+                        }
+                        renderCart();
+                        renderProducts();
+                    });
+
+                    // Prevent scanner focus
+                    directInput.addEventListener('focus', () => {
+                        barcodeInput.blur();
+                    });
+                    
+                    // Allow Enter key to trigger change and blur
+                    directInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            directInput.blur();
+                        }
+                    });
+                }
+
                 row.querySelector('.qty-remove').addEventListener('click', () => {
                     delete cart[item.barcode];
                     renderCart();
@@ -681,7 +704,9 @@
             const barcode = barcodeInput.value.trim();
             const quantity = parseFloat(scanQuantityInput.value) || 1;
 
-            if (!barcode) return;
+            if (!barcode) {
+                return;
+            }
 
             scanBtn.innerHTML = `
             <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

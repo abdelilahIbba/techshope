@@ -67,7 +67,8 @@
                         'barcode' => $product->barcode,
                         'category_id' => $product->category_id,
                         'price' => (float) ($product->sale_price ?? $product->price ?? 0),
-                        'stock_quantity' => (int) $product->stock_quantity,
+                        'stock_quantity' => (float) $product->stock_quantity,
+                        'unit' => $product->unit ?? 'unité',
                     ];
                 })->values(),
             ];
@@ -184,7 +185,7 @@
                         <div
                             class="absolute left-3 text-xs font-bold text-muted-foreground/70 group-focus-within:text-indigo-600 pointer-events-none z-10 transition-colors">
                             QTÉ</div>
-                        <input id="scan-quantity" type="number" min="1" value="1"
+                        <input id="scan-quantity" type="number" min="0.001" step="0.001" value="1"
                             class="w-full h-12 pl-10 pr-2 bg-muted/20/50 border border-border rounded-2xl text-center font-bold text-card-foreground focus:ring-2 focus:ring-indigo-500 focus:bg-card focus:border-transparent outline-none transition-all">
                     </div>
 
@@ -413,8 +414,13 @@
                 // Modern Product Card
                 card.className = 'group bg-card border border-border/60 rounded-3xl p-4 flex flex-col gap-2 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none h-44';
 
+                let isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
+                let stockFormatted = isLengthProduct ? Number(product.stock_quantity).toFixed(3) : Math.floor(product.stock_quantity);
                 let stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
-                let stockText = product.stock_quantity > 5 ? `En stock: ${product.stock_quantity}` : `Stock Faible: ${product.stock_quantity}`;
+                let stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
+                let unitBadge = '';
+                if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📏 m</span>';
+                if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📐 cm</span>';
 
                 card.innerHTML = `
                 <!-- Hover Add Icon (Top Left for LTR, Top Right for RTL visual balance) -->
@@ -431,6 +437,7 @@
                     
                     <div class="flex items-center gap-2 mt-auto">
                         <div class="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 truncate max-w-[120px]">${product.barcode}</div>
+                        ${unitBadge}
                     </div>
                 </div>
                 
@@ -448,8 +455,8 @@
                     </div>
                 </div>
 
-                <!-- Cart Quantity Badge (Top Left to avoid overlapping add button or price) -->
-                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${cartQty}</div>` : ''}
+                <!-- Cart Quantity Badge -->
+                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${isLengthProduct ? cartQty.toFixed(1) : cartQty}</div>` : ''}
             `;
 
                 card.addEventListener('click', () => {
@@ -478,6 +485,7 @@
                 quantity: nextQuantity,
                 stock_quantity: product.stock_quantity,
                 category_id: product.category_id,
+                unit: product.unit || 'unité',
             };
 
             renderCart();
@@ -491,7 +499,11 @@
                 return;
             }
 
-            const nextQuantity = item.quantity + delta;
+            const isLength = item.unit === 'metre' || item.unit === 'cm';
+            const defaultDelta = isLength ? 0.1 : 1;
+            const finalDelta = typeof delta === 'number' ? delta : defaultDelta;
+            
+            const nextQuantity = Math.max(0, item.quantity + finalDelta);
 
             if (nextQuantity <= 0) {
                 delete cart[barcode];
@@ -499,7 +511,7 @@
                 alert('Stock limite atteint');
                 return;
             } else {
-                item.quantity = nextQuantity;
+                item.quantity = Number(nextQuantity.toFixed(3));
             }
 
             renderCart();
@@ -562,10 +574,11 @@
                 row.innerHTML = `
                 <div class="flex-1 min-w-0">
                     <div class="font-bold text-sm text-card-foreground truncate">${item.name}</div>
-                    <div class="flex items-center gap-2 mt-1">
-                         <input type="number" class="price-input w-20 bg-gray-50 border border-gray-200 text-center font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 rounded-lg text-[11px] py-1" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
-                         <div class="text-[10px] text-muted-foreground/70 font-mono tracking-wider">${item.barcode}</div>
-                    </div>
+                     <div class="flex items-center gap-2 mt-1">
+                          <input type="number" class="price-input w-20 bg-gray-50 border border-gray-200 text-center font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 rounded-lg text-[11px] py-1" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
+                          <div class="text-[10px] text-muted-foreground/70 font-mono tracking-wider">${item.barcode}</div>
+                          ${item.unit === 'metre' ? '<span class="text-[9px] bg-amber-50 text-amber-600 font-bold px-1 rounded border border-amber-100/50">📏 m</span>' : (item.unit === 'cm' ? '<span class="text-[9px] bg-cyan-50 text-cyan-600 font-bold px-1 rounded border border-cyan-100/50">📐 cm</span>' : '')}
+                     </div>
                 </div>
                 
                 <div class="flex flex-col items-end gap-1">
@@ -575,7 +588,10 @@
                         <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-red-500 transition-colors qty-minus">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
                         </button>
-                        <span class="text-xs font-bold w-6 text-center text-slate-700">${item.quantity}</span>
+                        <input type="number" class="qty-direct-input text-[11px] font-bold w-14 text-center text-indigo-700 bg-indigo-50/50 border border-indigo-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-400 py-0.5" 
+                                  step="0.001" min="0.001" 
+                                  max="${item.stock_quantity}" 
+                                  value="${item.unit === 'unité' ? item.quantity : item.quantity}">
                         <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-green-600 transition-colors qty-plus">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                         </button>
@@ -611,8 +627,47 @@
                     barcodeInput.blur();
                 });
 
-                row.querySelector('.qty-minus').addEventListener('click', () => changeQuantity(item.barcode, -1));
-                row.querySelector('.qty-plus').addEventListener('click', () => changeQuantity(item.barcode, 1));
+                row.querySelector('.qty-minus').addEventListener('click', () => {
+                    const delta = (item.unit === 'metre' || item.unit === 'cm') ? -0.1 : -1;
+                    changeQuantity(item.barcode, delta);
+                });
+                row.querySelector('.qty-plus').addEventListener('click', () => {
+                    const delta = (item.unit === 'metre' || item.unit === 'cm') ? 0.1 : 1;
+                    changeQuantity(item.barcode, delta);
+                });
+
+                // Handle direct quantity input
+                const directInput = row.querySelector('.qty-direct-input');
+                if (directInput) {
+                    directInput.addEventListener('change', () => {
+                        const newQty = parseFloat(parseFloat(directInput.value).toFixed(3));
+                        
+                        if (isNaN(newQty) || newQty <= 0) {
+                            delete cart[item.barcode];
+                        } else if (newQty > item.stock_quantity) {
+                            alert(`Stock insuffisant! Max: ${item.stock_quantity}`);
+                            directInput.value = item.quantity;
+                            return;
+                        } else {
+                            item.quantity = newQty;
+                        }
+                        renderCart();
+                        renderProducts();
+                    });
+
+                    // Prevent scanner focus
+                    directInput.addEventListener('focus', () => {
+                        barcodeInput.blur();
+                    });
+                    
+                    // Allow Enter key to trigger change and blur
+                    directInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            directInput.blur();
+                        }
+                    });
+                }
+
                 row.querySelector('.qty-remove').addEventListener('click', () => {
                     delete cart[item.barcode];
                     renderCart();
@@ -647,7 +702,7 @@
 
         async function scanAndAdd() {
             const barcode = barcodeInput.value.trim();
-            const quantity = Math.max(1, parseInt(scanQuantityInput.value, 10) || 1);
+            const quantity = parseFloat(scanQuantityInput.value) || 1;
 
             if (!barcode) {
                 return;

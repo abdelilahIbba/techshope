@@ -13,8 +13,8 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        .modal { display: none; }
-        .modal.active { display: flex; animation: fadeIn 0.2s ease-out; }
+        .modal { display: none; position: fixed; inset: 0; z-index: 50; overflow-y: auto; background-color: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); }
+        .modal.active { display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fadeIn 0.2s ease-out; }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95); }
@@ -124,6 +124,7 @@
                             <th class="px-6 py-4 font-bold">Type</th>
                             <th class="px-6 py-4 font-bold">Catégorie</th>
                             <th class="px-6 py-4 font-bold">Fournisseur</th>
+                            <th class="px-6 py-4 font-bold">Unité</th>
                             <th class="px-6 py-4 font-bold">Stock</th>
                             <th class="px-6 py-4 font-bold">Prix achat</th>
                             <th class="px-6 py-4 font-bold">Prix vente</th>
@@ -151,7 +152,22 @@
                                 </td>
                                 <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-semibold">{{ $product->category->name ?? 'N/A' }}</span></td>
                                 <td class="px-6 py-4">{{ $product->supplier->name ?? 'Non assigné' }}</td>
-                                <td class="px-6 py-4 font-extrabold text-slate-900">{{ $product->stock_quantity }}</td>
+                                <td class="px-6 py-4">
+                                    @if($product->unit === 'metre')
+                                        <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-md text-xs font-semibold border border-amber-100">📏 m</span>
+                                    @elseif($product->unit === 'cm')
+                                        <span class="inline-flex items-center gap-1 bg-cyan-50 text-cyan-700 px-2 py-1 rounded-md text-xs font-semibold border border-cyan-100">📐 cm</span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 bg-slate-50 text-slate-700 px-2 py-1 rounded-md text-xs font-semibold border border-slate-100">📦 pcs</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 font-extrabold text-slate-900">
+                                    @if($product->unit === 'unité')
+                                        {{ number_format($product->stock_quantity, 0) }}
+                                    @else
+                                        {{ number_format($product->stock_quantity, 3) }}
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4">{{ number_format($product->purchase_price, 2) }} {{ $currencySymbol }}</td>
                                 <td class="px-6 py-4 font-bold text-blue-600">{{ number_format($product->sale_price, 2) }} {{ $currencySymbol }}</td>
                                 <td class="px-6 py-4">
@@ -195,7 +211,7 @@
     </div>
 
 <!-- Print Barcode Modal -->
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="printBarcodeModal">
+<div class="modal" id="printBarcodeModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-3">Imprimer tickets - <span id="print_product_name"></span></h3>
         <form id="printBarcodeForm" onsubmit="submitPrintForm(event)">
@@ -216,7 +232,7 @@
 </div>
 
 <!-- Product Details Modal -->
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="productDetailsModal">
+<div class="modal" id="productDetailsModal">
     <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <button type="button" class="absolute top-3 right-3 text-slate-400 hover:text-slate-700 text-xl" onclick="closeModal('productDetailsModal')">&times;</button>
         <h3 class="text-xl font-bold text-slate-900 mb-2" id="detail_product_name"></h3>
@@ -350,10 +366,10 @@
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="addProductModal">
-    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 relative">
-        <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter un produit</h3>
-        <form method="POST" action="{{ route('pos.stock.add-product') }}" class="flex flex-col gap-4">
+<div class="modal" id="addProductModal">
+    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-4 relative my-auto">
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Ajouter un produit</h3>
+        <form method="POST" action="{{ route('pos.stock.add-product') }}" class="flex flex-col gap-2">
             @csrf
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
@@ -407,9 +423,19 @@
                     </select>
                 </div>
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale</label>
-                <input type="text" name="stock_quantity" id="stock_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none cursor-pointer" value="0" required readonly onclick="openNumericKeyboard('stock_quantity_input')">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Unité de vente</label>
+                    <select name="unit" id="add_product_unit" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
+                        <option value="unité">📦 Pièce (Unité)</option>
+                        <option value="metre">📏 Mètre (m)</option>
+                        <option value="cm">📐 Centimètre (cm)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale</label>
+                    <input type="text" name="stock_quantity" id="stock_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none cursor-pointer" value="0" required readonly onclick="openNumericKeyboard('stock_quantity_input')">
+                </div>
             </div>
             <!-- Numeric Keyboard Modal -->
             <div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="numericKeyboardModal">
@@ -426,9 +452,12 @@
                         <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('7')">7</button>
                         <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('8')">8</button>
                         <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('9')">9</button>
-                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="clearNumericKey()">C</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('.')">.</button>
                         <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3" onclick="appendNumericKey('0')">0</button>
-                        <button type="button" class="bg-blue-600 text-white font-bold rounded-lg p-3" onclick="confirmNumericKey()">OK</button>
+                        <button type="button" class="bg-slate-200 hover:bg-blue-200 text-xl font-bold rounded-lg p-3 text-red-500" onclick="clearNumericKey()">C</button>
+                        <div class="col-span-3">
+                            <button type="button" class="w-full bg-blue-600 text-white font-bold rounded-lg p-3 mt-2" onclick="confirmNumericKey()">Confirmer</button>
+                        </div>
                     </div>
                     <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-slate-700 text-xl" onclick="closeModal('numericKeyboardModal')">&times;</button>
                 </div>
@@ -461,7 +490,8 @@
                         key = azertyKeyMap[key];
                     }
 
-                    if (key >= '0' && key <= '9') {
+                    if ((key >= '0' && key <= '9') || key === '.' || key === ',') {
+                        if (key === ',') key = '.';
                         appendNumericKey(key);
                     } else if (key === 'Backspace') {
                         const input = document.getElementById('numericKeyboardInput');
@@ -475,8 +505,14 @@
 
                 function appendNumericKey(digit) {
                     const input = document.getElementById('numericKeyboardInput');
-                    if (input.value.length < 6) {
-                        input.value = (input.value === '0') ? digit : input.value + digit;
+                    
+                    if (digit === '.') {
+                        if (input.value.includes('.')) return;
+                        if (input.value === '') input.value = '0';
+                    }
+                    
+                    if (input.value.length < 10) {
+                        input.value = (input.value === '0' && digit !== '.') ? digit : input.value + digit;
                     }
                 }
                 function clearNumericKey() {
@@ -510,34 +546,34 @@
                     <input type="number" step="0.01" name="sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
                 </div>
             </div>
-            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('addProductModal')">Annuler</button>
-                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Ajouter</button>
+            <div class="flex justify-end gap-3 mt-2 pt-3 border-t border-slate-100">
+                <button type="button" class="px-5 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('addProductModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="editProductModal">
-    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 relative">
-        <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier le produit</h3>
-        <form method="POST" id="editProductForm" class="flex flex-col gap-4">
+<div class="modal" id="editProductModal">
+    <div class="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-4 relative my-auto">
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Modifier le produit</h3>
+        <form method="POST" id="editProductForm" class="flex flex-col gap-2">
             @csrf
             @method('PUT')
             <input type="hidden" id="edit_product_id">
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
-                <input type="text" name="name" id="edit_product_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                <input type="text" name="name" id="edit_product_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2 outline-none" required>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">Type de Barcode</label>
                 <div class="flex gap-2 mb-3">
-                    <label id="edit_btn_scanned" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                    <label id="edit_btn_scanned" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
                         <input type="radio" name="barcode_type" id="edit_type_scanned" value="scanned" class="sr-only" onchange="onEditBarcodeTypeChange('scanned')">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                         Scanné
                     </label>
-                    <label id="edit_btn_internal" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
+                    <label id="edit_btn_internal" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
                         <input type="radio" name="barcode_type" id="edit_type_internal" value="internal" class="sr-only" onchange="onEditBarcodeTypeChange('internal')">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                         Interne
@@ -586,6 +622,14 @@
                     <input type="number" step="0.01" name="sale_price" id="edit_product_sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
                 </div>
             </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Unité de vente</label>
+                <select name="unit" id="edit_product_unit" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+                    <option value="unité">📦 Pièce (Unité)</option>
+                    <option value="metre">📏 Mètre (m)</option>
+                    <option value="cm">📐 Centimètre (cm)</option>
+                </select>
+            </div>
             <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
                 <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" onclick="closeModal('editProductModal')">Annuler</button>
                 <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Enregistrer</button>
@@ -594,7 +638,7 @@
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="adjustStockModal">
+<div class="modal" id="adjustStockModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-5">Ajuster le stock</h3>
         <form method="POST" id="adjustStockForm" class="flex flex-col gap-4">
@@ -617,8 +661,9 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité</label>
-                <input type="number" name="quantity" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-lg font-bold rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required min="0">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité <span id="adjust_unit_badge" class="ml-2 text-xs bg-slate-200 px-2 py-0.5 rounded text-slate-600">unités</span></label>
+                <input type="number" name="quantity" step="0.001" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-lg font-bold rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required min="0">
+                <p class="text-[10px] text-slate-400 mt-1">Accepte les décimales (ex: 1.5 pour 1m 50cm)</p>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">Motif (optionnel)</label>
@@ -632,7 +677,7 @@
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="addSupplierModal">
+<div class="modal" id="addSupplierModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter un fournisseur</h3>
         <form method="POST" action="{{ route('pos.stock.add-supplier') }}" class="flex flex-col gap-4">
@@ -657,7 +702,7 @@
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="editSupplierModal">
+<div class="modal" id="editSupplierModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier le fournisseur</h3>
         <form method="POST" id="editSupplierForm" class="flex flex-col gap-4">
@@ -684,7 +729,7 @@
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="addCategoryModal">
+<div class="modal" id="addCategoryModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter une catégorie</h3>
         <form method="POST" action="{{ route('pos.stock.add-category') }}" class="flex flex-col gap-4">
@@ -701,7 +746,7 @@
     </div>
 </div>
 
-<div class="modal fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 items-center justify-center" id="editCategoryModal">
+<div class="modal" id="editCategoryModal">
     <div class="modal-content bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 p-6 relative">
         <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier la catégorie</h3>
         <form method="POST" id="editCategoryForm" class="flex flex-col gap-4">
@@ -758,6 +803,7 @@
         document.getElementById('edit_product_supplier').value = product.supplier_id || '';
         document.getElementById('edit_product_purchase_price').value = product.purchase_price;
         document.getElementById('edit_product_sale_price').value = product.sale_price;
+        document.getElementById('edit_product_unit').value = product.unit || 'unité';
         document.getElementById('editProductForm').action = BASE_EDIT_PRODUCT + '/' + product.id;
 
         // Set barcode_type toggle
@@ -773,7 +819,20 @@
     function adjustStock(product) {
         document.getElementById('adjust_product_id').value = product.id;
         document.getElementById('adjust_product_name').value = product.name;
-        document.getElementById('adjust_current_stock').value = product.stock_quantity + ' unités';
+        
+        let unitLabel = 'unités';
+        if (product.unit === 'metre') unitLabel = 'mètres';
+        if (product.unit === 'cm') unitLabel = 'cm';
+        if (product.unit === 'unité') unitLabel = 'pièces';
+        
+        document.getElementById('adjust_unit_badge').textContent = unitLabel;
+        
+        let stockFormatted = product.stock_quantity;
+        if (product.unit !== 'unité') {
+            stockFormatted = parseFloat(product.stock_quantity).toFixed(3);
+        }
+        
+        document.getElementById('adjust_current_stock').value = stockFormatted + ' ' + unitLabel;
         document.getElementById('adjustStockForm').action = BASE_ADJUST_STOCK + '/' + product.id;
         openModal('adjustStockModal');
     }

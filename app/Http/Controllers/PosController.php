@@ -249,12 +249,14 @@ class PosController extends Controller
             'barcode' => ['nullable', 'string', 'unique:products,barcode'],
             'category_id' => ['required', 'exists:categories,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
-            'stock_quantity' => ['required', 'integer', 'min:0'],
+            'stock_quantity' => ['required', 'numeric', 'min:0'],
+            'unit' => ['nullable', 'string', 'in:unité,metre,cm'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'sale_price' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $validated['unit'] = 'unité';
+        $validated['unit'] = $validated['unit'] ?? 'unité';
+
 
         // Auto-generate barcode if not provided
         if (empty($validated['barcode'])) {
@@ -328,6 +330,7 @@ class PosController extends Controller
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'sale_price' => ['required', 'numeric', 'min:0'],
+            'unit' => ['nullable', 'string', 'in:unité,metre,cm'],
         ]);
 
         $product->update($validated);
@@ -346,28 +349,34 @@ class PosController extends Controller
     {
         $validated = $request->validate([
             'adjustment_type' => ['required', 'in:add,remove,set'],
-            'quantity' => ['required', 'integer', 'min:0'],
+            'quantity' => ['required', 'numeric', 'min:0'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $currentStock = $product->stock_quantity;
+        $currentStock = (float) $product->stock_quantity;
+        $adjustmentQty = (float) $validated['quantity'];
         $newStock = $currentStock;
 
         switch ($validated['adjustment_type']) {
             case 'add':
-                $newStock = $currentStock + $validated['quantity'];
+                $newStock = $currentStock + $adjustmentQty;
                 break;
             case 'remove':
-                $newStock = max(0, $currentStock - $validated['quantity']);
+                $newStock = max(0, $currentStock - $adjustmentQty);
                 break;
             case 'set':
-                $newStock = $validated['quantity'];
+                $newStock = $adjustmentQty;
                 break;
         }
 
         $product->update(['stock_quantity' => $newStock]);
 
-        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . $newStock . ' unités');
+        $unitLabel = $product->unit ?? 'unités';
+        if ($unitLabel === 'metre') $unitLabel = 'mètres';
+        if ($unitLabel === 'cm') $unitLabel = 'cm';
+        if ($unitLabel === 'unité') $unitLabel = 'pièces';
+
+        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . number_format($newStock, 3) . ' ' . $unitLabel);
     }
 
     public function editSupplier(Request $request, Supplier $supplier)
@@ -763,11 +772,12 @@ class PosController extends Controller
 
     public function scan(string $barcode): JsonResponse
     {
+        /** @var Product|null $product */
         $product = Product::query()
             ->where('barcode', $barcode)
             ->first();
 
-        if (!$product) {
+        if ($product === null) {
             return response()->json([
                 'message' => 'Product not found for this barcode.',
             ], 404);
@@ -779,7 +789,8 @@ class PosController extends Controller
             'barcode' => $product->barcode,
             'category_id' => $product->category_id,
             'price' => (float) ($product->sale_price ?? $product->price ?? 0),
-            'stock_quantity' => $product->stock_quantity,
+            'stock_quantity' => (float) $product->stock_quantity,
+            'unit' => $product->unit ?? 'unité',
         ]);
     }
 
@@ -788,7 +799,7 @@ class PosController extends Controller
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.barcode' => ['required', 'string'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
             'items.*.price' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
@@ -807,16 +818,17 @@ class PosController extends Controller
             $totalAmount = 0;
 
             foreach ($validated['items'] as $item) {
+                /** @var Product|null $product */
                 $product = Product::query()
                     ->where('barcode', $item['barcode'])
                     ->lockForUpdate()
                     ->first();
 
-                if (!$product) {
+                if ($product === null) {
                     abort(422, 'Product not found for barcode: ' . $item['barcode']);
                 }
 
-                $quantity = (int) $item['quantity'];
+                $quantity = (float) $item['quantity'];
 
                 if ($product->stock_quantity < $quantity) {
                     abort(422, 'Insufficient stock for: ' . $product->name);
@@ -827,7 +839,8 @@ class PosController extends Controller
 
                 $subtotal = $unitPrice * $quantity;
 
-                $product->decrement('stock_quantity', $quantity);
+                $product->stock_quantity = $product->stock_quantity - $quantity;
+                $product->save();
 
                 $resolvedItems[] = [
                     'product' => $product,
@@ -903,8 +916,22 @@ class PosController extends Controller
         $lines[] = $divider;
 
         foreach ($receipt->sale->items as $item) {
-            $name = $item->product->name;
-            $qty = (string) $item->quantity;
+            $product = $item->product;
+            if (!$product) continue;
+            
+            $name = $product->name;
+            $unit = $product->unit ?? 'unité';
+            $qtyValue = (float) $item->quantity;
+            
+            if ($unit === 'metre') {
+                $qty = number_format($qtyValue, 3) . 'm';
+            } elseif ($unit === 'cm') {
+                $qty = number_format($qtyValue, 3) . 'cm';
+            } else {
+                // If it's a whole number, show as integer, otherwise show with 2 decimal places
+                $qty = (floor($qtyValue) == $qtyValue) ? (string)(int)$qtyValue : number_format($qtyValue, 2);
+            }
+
             $price = number_format($item->unit_price, 2);
             $total = number_format($item->subtotal, 2);
 
@@ -912,7 +939,7 @@ class PosController extends Controller
             if (mb_strlen($name) > 18) {
                 $lines[] = "  " . mb_substr($name, 18, 40);
             }
-            $lines[] = "Code: " . $item->product->barcode;
+            $lines[] = "Code: " . $product->barcode . " Unit: " . $unit;
         }
 
         $lines[] = $divider;
@@ -1155,7 +1182,11 @@ PS;
 
             // Restore stock
             foreach ($sale->items as $item) {
-                $item->product->increment('stock_quantity', $item->quantity);
+                $product = $item->product;
+                if ($product) {
+                    $product->stock_quantity = (float)$product->stock_quantity + (float)$item->quantity;
+                    $product->save();
+                }
             }
 
             // Audit log

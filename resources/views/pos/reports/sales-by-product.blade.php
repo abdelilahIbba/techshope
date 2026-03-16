@@ -57,22 +57,34 @@
                 <tr>
                     <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase">Article</th>
                     <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">Qté Vendue</th>
+                    <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">Prix Achat</th>
                     <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">CA Total</th>
+                    <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">Profit Net</th>
                     <th class="px-6 py-4 text-center text-sm font-bold text-slate-700 uppercase">Dernière Vente</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($salesData as $item)
+                    @php
+                        $profit = $item->total_revenue - $item->total_cost;
+                        $profitColor = $profit >= 0 ? 'text-blue-600' : 'text-red-600';
+                    @endphp
                     <tr class="border-b border-slate-100 hover:bg-slate-50">
                         <td class="px-6 py-4">
                             <div class="font-semibold text-slate-900">{{ $item->name }}</div>
                             <div class="text-sm text-slate-500">ID: {{ $item->id }}</div>
                         </td>
                         <td class="px-6 py-4 text-right font-semibold text-slate-900">
-                            {{ number_format($item->total_quantity) }}
+                            {{ (float)$item->total_quantity }} <span class="text-[10px] text-slate-400 uppercase">{{ $item->unit === 'metre' ? 'm' : ($item->unit === 'cm' ? 'cm' : 'pcs') }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-slate-500 font-medium">
+                            {{ number_format($item->purchase_price, 2) }} {{ $currencySymbol }}
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <span class="font-bold text-green-600">{{ number_format($item->total_revenue, 2) }} {{ $currencySymbol }}</span>
+                            <span class="font-bold text-slate-900">{{ number_format($item->total_revenue, 2) }} {{ $currencySymbol }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="font-bold {{ $profitColor }}">{{ number_format($profit, 2) }} {{ $currencySymbol }}</span>
                         </td>
                         <td class="px-6 py-4 text-center text-sm text-slate-500">
                             {{ \Carbon\Carbon::parse($item->last_sale_date)->format('d/m/Y') }}
@@ -80,7 +92,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
                             <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>

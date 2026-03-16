@@ -141,7 +141,7 @@
                         <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0">
                             <td class="px-6 py-4 font-medium text-slate-900">{{ $item->product_name }}</td>
                             <td class="px-6 py-4">
-                                <span class="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md font-semibold text-xs">{{ $item->total_quantity }}</span>
+                                <span class="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md font-semibold text-xs">{{ (float)$item->total_quantity }}</span>
                             </td>
                             <td class="px-6 py-4 font-semibold text-emerald-600">{{ number_format($item->total_revenue, 2) }} {{ $currencySymbol }}</td>
                             <td class="px-6 py-4"><span class="muted text-slate-400">{{ $item->seller_name ?? 'Multiple' }}</span></td>

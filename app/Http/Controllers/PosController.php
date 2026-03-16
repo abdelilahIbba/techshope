@@ -207,7 +207,7 @@ class PosController extends Controller
             ->with([
                 'products' => function ($query) {
                     $query
-                        ->select('id', 'name', 'barcode', 'sale_price', 'stock_quantity', 'category_id')
+                        ->select('id', 'name', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id')
                         ->orderBy('name');
                 },
             ])
@@ -376,7 +376,7 @@ class PosController extends Controller
         if ($unitLabel === 'cm') $unitLabel = 'cm';
         if ($unitLabel === 'unité') $unitLabel = 'pièces';
 
-        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . number_format($newStock, 3) . ' ' . $unitLabel);
+        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . (float)$newStock . ' ' . $unitLabel);
     }
 
     public function editSupplier(Request $request, Supplier $supplier)
@@ -789,6 +789,7 @@ class PosController extends Controller
             'barcode' => $product->barcode,
             'category_id' => $product->category_id,
             'price' => (float) ($product->sale_price ?? $product->price ?? 0),
+            'purchase_price' => (float) ($product->purchase_price ?? 0),
             'stock_quantity' => (float) $product->stock_quantity,
             'unit' => $product->unit ?? 'unité',
         ]);
@@ -892,7 +893,7 @@ class PosController extends Controller
         $currencySymbol = Setting::get('currency_symbol', 'DH');
 
         // ── Exact Layout (42 columns standard for 80mm) ────────────────────
-        $w = 42;
+        $w = 40;
         $divider = str_repeat('-', $w);
 
         $lines = [];
@@ -907,12 +908,12 @@ class PosController extends Controller
         $timeStr = optional($receipt->printed_at)->format('H:i') ?? now()->format('H:i');
         $cashierName = $receipt->sale->cashier->name ?? 'Précisé';
 
-        $lines[] = str_pad("Ticket N° : " . $receipt->receipt_number, 24) . str_pad("Date : " . $dateStr, 18, ' ', STR_PAD_LEFT);
-        $lines[] = str_pad("Caisse : Principal", 24) . str_pad("Heure : " . $timeStr, 18, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("Ticket N° : " . $receipt->receipt_number, 22) . str_pad("Date : " . $dateStr, 18, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("Caisse : Principal", 22) . str_pad("Heure : " . $timeStr, 18, ' ', STR_PAD_LEFT);
         $lines[] = "Caissier : " . $cashierName;
         $lines[] = $divider;
 
-        $lines[] = str_pad("Article", 18) . str_pad("Qté", 4, ' ', STR_PAD_BOTH) . str_pad("Prix U.", 10, ' ', STR_PAD_LEFT) . str_pad("Total", 10, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("Article", 16) . str_pad("Qté", 4, ' ', STR_PAD_BOTH) . str_pad("Prix U.", 10, ' ', STR_PAD_LEFT) . str_pad("Total", 10, ' ', STR_PAD_LEFT);
         $lines[] = $divider;
 
         foreach ($receipt->sale->items as $item) {
@@ -924,9 +925,9 @@ class PosController extends Controller
             $qtyValue = (float) $item->quantity;
             
             if ($unit === 'metre') {
-                $qty = number_format($qtyValue, 3) . 'm';
+                $qty = (float)$qtyValue . 'm';
             } elseif ($unit === 'cm') {
-                $qty = number_format($qtyValue, 3) . 'cm';
+                $qty = (float)$qtyValue . 'cm';
             } else {
                 // If it's a whole number, show as integer, otherwise show with 2 decimal places
                 $qty = (floor($qtyValue) == $qtyValue) ? (string)(int)$qtyValue : number_format($qtyValue, 2);
@@ -935,9 +936,9 @@ class PosController extends Controller
             $price = number_format($item->unit_price, 2);
             $total = number_format($item->subtotal, 2);
 
-            $lines[] = str_pad(mb_substr($name, 0, 18), 18) . str_pad($qty, 4, ' ', STR_PAD_BOTH) . str_pad($price, 10, ' ', STR_PAD_LEFT) . str_pad($total, 10, ' ', STR_PAD_LEFT);
-            if (mb_strlen($name) > 18) {
-                $lines[] = "  " . mb_substr($name, 18, 40);
+            $lines[] = str_pad(mb_substr($name, 0, 16), 16) . str_pad($qty, 4, ' ', STR_PAD_BOTH) . str_pad($price, 10, ' ', STR_PAD_LEFT) . str_pad($total, 10, ' ', STR_PAD_LEFT);
+            if (mb_strlen($name) > 16) {
+                $lines[] = "  " . mb_substr($name, 16, 40);
             }
             $lines[] = "Code: " . $product->barcode . " Unit: " . $unit;
         }
@@ -945,10 +946,10 @@ class PosController extends Controller
         $lines[] = $divider;
         $sum = number_format($receipt->sale->total_amount, 2);
 
-        $lines[] = str_pad("Sous-total :", 32, ' ', STR_PAD_LEFT) . str_pad($sum, 10, ' ', STR_PAD_LEFT);
-        $lines[] = str_pad("TVA (0%) :", 32, ' ', STR_PAD_LEFT) . str_pad("0.00", 10, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("Sous-total :", 30, ' ', STR_PAD_LEFT) . str_pad($sum, 10, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("TVA (0%) :", 30, ' ', STR_PAD_LEFT) . str_pad("0.00", 10, ' ', STR_PAD_LEFT);
         $lines[] = "";
-        $lines[] = str_pad("NET À PAYER :", 25, ' ', STR_PAD_LEFT) . str_pad($sum . " " . $currencySymbol, 17, ' ', STR_PAD_LEFT);
+        $lines[] = str_pad("NET À PAYER :", 23, ' ', STR_PAD_LEFT) . str_pad($sum . " " . $currencySymbol, 17, ' ', STR_PAD_LEFT);
         $lines[] = $divider;
 
         $lines[] = str_pad("Merci", $w, ' ', STR_PAD_BOTH);
@@ -986,7 +987,7 @@ Add-Type -AssemblyName System.Drawing
 
 \$printDoc.Add_PrintPage({
     param(\$sender, \$ev)
-    \$font = New-Object System.Drawing.Font('Consolas', 8.5)
+    \$font = New-Object System.Drawing.Font('Consolas', 8.0)
     \$brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::Black)
     \$ev.Graphics.DrawString(\$text, \$font, \$brush, 0, 0)
     \$ev.HasMorePages = \$false
@@ -1079,12 +1080,15 @@ PS;
             ->select(
                 'products.id',
                 'products.name',
+                'products.unit',
                 'products.category_id',
+                'products.purchase_price',
                 DB::raw('SUM(sale_items.quantity) as total_quantity'),
                 DB::raw('SUM(sale_items.subtotal) as total_revenue'),
+                DB::raw('SUM(sale_items.quantity * products.purchase_price) as total_cost'),
                 DB::raw('MAX(sales.date) as last_sale_date')
             )
-            ->groupBy('products.id', 'products.name', 'products.category_id')
+            ->groupBy('products.id', 'products.name', 'products.unit', 'products.category_id', 'products.purchase_price')
             ->orderByDesc('total_revenue')
             ->get();
 

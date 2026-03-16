@@ -190,7 +190,7 @@
                     <span class="item-name">{{ $item->product->name }}</span>
                     <span class="item-code">Code: {{ $item->product->barcode }}</span>
                 </td>
-                <td class="text-center">{{ $item->quantity }}</td>
+                <td class="text-center">{{ (float)$item->quantity }}</td>
                 <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
                 <td class="text-right font-bold">{{ number_format($item->subtotal, 2) }}</td>
             </tr>

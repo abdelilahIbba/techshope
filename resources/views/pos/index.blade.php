@@ -67,6 +67,7 @@
                         'barcode' => $product->barcode,
                         'category_id' => $product->category_id,
                         'price' => (float) ($product->sale_price ?? $product->price ?? 0),
+                        'purchase_price' => (float) ($product->purchase_price ?? 0),
                         'stock_quantity' => (float) $product->stock_quantity,
                         'unit' => $product->unit ?? 'unité',
                     ];
@@ -342,6 +343,13 @@
         const receivedAmountInput = document.getElementById('received-amount');
         const changeAmountDisplay = document.getElementById('change-amount');
 
+        // AZERTY to QWERTY mapping for numbers (Dual support: FR/EN)
+        const azertyMap = {
+            '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
+            '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
+            ')': '°', '=': '+', '§': '!'
+        };
+
         let activeCategoryId = categories.length ? categories[0].id : null;
         const cart = {};
 
@@ -415,7 +423,7 @@
                 card.className = 'group bg-card border border-border/60 rounded-3xl p-4 flex flex-col gap-2 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none h-44';
 
                 let isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
-                let stockFormatted = isLengthProduct ? Number(product.stock_quantity).toFixed(3) : Math.floor(product.stock_quantity);
+                let stockFormatted = isLengthProduct ? parseFloat(Number(product.stock_quantity).toFixed(3)) : Math.floor(product.stock_quantity);
                 let stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
                 let stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
                 let unitBadge = '';
@@ -448,6 +456,9 @@
                             ${Number(product.price).toFixed(2)}
                             <span class="text-[10px] font-bold text-slate-400 self-start mt-1">${currencySymbol}</span>
                          </div>
+                         <div class="text-[11px] font-bold text-slate-400 mt-0.5">
+                             A: ${Number(product.purchase_price).toFixed(2)} ${currencySymbol}
+                         </div>
                     </div>
                     
                     <div class="${stockColor} px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm border border-transparent">
@@ -456,7 +467,7 @@
                 </div>
 
                 <!-- Cart Quantity Badge -->
-                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${isLengthProduct ? cartQty.toFixed(1) : cartQty}</div>` : ''}
+                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${isLengthProduct ? parseFloat(cartQty.toFixed(3)) : cartQty}</div>` : ''}
             `;
 
                 card.addEventListener('click', () => {
@@ -481,6 +492,7 @@
                 barcode: product.barcode,
                 name: product.name,
                 price: Number(product.price),
+                purchase_price: Number(product.purchase_price),
                 unit_price: Number(product.price), // Custom price (editable)
                 quantity: nextQuantity,
                 stock_quantity: product.stock_quantity,
@@ -511,7 +523,7 @@
                 alert('Stock limite atteint');
                 return;
             } else {
-                item.quantity = Number(nextQuantity.toFixed(3));
+                item.quantity = parseFloat(nextQuantity.toFixed(3));
             }
 
             renderCart();
@@ -577,6 +589,7 @@
                      <div class="flex items-center gap-2 mt-1">
                           <input type="number" class="price-input w-20 bg-gray-50 border border-gray-200 text-center font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 rounded-lg text-[11px] py-1" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
                           <div class="text-[10px] text-muted-foreground/70 font-mono tracking-wider">${item.barcode}</div>
+                          <div class="text-[10px] font-bold text-slate-400 bg-slate-100 px-1 rounded">A: ${item.purchase_price.toFixed(2)}</div>
                           ${item.unit === 'metre' ? '<span class="text-[9px] bg-amber-50 text-amber-600 font-bold px-1 rounded border border-amber-100/50">📏 m</span>' : (item.unit === 'cm' ? '<span class="text-[9px] bg-cyan-50 text-cyan-600 font-bold px-1 rounded border border-cyan-100/50">📐 cm</span>' : '')}
                      </div>
                 </div>
@@ -591,7 +604,7 @@
                         <input type="number" class="qty-direct-input text-[11px] font-bold w-14 text-center text-indigo-700 bg-indigo-50/50 border border-indigo-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-400 py-0.5" 
                                   step="0.001" min="0.001" 
                                   max="${item.stock_quantity}" 
-                                  value="${item.unit === 'unité' ? item.quantity : item.quantity}">
+                                  value="${item.quantity}">
                         <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-green-600 transition-colors qty-plus">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                         </button>
@@ -666,8 +679,20 @@
                             directInput.blur();
                         }
                     });
-                }
 
+                    // AZERTY to QWERTY mapping for numbers
+                    directInput.addEventListener('keydown', (event) => {
+                        if (azertyMap[event.key]) {
+                            event.preventDefault();
+                            const start = directInput.selectionStart;
+                            const end = directInput.selectionEnd;
+                            const val = directInput.value;
+                            directInput.value = val.slice(0, start) + azertyMap[event.key] + val.slice(end);
+                            directInput.setSelectionRange(start + 1, start + 1);
+                            directInput.dispatchEvent(new Event('change'));
+                        }
+                    });
+                }
                 row.querySelector('.qty-remove').addEventListener('click', () => {
                     delete cart[item.barcode];
                     renderCart();
@@ -751,14 +776,7 @@
             }
         }
 
-        // AZERTY to QWERTY mapping for numbers (Dual support: FR/EN)
-        // English keyboards send digits directly (1, 2, 3...) which are not in this map,
-        // so they remain unchanged. Only French layout symbols are corrected.
-        const azertyMap = {
-            '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
-            '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
-            ')': '°', '=': '+', '§': '!'
-        };
+
 
         barcodeInput.addEventListener('input', (event) => {
             let value = barcodeInput.value;

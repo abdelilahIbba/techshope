@@ -165,7 +165,7 @@
                                     @if($product->unit === 'unité')
                                         {{ number_format($product->stock_quantity, 0) }}
                                     @else
-                                        {{ number_format($product->stock_quantity, 3) }}
+                                        {{ (float)$product->stock_quantity }}
                                     @endif
                                 </td>
                                 <td class="px-6 py-4">{{ number_format($product->purchase_price, 2) }} {{ $currencySymbol }}</td>
@@ -944,7 +944,7 @@
     const azertyMap = {
         '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
         '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
-        ')': '°', '=': '+'
+        ')': '°', '=': '+', '§': '!'
     };
 
     function applyAzertyMap(value) {
@@ -961,8 +961,42 @@
         return changed ? corrected : null; // returns null if no change needed
     }
 
-    // Apply to Add Product barcode input
+    // Apply to inputs
     document.addEventListener('DOMContentLoaded', function () {
+        // Apply to main Product Search
+        const searchProductInput = document.getElementById('searchProduct');
+        if (searchProductInput) {
+            searchProductInput.addEventListener('input', function () {
+                const corrected = applyAzertyMap(this.value);
+                if (corrected !== null) {
+                    this.value = corrected;
+                    filterProducts(); // Trigger search update
+                }
+            });
+        }
+
+        const searchSupplierInput = document.getElementById('searchSupplier');
+        if (searchSupplierInput) {
+            searchSupplierInput.addEventListener('input', function () {
+                const corrected = applyAzertyMap(this.value);
+                if (corrected !== null) {
+                    this.value = corrected;
+                    filterSuppliers();
+                }
+            });
+        }
+
+        const searchCategoryInput = document.getElementById('searchCategory');
+        if (searchCategoryInput) {
+            searchCategoryInput.addEventListener('input', function () {
+                const corrected = applyAzertyMap(this.value);
+                if (corrected !== null) {
+                    this.value = corrected;
+                    filterCategories();
+                }
+            });
+        }
+
         const addBarcodeInput = document.getElementById('add_barcode_input');
         if (addBarcodeInput) {
             addBarcodeInput.addEventListener('input', function () {

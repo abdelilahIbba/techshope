@@ -117,7 +117,7 @@
                     <div class="notification-stock text-right">
                         <div class="text-xs text-slate-400 font-bold uppercase mb-1">Reste en stock</div>
                         <div class="text-3xl font-extrabold {{ $iconColor }}">
-                            {{ $product->stock_quantity }}
+                            {{ (float)$product->stock_quantity }}
                         </div>
                     </div>
                 </div>

@@ -86,7 +86,7 @@
         }
         .barcode-img { 
             margin-top: 4px; 
-            max-width: 120px; 
+            max-width: 100px; 
             height: auto;
         }
 
@@ -169,7 +169,7 @@
                             </div>
                         @endif
                     </td>
-                    <td class="text-center">{{ $item->quantity }}</td>
+                    <td class="text-center">{{ (float)$item->quantity }}</td>
                     <td class="text-right">{{ number_format($item->unit_price, 2) }} {{ $currencySymbol }}</td>
                     <td class="text-right" style="font-weight: bold;">{{ number_format($item->subtotal, 2) }} {{ $currencySymbol }}</td>
                 </tr>

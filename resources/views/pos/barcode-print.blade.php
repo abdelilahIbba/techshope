@@ -69,13 +69,13 @@
         /* ── PRINT ── */
         @media print {
             @page {
-                size: 50mm 25mm;
+                size: 50mm 30mm;
                 margin: 0 !important; /* مهم جداً لمنع الهوامش الافتراضية */
             }
 
             html, body {
                 width: 50mm !important;
-                height: 25mm !important;
+                height: 30mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;

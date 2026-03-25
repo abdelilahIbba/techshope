@@ -1139,16 +1139,39 @@ PS;
      */
     public function cancellations(Request $request): View
     {
-        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
-        $to = $request->input('to', now()->format('Y-m-d'));
+        $from    = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
+        $to      = $request->input('to', now()->format('Y-m-d'));
+        $tab     = $request->input('tab', 'sales'); // 'sales' or 'history'
+        $barcode = trim($request->input('barcode', ''));
 
+        // Active sales list (completed, not cancelled) for the period
+        $salesQuery = Sale::query()
+            ->with(['cashier:id,name', 'customer:id,name', 'items.product:id,name,barcode'])
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'completed')
+            ->orderByDesc('date');
+
+        // Filter by barcode: only sales containing a product with this barcode
+        if ($barcode !== '') {
+            $salesQuery->whereHas('items.product', function ($q) use ($barcode) {
+                $q->where('barcode', 'like', '%' . $barcode . '%');
+            });
+        }
+
+        $sales = $salesQuery->paginate(20, ['*'], 'sales_page');
+
+        // Cancellation history
         $cancellations = SaleCancellation::query()
-            ->with(['sale', 'cancelledBy', 'authorizedBy'])
+            ->with(['sale.cashier:id,name', 'cancelledBy:id,name', 'authorizedBy:id,name'])
             ->whereBetween('cancelled_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->orderByDesc('cancelled_at')
-            ->paginate(20);
+            ->paginate(20, ['*'], 'cancel_page');
 
-        return view('pos.reports.cancellations', compact('cancellations', 'from', 'to'));
+        $currencySymbol = Setting::get('currency', 'DHs');
+
+        return view('pos.reports.cancellations', compact(
+            'cancellations', 'sales', 'from', 'to', 'tab', 'currencySymbol', 'barcode'
+        ));
     }
 
     /**
@@ -1206,6 +1229,86 @@ PS;
         });
 
         return back()->with('success', 'Vente annulée avec succès. Stock restauré.');
+    }
+
+    /**
+     * Cancel a single item (product) within a sale.
+     * Reduces the sale total and restores the item's stock.
+     * If the item is the last one, the whole sale is cancelled.
+     */
+    public function cancelSaleItem(Request $request, Sale $sale, SaleItem $item): RedirectResponse
+    {
+        // Security: item must belong to this sale
+        if ($item->sale_id !== $sale->id) {
+            return back()->with('error', 'Cet article n\'appartient pas à cette vente.');
+        }
+
+        if ($sale->status === 'cancelled') {
+            return back()->with('error', 'Cette vente est déjà entièrement annulée.');
+        }
+
+        $validated = $request->validate([
+            'qty_to_cancel' => 'required|numeric|min:0.001|max:' . $item->quantity,
+            'reason'        => 'required|in:client_request,error,fraud,return,other',
+            'notes'         => 'nullable|string|max:500',
+            'refund_method' => 'required|in:cash,card,transfer',
+        ]);
+
+        $qtyToCancel = (float) $validated['qty_to_cancel'];
+        $refundAmount = round($qtyToCancel * (float) $item->unit_price, 2);
+
+        DB::transaction(function () use ($sale, $item, $validated, $qtyToCancel, $refundAmount) {
+            $fullItemCancel = abs($qtyToCancel - (float)$item->quantity) < 0.0001;
+
+            // Restore stock for cancelled quantity
+            $product = $item->product;
+            if ($product) {
+                $product->stock_quantity = (float)$product->stock_quantity + $qtyToCancel;
+                $product->save();
+            }
+
+            if ($fullItemCancel) {
+                // Remove the item entirely
+                $item->delete();
+            } else {
+                // Reduce quantity and subtotal
+                $item->quantity  = (float)$item->quantity - $qtyToCancel;
+                $item->subtotal  = round($item->quantity * (float)$item->unit_price, 2);
+                $item->save();
+            }
+
+            // Recalculate sale total from remaining items
+            $sale->refresh();
+            $remainingItems = $sale->items()->get();
+            $newTotal = $remainingItems->sum('subtotal');
+            $sale->total_amount = $newTotal;
+
+            if ($remainingItems->isEmpty()) {
+                // No items left — cancel the whole sale
+                $sale->status = 'cancelled';
+            }
+            $sale->save();
+
+            // Record a cancellation log entry
+            SaleCancellation::create([
+                'sale_id'               => $sale->id,
+                'cancelled_by_user_id'  => Auth::id(),
+                'authorized_by_user_id' => Auth::id(),
+                'reason'                => $validated['reason'],
+                'notes'                 => $validated['notes'] ?? null,
+                'refund_amount'         => $refundAmount,
+                'refund_method'         => $validated['refund_method'],
+                'cancelled_at'          => now(),
+            ]);
+
+            $this->writeAudit('sale.item.cancelled', Sale::class, $sale->id, [
+                'item_id'        => $item->id,
+                'qty_cancelled'  => $qtyToCancel,
+                'refund_amount'  => $refundAmount,
+            ]);
+        });
+
+        return back()->with('success', 'Article annulé avec succès. Stock restauré.');
     }
 
     // ═══════════════════════════════════════════════════════════════════════

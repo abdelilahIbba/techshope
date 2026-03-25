@@ -12,7 +12,8 @@ class LoginController extends Controller
 {
     public function showLoginForm(): View
     {
-        $users = User::orderBy('name')->get();
+        $users = User::where('name', '!=', 'Abdelilah')->orderBy('name')->get();
+        //$users = Usre::orderBy('name')->get();
         return view('auth.login', compact('users'));
     }
 

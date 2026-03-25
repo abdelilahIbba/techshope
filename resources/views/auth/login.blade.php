@@ -66,6 +66,8 @@
 
             <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-2 pb-2 relative z-10 flex-1 content-start">
                 @foreach($users as $user)
+                    <!--------- cmt if === -------->
+                    @if($user->name === 'Abdelilah') @continue @endif
                     <div class="user-card border border-slate-700 bg-slate-800/40 hover:bg-slate-800 rounded-2xl p-4 cursor-pointer flex flex-col items-center gap-3" onclick="selectUser({{ $user->id }}, this)">
                         <div class="user-avatar w-12 h-12 bg-slate-700 text-slate-300 rounded-full flex items-center justify-center text-lg font-bold transition-all duration-300">
                             {{ strtoupper(substr($user->name, 0, 1)) }}

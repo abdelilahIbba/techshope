@@ -74,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
         
         // ── Annulations ──
         Route::post('/pos/sales/{sale}/cancel', [PosController::class, 'cancelSale'])->middleware('permission:sale.cancel')->name('pos.sales.cancel');
+        Route::post('/pos/sales/{sale}/cancel-item/{item}', [PosController::class, 'cancelSaleItem'])->middleware('permission:sale.cancel')->name('pos.sales.cancel-item');
         Route::post('/pos/sales/{sale}/authorize-cancellation', [PosController::class, 'authorizeCancellation'])->middleware('permission:sale.cancel.authorize')->name('pos.sales.authorize-cancellation');
         
         // ── Dépenses ──

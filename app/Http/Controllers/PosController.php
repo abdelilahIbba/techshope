@@ -245,17 +245,26 @@ class PosController extends Controller
     public function addProduct(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'barcode' => ['nullable', 'string', 'unique:products,barcode'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'name'           => ['required', 'string', 'max:255'],
+            'barcode'        => ['nullable', 'string', 'unique:products,barcode'],
+            'category_id'    => ['required', 'exists:categories,id'],
+            'supplier_id'    => ['nullable', 'exists:suppliers,id'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
-            'unit' => ['nullable', 'string', 'in:unité,metre,cm'],
+            'unit'           => ['nullable', 'string', 'in:unité,metre,cm,m'],
+            'sell_by_length' => ['nullable', 'boolean'],
+            'length_unit'    => ['nullable', 'string', 'in:m,cm'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'sale_price' => ['required', 'numeric', 'min:0'],
+            'sale_price'     => ['required', 'numeric', 'min:0'],
         ]);
 
-        $validated['unit'] = $validated['unit'] ?? 'unité';
+        $validated['sell_by_length'] = (bool) ($validated['sell_by_length'] ?? false);
+
+        // If sold by length, sync unit with length_unit
+        if ($validated['sell_by_length'] && !empty($validated['length_unit'])) {
+            $validated['unit'] = $validated['length_unit'];
+        } else {
+            $validated['unit'] = $validated['unit'] ?? 'unité';
+        }
 
 
         // Auto-generate barcode if not provided
@@ -770,11 +779,20 @@ class PosController extends Controller
         return back()->with('success', 'Paramètres mis à jour avec succès');
     }
 
-    public function scan(string $barcode): JsonResponse
+    public function scan(Request $request): JsonResponse
     {
+        $barcode = $request->query('barcode');
+
+        if (!$barcode) {
+             return response()->json([
+                'message' => 'Barcode is required.',
+            ], 400);
+        }
+
         /** @var Product|null $product */
         $product = Product::query()
             ->where('barcode', $barcode)
+            ->orWhere('name', $barcode)
             ->first();
 
         if ($product === null) {

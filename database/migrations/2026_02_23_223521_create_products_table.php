@@ -14,15 +14,19 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->string('name');
             $table->string('barcode')->unique();
+            $table->string('barcode_type')->default('internal');
             $table->string('description')->nullable();
             $table->decimal('purchase_price', 10, 2);
             $table->decimal('sale_price', 10, 2);
-            $table->integer('stock_quantity')->default(0);
+            $table->decimal('stock_quantity', 10, 3)->default(0);
             $table->string('unit');
+            $table->boolean('sell_by_length')->default(false);
+            $table->string('length_unit', 10)->nullable();
             $table->timestamps();
-        }); 
+        });
     }
 
     /**

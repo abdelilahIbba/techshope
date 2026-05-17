@@ -1,0 +1,37 @@
+FROM php:8.3-fpm-alpine
+
+RUN apk add --no-cache \
+    bash \
+    curl \
+    git \
+    icu-dev \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    oniguruma-dev \
+    postgresql-dev \
+    unzip \
+    $PHPIZE_DEPS
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        bcmath \
+        exif \
+        gd \
+        intl \
+        pcntl \
+        pdo_pgsql \
+        pgsql \
+        zip
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-droguerie.ini
+COPY docker/php/entrypoint.sh /usr/local/bin/droguerie-entrypoint
+RUN chmod +x /usr/local/bin/droguerie-entrypoint
+
+ENTRYPOINT ["droguerie-entrypoint"]
+CMD ["php-fpm"]

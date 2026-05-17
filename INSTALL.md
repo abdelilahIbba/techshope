@@ -18,6 +18,66 @@ Make sure the following software is installed before proceeding.
 
 ---
 
+## Docker + PostgreSQL Setup (Recommended for this project)
+
+Use this flow if you want the full environment in containers.
+
+### A. Prepare environment file
+
+```bash
+cp .env.docker.example .env        # Linux / macOS
+copy .env.docker.example .env      # Windows CMD
+```
+
+Generate app key once:
+
+```bash
+docker compose run --rm app php artisan key:generate
+```
+
+### B. Build and start containers
+
+```bash
+docker compose up -d --build
+```
+
+This starts:
+- `web` (Nginx) at `http://localhost:8000`
+- `app` (PHP-FPM Laravel runtime)
+- `queue` (Laravel queue worker)
+- `db` (PostgreSQL 16)
+
+### C. Run migrations and seeders
+
+```bash
+docker compose exec app php artisan migrate --seed
+```
+
+### D. Optional: run Vite in container
+
+```bash
+docker compose --profile frontend up -d vite
+```
+
+Vite will be available at `http://localhost:5173`.
+
+### E. Useful commands
+
+```bash
+docker compose logs -f app
+docker compose logs -f db
+docker compose exec app php artisan test
+docker compose down
+```
+
+If you want to remove database data too:
+
+```bash
+docker compose down -v
+```
+
+---
+
 ## Required PHP Extensions
 
 Verify these PHP extensions are enabled in your `php.ini`:

@@ -475,11 +475,13 @@
                     document.getElementById('numericKeyboardInput').value = numericTargetInput.value || '';
                     document.getElementById('numericKeyboardModal').classList.add('active');
                     
-                    // Add global keydown listener when modal is open
-                    document.addEventListener('keydown', handleKeydown);
+                    // Add global keydown listener when modal is open.
+                    // Stored on window so closeModal (defined in the later <script> block)
+                    // can call removeEventListener with the same function reference.
+                    document.addEventListener('keydown', window.numericKeyboardHandler);
                 }
 
-                function handleKeydown(e) {
+                window.numericKeyboardHandler = function(e) {
                     const modal = document.getElementById('numericKeyboardModal');
                     if (!modal.classList.contains('active')) return;
 
@@ -501,7 +503,7 @@
                     } else if (key === 'Escape') {
                         closeModal('numericKeyboardModal');
                     }
-                }
+                };
 
                 function appendNumericKey(digit) {
                     const input = document.getElementById('numericKeyboardInput');
@@ -526,15 +528,6 @@
                     }
                     closeModal('numericKeyboardModal');
                 }
-                
-                // Override closeModal to remove listener
-                const originalCloseModal = closeModal;
-                window.closeModal = function(modalId) {
-                    if (modalId === 'numericKeyboardModal') {
-                        document.removeEventListener('keydown', handleKeydown);
-                    }
-                    originalCloseModal(modalId);
-                };
             </script>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -772,6 +765,10 @@
 
     function closeModal(modalId) {
         document.getElementById(modalId).classList.remove('active');
+        // Clean up the numeric keyboard's keydown listener when that modal closes.
+        if (modalId === 'numericKeyboardModal' && window.numericKeyboardHandler) {
+            document.removeEventListener('keydown', window.numericKeyboardHandler);
+        }
     }
 
     function switchTab(tab, event) {

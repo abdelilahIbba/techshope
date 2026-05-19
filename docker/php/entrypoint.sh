@@ -17,15 +17,20 @@ fi
 
 if [ "${DB_CONNECTION}" = "pgsql" ]; then
     echo "Waiting for PostgreSQL ${DB_HOST}:${DB_PORT}..."
-    until php -r "try { new PDO('pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Throwable $e) { exit(1); }"; do
+    until timeout 5 php -r "try { new PDO('pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); } catch (Throwable $e) { exit(1); }" 2>/dev/null; do
         sleep 2
     done
 fi
 
 if [ "${RUN_MIGRATIONS}" = "true" ]; then
-    php artisan migrate --force
+    timeout 120 php artisan migrate --force || echo "Migration timeout or error - continuing anyway"
 fi
 
-php artisan config:clear >/dev/null 2>&1 || true
+# Cache Laravel bootstrap artefacts so they are read from bootstrap/cache/
+# (one file, warmed by OPcache) instead of parsing every config / route / view
+# from the slow bind-mounted filesystem on each request.
+php artisan config:cache  >/dev/null 2>&1 || true
+php artisan route:cache   >/dev/null 2>&1 || true
+php artisan view:cache    >/dev/null 2>&1 || true
 
 exec "$@"

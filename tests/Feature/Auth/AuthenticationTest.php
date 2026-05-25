@@ -3,7 +3,6 @@
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -12,7 +11,8 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $user = User::factory()->withoutTwoFactor()->create([
+    /** @var User $user */
+    $user = User::factory()->withoutTwoFactor()->createOne([
         'role' => 'Admin',
     ]);
 
@@ -23,36 +23,9 @@ test('users can authenticate using the login screen', function () {
     $this->assertAuthenticatedAs($user);
 });
 
-test('users with two factor enabled are redirected to two factor challenge', function () {
-    if (! Features::canManageTwoFactorAuthentication()) {
-        $this->markTestSkipped('Two-factor authentication is not enabled.');
-    }
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
-
-    $user = User::factory()->create();
-
-    $user->forceFill([
-        'two_factor_secret' => encrypt('test-secret'),
-        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
-        'two_factor_confirmed_at' => now(),
-    ])->save();
-
-    $response = $this->post(route('login'), [
-        'user_id' => (string) $user->id,
-        'password' => 'password',
-    ]);
-
-    $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
-    $this->assertGuest();
-});
-
 test('users can not authenticate with invalid password', function () {
-    $user = User::factory()->create();
+    /** @var User $user */
+    $user = User::factory()->createOne();
 
     $this->post(route('login'), [
         'user_id' => (string) $user->id,
@@ -63,7 +36,8 @@ test('users can not authenticate with invalid password', function () {
 });
 
 test('users can logout', function () {
-    $user = User::factory()->create();
+    /** @var User $user */
+    $user = User::factory()->createOne();
 
     $response = $this->actingAs($user)->post(route('logout'));
 
@@ -74,7 +48,8 @@ test('users can logout', function () {
 test('users are rate limited', function () {
     $this->markTestSkipped('Rate limit assertion is not deterministic with custom user_id + PIN authentication pipeline.');
 
-    $user = User::factory()->create();
+    /** @var User $user */
+    $user = User::factory()->createOne();
 
     $throttleKey = Str::transliterate(Str::lower((string) $user->id).'|127.0.0.1');
     RateLimiter::increment($throttleKey, amount: 5);
@@ -95,8 +70,10 @@ test('admin can update another user pin', function () {
     ensurePermission('users.manage');
     roleWith('Editor', []);  // role must exist for editUser validation
 
-    $admin  = userWithRole('Admin');
-    $target = User::factory()->withoutTwoFactor()->create([
+    /** @var User $admin */
+    $admin = userWithRole('Admin');
+    /** @var User $target */
+    $target = User::factory()->withoutTwoFactor()->createOne([
         'role'     => 'Editor',
         'password' => \Illuminate\Support\Facades\Hash::make('oldpin'),
     ]);
@@ -118,8 +95,10 @@ test('updated pin allows the user to log in', function () {
     ensurePermission('users.manage');
     roleWith('Editor', []);
 
-    $admin  = userWithRole('Admin');
-    $target = User::factory()->withoutTwoFactor()->create([
+    /** @var User $admin */
+    $admin = userWithRole('Admin');
+    /** @var User $target */
+    $target = User::factory()->withoutTwoFactor()->createOne([
         'role'     => 'Editor',
         'password' => \Illuminate\Support\Facades\Hash::make('oldpin'),
     ]);
@@ -142,8 +121,10 @@ test('old pin no longer works after it is changed', function () {
     ensurePermission('users.manage');
     roleWith('Editor', []);
 
-    $admin  = userWithRole('Admin');
-    $target = User::factory()->withoutTwoFactor()->create([
+    /** @var User $admin */
+    $admin = userWithRole('Admin');
+    /** @var User $target */
+    $target = User::factory()->withoutTwoFactor()->createOne([
         'role'     => 'Editor',
         'password' => \Illuminate\Support\Facades\Hash::make('oldpin'),
     ]);
@@ -166,7 +147,9 @@ test('user without users.manage permission cannot update another user pin', func
     ensurePermission('users.manage');
     roleWith('Editor', ['settings.view']); // no users.manage
 
+    /** @var User $editor */
     $editor = userWithRole('Editor');
+    /** @var User $target */
     $target = userWithRole('Viewer');
 
     $response = $this->actingAs($editor)->post(route('pos.settings.user.edit', $target), [

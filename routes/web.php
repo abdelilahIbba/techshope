@@ -60,7 +60,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/pos/settings/roles/{role}', [PosController::class, 'updateRole'])->middleware('permission:roles.manage')->name('pos.settings.roles.update');
         Route::delete('/pos/settings/roles/{role}', [PosController::class, 'deleteRole'])->middleware('permission:roles.manage')->name('pos.settings.roles.delete');
         Route::post('/pos/settings/system/update', [PosController::class, 'updateSystemSettings'])->middleware('permission:settings.update')->name('pos.settings.system.update');
-        Route::get('/pos/scan/{barcode}', [PosController::class, 'scan'])->middleware('permission:pos.view')->name('pos.scan');
+        Route::get('/pos/scan', [PosController::class, 'scan'])->middleware('permission:pos.view')->name('pos.scan');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->middleware('permission:checkout.create')->name('pos.checkout');
         Route::get('/pos/receipt/{receipt}/print', [PosController::class, 'receiptPrint'])->middleware('permission:receipt.export')->name('pos.receipt.print');
         Route::get('/pos/barcode-print', [PosController::class, 'barcodePrintPage'])->middleware('permission:barcode.print')->name('pos.barcode.print');

@@ -293,6 +293,7 @@
         };
 
         let activeCategoryId = categories.length ? categories[0].id : null;
+        const allProducts = categories.flatMap(c => c.products);
         const cart = {};
 
         function getCategoryById(categoryId) {
@@ -323,6 +324,7 @@
 
                 button.addEventListener('click', () => {
                     activeCategoryId = category.id;
+                    barcodeInput.value = ''; // Clear search when switching category
                     renderCategories();
                     renderProducts();
                 });
@@ -331,33 +333,44 @@
         }
 
         function renderProducts() {
-            const activeCategory = getCategoryById(activeCategoryId);
+            const searchTerm = barcodeInput.value.trim().toLowerCase();
+            let productsToDisplay = [];
 
-            if (!activeCategory) {
-                activeCategoryName.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400"></span> Aucune catégorie`;
-                productsGrid.innerHTML = `
-                <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-40">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                    <span class="font-bold text-lg">Aucun produit ici</span>
-                </div>
-            `;
-                return;
+            if (searchTerm === '') {
+                const activeCategory = getCategoryById(activeCategoryId);
+                if (!activeCategory) {
+                    activeCategoryName.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400"></span> Aucune catégorie`;
+                    productsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-40">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                            <span class="font-bold text-lg">Aucun produit ici</span>
+                        </div>
+                    `;
+                    return;
+                }
+                productsToDisplay = activeCategory.products;
+                activeCategoryName.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> ${activeCategory.name} <span class="bg-muted/30 text-muted-foreground px-2 rounded-md ml-2 text-xs font-bold">${activeCategory.products.length}</span>`;
+            } else {
+                productsToDisplay = allProducts.filter(p => 
+                    p.name.toLowerCase().includes(searchTerm) || 
+                    p.barcode.toLowerCase().includes(searchTerm)
+                );
+                activeCategoryName.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500"></span> Recherche: "${searchTerm}" <span class="bg-muted/30 text-muted-foreground px-2 rounded-md ml-2 text-xs font-bold">${productsToDisplay.length}</span>`;
             }
 
-            activeCategoryName.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> ${activeCategory.name} <span class="bg-muted/30 text-muted-foreground px-2 rounded-md ml-2 text-xs font-bold">${activeCategory.products.length}</span>`;
             productsGrid.innerHTML = '';
 
-            if (activeCategory.products.length === 0) {
+            if (productsToDisplay.length === 0) {
                 productsGrid.innerHTML = `
                 <div class="col-span-full flex flex-col items-center justify-center py-20 opacity-40">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    <span class="font-bold text-lg">Catégorie vide</span>
+                    <span class="font-bold text-lg">Aucun produit trouvé</span>
                 </div>
             `;
                 return;
             }
 
-            activeCategory.products.forEach((product) => {
+            productsToDisplay.forEach((product) => {
                 const card = document.createElement('div');
                 const cartQty = cart[product.barcode]?.quantity || 0;
 
@@ -683,7 +696,7 @@
         `;
 
             try {
-                const response = await fetch("{{ route('pos.scan', ['barcode' => 'BARCODE_PLACEHOLDER']) }}".replace('BARCODE_PLACEHOLDER', barcode));
+                const response = await fetch("{{ route('pos.scan') }}?barcode=" + encodeURIComponent(barcode));
 
                 if (!response.ok) {
                     // Show error effect on input
@@ -737,6 +750,8 @@
             if (changed) {
                 barcodeInput.value = corrected;
             }
+            
+            renderProducts();
         });
 
         scanBtn.addEventListener('click', scanAndAdd);

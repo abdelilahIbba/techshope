@@ -67,6 +67,14 @@ class PosController extends Controller
 
     private function ensureDefaultAccessRights(): void
     {
+        // Guard: only run the expensive bulk writes when the permission count is
+        // out of sync. This replaces a Cache::remember() guard which was useless
+        // because CACHE_STORE=array resets after every request.
+        $expectedCount = count($this->permissionCatalog());
+        if (Permission::query()->count() >= $expectedCount) {
+            return;
+        }
+
         foreach ($this->permissionCatalog() as $permission) {
             Permission::query()->updateOrCreate(
                 ['key' => $permission['key']],
@@ -245,17 +253,26 @@ class PosController extends Controller
     public function addProduct(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'barcode' => ['nullable', 'string', 'unique:products,barcode'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'name'           => ['required', 'string', 'max:255'],
+            'barcode'        => ['nullable', 'string', 'unique:products,barcode'],
+            'category_id'    => ['required', 'exists:categories,id'],
+            'supplier_id'    => ['nullable', 'exists:suppliers,id'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
-            'unit' => ['nullable', 'string', 'in:unité,metre,cm'],
+            'unit'           => ['nullable', 'string', 'in:unité,metre,cm,m'],
+            'sell_by_length' => ['nullable', 'boolean'],
+            'length_unit'    => ['nullable', 'string', 'in:m,cm'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'sale_price' => ['required', 'numeric', 'min:0'],
+            'sale_price'     => ['required', 'numeric', 'min:0'],
         ]);
 
-        $validated['unit'] = $validated['unit'] ?? 'unité';
+        $validated['sell_by_length'] = (bool) ($validated['sell_by_length'] ?? false);
+
+        // If sold by length, sync unit with length_unit
+        if ($validated['sell_by_length'] && !empty($validated['length_unit'])) {
+            $validated['unit'] = $validated['length_unit'];
+        } else {
+            $validated['unit'] = $validated['unit'] ?? 'unité';
+        }
 
 
         // Auto-generate barcode if not provided
@@ -555,40 +572,48 @@ class PosController extends Controller
 
     private function getAvailablePrinters(): array
     {
+        // CACHE_STORE=array resets after every request, so Cache::remember() is
+        // useless here. Instead, store the printer list in the settings table
+        // with a refresh timestamp and only call shell_exec once every 5 minutes.
+        $cachedAt   = Setting::get('_printers_cached_at', null);
+        $cachedList = Setting::get('_printers_list', null);
+
+        if ($cachedAt && $cachedList && (time() - (int) $cachedAt) < 300) {
+            return json_decode($cachedList, true) ?? [];
+        }
+
         $printers = [];
 
         try {
             if (PHP_OS_FAMILY === 'Windows') {
-                // Use PowerShell to get printers
-                $command = 'powershell -Command "Get-Printer | Select-Object -ExpandProperty Name"';
+                $command = 'powershell -NonInteractive -Command "Get-Printer | Select-Object -ExpandProperty Name"';
                 $output = shell_exec($command);
 
                 if ($output) {
-                    $printersList = explode("\n", trim($output));
-                    foreach ($printersList as $printer) {
+                    foreach (explode("\n", trim($output)) as $printer) {
                         $printer = trim($printer);
-                        if (!empty($printer)) {
+                        if ($printer !== '') {
                             $printers[] = $printer;
                         }
                     }
                 }
             } else {
-                // For Linux/Unix systems
                 $output = shell_exec('lpstat -p -d 2>/dev/null | grep "^printer" | cut -d" " -f2');
                 if ($output) {
-                    $printersList = explode("\n", trim($output));
-                    foreach ($printersList as $printer) {
+                    foreach (explode("\n", trim($output)) as $printer) {
                         $printer = trim($printer);
-                        if (!empty($printer)) {
+                        if ($printer !== '') {
                             $printers[] = $printer;
                         }
                     }
                 }
             }
         } catch (\Exception $e) {
-            // If we can't detect printers, return empty array
             $printers = [];
         }
+
+        Setting::set('_printers_cached_at', (string) time());
+        Setting::set('_printers_list', json_encode($printers));
 
         return $printers;
     }
@@ -770,11 +795,20 @@ class PosController extends Controller
         return back()->with('success', 'Paramètres mis à jour avec succès');
     }
 
-    public function scan(string $barcode): JsonResponse
+    public function scan(Request $request): JsonResponse
     {
+        $barcode = $request->query('barcode');
+
+        if (!$barcode) {
+             return response()->json([
+                'message' => 'Barcode is required.',
+            ], 400);
+        }
+
         /** @var Product|null $product */
         $product = Product::query()
             ->where('barcode', $barcode)
+            ->orWhere('name', $barcode)
             ->first();
 
         if ($product === null) {
@@ -1103,6 +1137,14 @@ PS;
         $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
         $to = $request->input('to', now()->format('Y-m-d'));
 
+        // Cancellation counts per cashier in a single subquery — avoids N+1 queries.
+        $cancellationCounts = DB::table('sales')
+            ->select('cashier_user_id', DB::raw('COUNT(*) as total_cancelled'))
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'cancelled')
+            ->groupBy('cashier_user_id')
+            ->pluck('total_cancelled', 'cashier_user_id');
+
         $salesData = Sale::query()
             ->with('cashier:id,name')
             ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
@@ -1116,14 +1158,8 @@ PS;
             ->groupBy('cashier_user_id')
             ->orderByDesc('total_revenue')
             ->get()
-            ->map(function ($row) use ($from, $to) {
-                // Calculate cancellation rate
-                $cancellations = Sale::query()
-                    ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
-                    ->where('cashier_user_id', $row->cashier_user_id)
-                    ->where('status', 'cancelled')
-                    ->count();
-
+            ->map(function ($row) use ($cancellationCounts) {
+                $cancellations = (int) ($cancellationCounts[$row->cashier_user_id] ?? 0);
                 $row->cancellation_rate = $row->total_sales > 0
                     ? round(($cancellations / ($row->total_sales + $cancellations)) * 100, 1)
                     : 0;

@@ -24,11 +24,24 @@ class License extends Model
     ];
 
     /**
+     * Request-level cache — prevents repeated SELECT queries when current() is
+     * called from CheckLicense middleware, ShareNavData middleware, and
+     * settingsPayload() all within the same request.
+     */
+    private static bool $fetched = false;
+    private static ?self $sharedInstance = null;
+
+    /**
      * Retrieve the single active license record (always id = 1).
+     * Result is cached for the duration of the current PHP process (one request).
      */
     public static function current(): ?self
     {
-        return self::find(1);
+        if (! self::$fetched) {
+            self::$sharedInstance = self::find(1);
+            self::$fetched = true;
+        }
+        return self::$sharedInstance;
     }
 
     /**
@@ -49,7 +62,12 @@ class License extends Model
             return false;
         }
 
-        if (! $license->last_seen_at || $now->gt($license->last_seen_at)) {
+        // Only write last_seen_at once per minute — previously this ran a DB UPDATE
+        // on every single request because $now->gt($last_seen_at) is always true.
+        $shouldUpdate = ! $license->last_seen_at
+            || $now->diffInSeconds($license->last_seen_at) >= 60;
+
+        if ($shouldUpdate) {
             $license->forceFill(['last_seen_at' => $now])->saveQuietly();
         }
 

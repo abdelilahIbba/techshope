@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id();
             $table->text('key');
             $table->string('period', 50);
-            $table->timestamp('activated_at')->nullable();
-            $table->timestamp('expires_at')->nullable();
+            $table->dateTime('activated_at')->nullable();
+            $table->dateTime('last_seen_at')->nullable();
+            $table->dateTime('expires_at')->nullable();
             $table->timestamps();
         });
     }

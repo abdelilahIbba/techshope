@@ -47,6 +47,14 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Cached permission keys for the current request.
+     * Populated on first call; avoids 2 DB queries per permission check.
+     *
+     * @var string[]|null
+     */
+    private ?array $permissionCache = null;
+
     public function hasRole(string $roleName): bool
     {
         return (string) $this->role === $roleName;
@@ -67,11 +75,17 @@ class User extends Authenticatable
             return true;
         }
 
-        $role = Role::query()->where('name', $this->role)->first();
-        if (! $role) {
-            return false;
+        // Load all permission keys for this user's role in a single query and
+        // cache them on the model instance for the lifetime of the request.
+        // Previously every call fired: Role::where(...)->first() + permissions()->exists()
+        // = 2 DB queries per check. A page with 3 middleware checks = 6 DB queries.
+        if ($this->permissionCache === null) {
+            $role = Role::query()->where('name', $this->role)->first();
+            $this->permissionCache = $role
+                ? $role->permissions()->pluck('key')->all()
+                : [];
         }
 
-        return $role->permissions()->where('key', $permissionKey)->exists();
+        return in_array($permissionKey, $this->permissionCache, true);
     }
 }

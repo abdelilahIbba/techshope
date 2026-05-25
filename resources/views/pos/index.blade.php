@@ -76,65 +76,7 @@
         })->values();
     @endphp
 
-    <!-- Top Navigation Bar -->
-    <nav
-        class="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0 z-20 shadow-sm relative">
-        <div class="flex items-center gap-8">
-            <a href="{{ route('pos.dashboard') }}"
-                style="display: flex; align-items: center; gap: 0px; text-decoration: none;">
-                <img src="{{ asset('images/logo.png') }}" onerror="this.src='{{ asset('logo.svg') }}'"
-                    alt="TickDroguerie" style="width: 150px; height: auto; margin-right: -10px;">
-                <div style="font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 900; line-height: 1;">
-                    <span style="color: #F27036;">Tick</span><span style="color: #1A476F;">Droguerie</span>
-                </div>
-            </a>
-
-            <div class="flex items-center bg-muted/30 p-1 rounded-xl">
-                <a href="{{ route('pos.dashboard') }}"
-                    class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Tableau
-                    de bord</a>
-                <a href="{{ route('pos.index') }}"
-                    class="px-5 py-2 rounded-lg text-sm font-bold text-indigo-600 bg-card shadow-sm ring-1 ring-black/5 transition-smooth">POS</a>
-                <a href="{{ route('pos.stock') }}"
-                    class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Gestion
-                    de stock</a>
-                <a href="{{ route('pos.settings') }}"
-                    class="px-5 py-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">Paramètres</a>
-            </div>
-        </div>
-
-
-        <div class="flex items-center gap-4">
-            <a href="{{ route('pos.notifications') }}"
-                class="relative w-10 h-10 flex items-center justify-center hover:bg-muted/20 rounded-xl transition-smooth text-muted-foreground hover:text-indigo-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                @if($notificationCount > 0)
-                    <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
-                @endif
-            </a>
-
-            @include('partials.license-badge')
-
-            <div class="h-8 w-px bg-gray-200 mx-2"></div>
-
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit"
-                    class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-smooth">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Sortir</span>
-                </button>
-            </form>
-        </div>
-    </nav>
+    @include('partials.pos-nav')
 
     @if(session('success'))
         <div id="flash-success"

@@ -27,12 +27,7 @@
 <body class="bg-slate-100 min-h-screen antialiased text-slate-800">
 
 {{-- ── Nav ── --}}
-<nav class="flex items-center gap-2 px-6 py-3 bg-white border-b border-slate-200 shadow-sm">
-    <a class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100" href="{{ route('pos.dashboard') }}">Tableau de bord</a>
-    <a class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100" href="{{ route('pos.index') }}">POS</a>
-    <a class="px-3 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow-md" href="{{ route('pos.reports') }}">Rapports</a>
-    <a class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100" href="{{ route('pos.settings') }}">Paramètres</a>
-</nav>
+@include('partials.pos-nav')
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 

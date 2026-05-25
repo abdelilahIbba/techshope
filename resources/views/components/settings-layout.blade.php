@@ -96,28 +96,7 @@
         <div class="absolute top-32 -left-20 h-72 w-72 rounded-full bg-gradient-to-tr from-slate-100/80 via-white/40 to-transparent blur-3xl"></div>
     </div>
 
-    <nav class="top-nav flex items-center gap-2 p-4 bg-white/95 backdrop-blur border-b border-slate-200/70 shadow-sm">
-        <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900" href="{{ route('pos.dashboard') }}">Dashboard</a>
-        <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900" href="{{ route('pos.index') }}">POS</a>
-        <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900" href="{{ route('pos.stock') }}">Gestion de stock</a>
-        <a class="nav-link notification-badge relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900" href="{{ route('pos.notifications') }}">
-            Notifications stock
-            @if($notificationCount > 0)
-                <span class="badge-count absolute -top-2 -right-2 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm">{{ $notificationCount }}</span>
-            @endif
-        </a>
-        <a class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-slate-900 text-white shadow-md" href="{{ route('pos.settings') }}">Settings</a>
-
-        @include('partials.license-badge')
-
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" class="nav-link px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 cursor-pointer flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                Deconnexion
-            </button>
-        </form>
-    </nav>
+    @include('partials.pos-nav')
 
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <div class="flex flex-col lg:flex-row gap-6">

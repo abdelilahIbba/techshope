@@ -1,4 +1,4 @@
-import { createInertiaApp } from '@inertiajs/react';
+﻿import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import ReactDOMServer from 'react-dom/server';
@@ -13,10 +13,11 @@ createServer((page) =>
         resolve: (name) =>
             resolvePageComponent(
                 `./pages/${name}.tsx`,
-                import.meta.glob('./pages/**/*.tsx'),
+                import.meta.glob(['./pages/**/*.tsx', '!./pages/auth/**/*.tsx']),
             ),
         setup: ({ App, props }) => {
             return <App {...props} />;
         },
     }),
 );
+

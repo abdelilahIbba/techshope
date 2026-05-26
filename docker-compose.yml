@@ -16,7 +16,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-droguerie_s}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
     depends_on:
       db:
         condition: service_healthy

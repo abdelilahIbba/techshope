@@ -1,18 +1,8 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Rapports - POS System</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden antialiased">
+@extends('layouts.pos')
+@section('title', 'Rapports - POS System')
+@section('content')
 
-@include('partials.pos-nav')
+
 
 <div class="container flex-1 p-6 lg:p-8 overflow-y-auto w-full max-w-7xl mx-auto">
     
@@ -178,5 +168,5 @@
 
 </div>
 
-</body>
-</html>
+@endsection
+

@@ -6,11 +6,24 @@ import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
-import { disable, enable, show } from '@/routes/two-factor';
 import { type BreadcrumbItem } from '@/types';
 import { Form, Head } from '@inertiajs/react';
 import { ShieldBan, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
+
+const enableTwoFactorForm = {
+    form: () => ({
+        action: '/user/two-factor-authentication',
+        method: 'post' as const,
+    }),
+};
+
+const disableTwoFactorForm = {
+    form: () => ({
+        action: '/user/two-factor-authentication',
+        method: 'delete' as const,
+    }),
+};
 
 interface TwoFactorProps {
     requiresConfirmation?: boolean;
@@ -20,7 +33,7 @@ interface TwoFactorProps {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Authentification à deux facteurs',
-        href: show.url(),
+        href: '/settings/two-factor',
     },
 ];
 
@@ -66,7 +79,7 @@ export default function TwoFactor({
                             />
 
                             <div className="relative inline">
-                                <Form {...disable.form()}>
+                                <Form {...disableTwoFactorForm.form()}>
                                     {({ processing }) => (
                                         <Button
                                             variant="destructive"
@@ -99,7 +112,7 @@ export default function TwoFactor({
                                     </Button>
                                 ) : (
                                     <Form
-                                        {...enable.form()}
+                                        {...enableTwoFactorForm.form()}
                                         onSuccess={() =>
                                             setShowSetupModal(true)
                                         }

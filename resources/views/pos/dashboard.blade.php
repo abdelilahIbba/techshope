@@ -1,18 +1,8 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de bord - CA</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        /* تم الاعتماد بالكامل على Tailwind، ولكن أبقينا هذا الجزء فارغاً لاحترام هيكل الكود الأصلي */
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden antialiased">
+@extends('layouts.pos')
+@section('title', 'Tableau de bord - CA')
+@section('content')
 
-@include('partials.pos-nav')
+
 
 <div class="container flex-1 p-6 lg:p-8 overflow-y-auto w-full max-w-7xl mx-auto">
     
@@ -22,7 +12,7 @@
         <p class="text-sm text-slate-400 mt-1">Utilisateur: {{ auth()->user()->name }}</p>
     </div>
 
-    <div class="filter-section bg-white border border-slate-200 rounded-2xl p-5 mb-8 shadow-sm">
+    <div class="filter-section bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-5 mb-8 shadow-sm">
         <form method="GET" action="{{ route('pos.dashboard') }}" class="filter-form flex flex-wrap gap-4 items-end">
             <div class="filter-group flex flex-col gap-1.5">
                 <label class="filter-label text-sm font-semibold text-slate-700">Date début</label>
@@ -42,25 +32,25 @@
     </div>
 
     <div class="stats-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="stat-card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="stat-card bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="stat-label text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">CA Total (période)</div>
             <div class="stat-value success text-3xl font-extrabold text-emerald-600">{{ number_format($totalRevenue, 2) }} <span class="text-xl text-emerald-500">{{ $currencySymbol }}</span></div>
         </div>
-        <div class="stat-card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="stat-card bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="stat-label text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Ventes (période)</div>
             <div class="stat-value text-3xl font-extrabold text-slate-900">{{ $salesCount }}</div>
         </div>
-        <div class="stat-card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="stat-card bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="stat-label text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Produits vendus</div>
             <div class="stat-value text-3xl font-extrabold text-slate-900">{{ $productsCount }}</div>
         </div>
-        <div class="stat-card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="stat-card bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
             <div class="stat-label text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">En stock</div>
             <div class="stat-value text-3xl font-extrabold text-red-500">{{ $lowStockCount }} <span class="text-xl text-red-400 font-medium">alertes</span></div>
         </div>
     </div>
 
-    <div class="table-container bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
+    <div class="table-container bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl shadow-sm overflow-hidden mb-8">
         <h2 class="section-title text-lg font-bold text-slate-900 p-5 border-b border-slate-200 bg-slate-50/50">Transactions de la période</h2>
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-slate-600">
@@ -96,7 +86,7 @@
         </div>
     </div>
 
-    <div class="table-container bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-8">
+    <div class="table-container bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl shadow-sm overflow-hidden mb-8">
         <h2 class="section-title text-lg font-bold text-slate-900 p-5 border-b border-slate-200 bg-slate-50/50">Produits vendus (période)</h2>
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left text-slate-600">
@@ -129,5 +119,6 @@
     </div>
 
 </div>
-</body>
-</html>
+@endsection
+
+

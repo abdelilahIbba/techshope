@@ -49,6 +49,11 @@ class Sale extends Model
         return $this->hasOne(SaleCancellation::class);
     }
 
+    public function exchanges(): HasMany
+    {
+        return $this->hasMany(SaleExchange::class);
+    }
+
     // Scopes utiles
     public function scopeCompleted($query)
     {

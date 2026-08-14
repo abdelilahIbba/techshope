@@ -6,11 +6,17 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { regenerateRecoveryCodes } from '@/routes/two-factor';
 import { Form } from '@inertiajs/react';
 import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AlertError from './alert-error';
+
+const regenerateRecoveryCodesForm = {
+    form: () => ({
+        action: '/user/two-factor-recovery-codes',
+        method: 'post' as const,
+    }),
+};
 
 interface TwoFactorRecoveryCodesProps {
     recoveryCodesList: string[];
@@ -81,7 +87,7 @@ export default function TwoFactorRecoveryCodes({
 
                     {canRegenerateCodes && (
                         <Form
-                            {...regenerateRecoveryCodes.form()}
+                            {...regenerateRecoveryCodesForm.form()}
                             options={{ preserveScroll: true }}
                             onSuccess={fetchRecoveryCodes}
                         >

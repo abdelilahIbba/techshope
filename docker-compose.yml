@@ -1,9 +1,9 @@
 services:
-  app:
+  techshope_app_v2:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: droguerie_app
+    container_name: techshope_app_v2
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
@@ -11,44 +11,44 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       DB_CONNECTION: pgsql
-      DB_HOST: db
+      DB_HOST: techshope_pgsql_v2
       DB_PORT: "5432"
       DB_DATABASE: ${DB_DATABASE:-droguerie_s}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
     depends_on:
-      db:
+      techshope_pgsql_v2:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - droguerie
+      - techshope_net_v2
 
-  web:
+  techshope_web_v2:
     image: nginx:1.27-alpine
-    container_name: droguerie_web
+    container_name: techshope_web_v2
     depends_on:
-      - app
+      - techshope_app_v2
     ports:
-      - "8000:80"
+      - "18080:80"
     volumes:
       - ./:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
     networks:
-      - droguerie
+      - techshope_net_v2
 
-  queue:
+  techshope_queue_v2:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: droguerie_queue
+    container_name: techshope_queue_v2
     working_dir: /var/www/html
     command: ["php", "artisan", "queue:work", "--tries=1", "--verbose"]
     depends_on:
-      db:
+      techshope_pgsql_v2:
         condition: service_healthy
-      app:
+      techshope_app_v2:
         condition: service_started
     volumes:
       - ./:/var/www/html
@@ -56,26 +56,26 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       DB_CONNECTION: pgsql
-      DB_HOST: db
+      DB_HOST: techshope_pgsql_v2
       DB_PORT: "5432"
       DB_DATABASE: ${DB_DATABASE:-droguerie_s}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
     restart: unless-stopped
     networks:
-      - droguerie
+      - techshope_net_v2
 
-  db:
+  techshope_pgsql_v2:
     image: postgres:16-alpine
-    container_name: droguerie_db
+    container_name: techshope_pgsql_v2
     environment:
       POSTGRES_DB: ${DB_DATABASE:-droguerie_s}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-55432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - techshope_pgdata_v2:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-droguerie_s}"]
       interval: 5s
@@ -84,26 +84,26 @@ services:
       start_period: 10s
     restart: unless-stopped
     networks:
-      - droguerie
+      - techshope_net_v2
 
-  vite:
+  techshope_vite_v2:
     image: node:22-alpine
-    container_name: droguerie_vite
+    container_name: techshope_vite_v2
     profiles: ["frontend"]
     working_dir: /var/www/html
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 15173"
     ports:
-      - "5173:5173"
+      - "15173:15173"
     volumes:
       - ./:/var/www/html
     depends_on:
-      - app
+      - techshope_app_v2
     networks:
-      - droguerie
+      - techshope_net_v2
 
 networks:
-  droguerie:
+  techshope_net_v2:
     driver: bridge
 
 volumes:
-  postgres_data:
+  techshope_pgdata_v2:

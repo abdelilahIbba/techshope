@@ -1,4 +1,3 @@
-import { update } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
 
 import InputError from '@/components/input-error';
@@ -13,6 +12,13 @@ interface ResetPasswordProps {
     email: string;
 }
 
+const resetPasswordForm = {
+    form: () => ({
+        action: '/reset-password',
+        method: 'post' as const,
+    }),
+};
+
 export default function ResetPassword({ token, email }: ResetPasswordProps) {
     return (
         <AuthLayout
@@ -22,7 +28,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
             <Head title="Reset password" />
 
             <Form
-                {...update.form()}
+                {...resetPasswordForm.form()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
             >

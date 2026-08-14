@@ -12,6 +12,7 @@ class Product extends Model
         'category_id',
         'supplier_id',
         'name',
+        'brand',
         'barcode',
         'barcode_type',
         'description',
@@ -24,15 +25,31 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'sell_by_length'  => 'boolean',
-        'stock_quantity'  => 'decimal:3',
-        'purchase_price'  => 'decimal:2',
-        'sale_price'      => 'decimal:2',
+        'sell_by_length' => 'boolean',
+        'stock_quantity' => 'decimal:3',
+        'purchase_price' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+    ];
+
+    protected $appends = [
+        'has_variants',
+        'available_sizes',
+        'available_colors',
     ];
 
     public function saleItems(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
     }
 
     public function category(): BelongsTo
@@ -43,5 +60,32 @@ class Product extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function getHasVariantsAttribute(): bool
+    {
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->contains(fn (ProductVariant $v) => ! $v->is_default);
+        }
+
+        return $this->variants()->where('is_default', false)->exists();
+    }
+
+    public function getAvailableSizesAttribute(): array
+    {
+        $source = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        return $source->pluck('size')->filter()->unique()->values()->all();
+    }
+
+    public function getAvailableColorsAttribute(): array
+    {
+        $source = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        return $source->pluck('color')->filter()->unique()->values()->all();
     }
 }

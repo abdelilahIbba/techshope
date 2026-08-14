@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\LicenseController;
+use Laravel\Fortify\Http\Controllers\EmailVerificationNotificationController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -23,6 +24,11 @@ Route::middleware(['auth'])->group(function () {
 
     // ── License key generation (Admin only, AJAX) ──
     Route::post('/license/generate', [LicenseController::class, 'generate'])->name('license.generate');
+
+    // Verify email notification endpoint used by auth/settings React pages.
+    Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
 
     // ── POS routes — protected by license check for non-admin users ──
     Route::middleware(['check.license'])->group(function () {
@@ -75,6 +81,8 @@ Route::middleware(['auth'])->group(function () {
         // ── Annulations ──
         Route::post('/pos/sales/{sale}/cancel', [PosController::class, 'cancelSale'])->middleware('permission:sale.cancel')->name('pos.sales.cancel');
         Route::post('/pos/sales/{sale}/cancel-item/{item}', [PosController::class, 'cancelSaleItem'])->middleware('permission:sale.cancel')->name('pos.sales.cancel-item');
+        Route::post('/pos/sales/{sale}/exchange-item/{item}', [PosController::class, 'exchangeSaleItem'])->middleware('permission:sale.cancel')->name('pos.sales.exchange-item');
+        Route::get('/pos/variants/options', [PosController::class, 'variantOptions'])->middleware('permission:pos.view')->name('pos.variants.options');
         Route::post('/pos/sales/{sale}/authorize-cancellation', [PosController::class, 'authorizeCancellation'])->middleware('permission:sale.cancel.authorize')->name('pos.sales.authorize-cancellation');
         
         // ── Dépenses ──
@@ -90,3 +98,5 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pos/reports/export/expenses', [PosController::class, 'exportExpenses'])->middleware('permission:reports.export')->name('pos.reports.export.expenses');
     });
 });
+
+require __DIR__.'/settings.php';

@@ -1,5 +1,4 @@
 import { login } from '@/routes';
-import { store } from '@/routes/register';
 import { Form, Head } from '@inertiajs/react';
 
 import InputError from '@/components/input-error';
@@ -10,6 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 
+const registerForm = {
+    form: () => ({
+        action: '/register',
+        method: 'post' as const,
+    }),
+};
+
 export default function Register() {
     return (
         <AuthLayout
@@ -18,7 +24,7 @@ export default function Register() {
         >
             <Head title="S'inscrire" />
             <Form
-                {...store.form()}
+                {...registerForm.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 className="flex flex-col gap-6"

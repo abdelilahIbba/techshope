@@ -32,7 +32,7 @@ copy .env.docker.example .env      # Windows CMD
 Generate app key once:
 
 ```bash
-docker compose run --rm app php artisan key:generate
+docker compose run --rm techshope_app_v2 php artisan key:generate
 ```
 
 ### B. Build and start containers
@@ -42,31 +42,31 @@ docker compose up -d --build
 ```
 
 This starts:
-- `web` (Nginx) at `http://localhost:8000`
-- `app` (PHP-FPM Laravel runtime)
-- `queue` (Laravel queue worker)
-- `db` (PostgreSQL 16)
+- `techshope_web_v2` (Nginx) at `http://localhost:18080`
+- `techshope_app_v2` (PHP-FPM Laravel runtime)
+- `techshope_queue_v2` (Laravel queue worker)
+- `techshope_pgsql_v2` (PostgreSQL 16)
 
 ### C. Run migrations and seeders
 
 ```bash
-docker compose exec app php artisan migrate --seed
+docker compose exec techshope_app_v2 php artisan migrate --seed
 ```
 
 ### D. Optional: run Vite in container
 
 ```bash
-docker compose --profile frontend up -d vite
+docker compose --profile frontend up -d techshope_vite_v2
 ```
 
-Vite will be available at `http://localhost:5173`.
+Vite will be available at `http://localhost:15173`.
 
 ### E. Useful commands
 
 ```bash
-docker compose logs -f app
-docker compose logs -f db
-docker compose exec app php artisan test
+docker compose logs -f techshope_app_v2
+docker compose logs -f techshope_pgsql_v2
+docker compose exec techshope_app_v2 php artisan test
 docker compose down
 ```
 
@@ -148,7 +148,7 @@ Open `.env` and adjust the values below at minimum:
 APP_NAME="Droguerie"
 APP_ENV=local
 APP_DEBUG=true
-APP_URL=http://localhost:8000
+APP_URL=http://localhost:18080
 
 # --- Database (SQLite — default, no server needed) ---
 DB_CONNECTION=sqlite

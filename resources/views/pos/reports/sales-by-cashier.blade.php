@@ -1,17 +1,8 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Performance Caissiers - POS System</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-50">
+@extends('layouts.pos')
+@section('title', 'Rapports - POS System')
+@section('content')
 
-@include('partials.pos-nav')
+
 
 <div class="container p-6 lg:p-8 max-w-7xl mx-auto">
     <div class="mb-6">
@@ -110,5 +101,5 @@
     </div>
 </div>
 
-</body>
-</html>
+@endsection
+

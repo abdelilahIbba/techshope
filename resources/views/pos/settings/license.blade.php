@@ -113,11 +113,11 @@
 
     <script>
         async function generateLicenseKey() {
-            const period = document.getElementById('license_period')?.value;
-            const btn = document.getElementById('generateLicenseBtn');
-            const btnText = document.getElementById('generateLicenseBtnText');
-            const box = document.getElementById('generatedKeyBox');
-            const textarea = document.getElementById('generatedKeyText');
+            var period = document.getElementById('license_period')?.value;
+            var btn = document.getElementById('generateLicenseBtn');
+            var btnText = document.getElementById('generateLicenseBtnText');
+            var box = document.getElementById('generatedKeyBox');
+            var textarea = document.getElementById('generatedKeyText');
 
             if (!period) return;
 
@@ -125,7 +125,7 @@
             btn.disabled = true;
 
             try {
-                const resp = await fetch(@json(route('license.generate')), {
+                var resp = await fetch(@json(route('license.generate')), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -136,7 +136,7 @@
                     body: JSON.stringify({ period }),
                 });
 
-                const data = await resp.json();
+                var data = await resp.json();
 
                 if (resp.ok && data.key) {
                     textarea.value = data.key;
@@ -154,13 +154,14 @@
         }
 
         function copyLicenseKey() {
-            const ta = document.getElementById('generatedKeyText');
+            var ta = document.getElementById('generatedKeyText');
             ta.select();
             document.execCommand('copy');
 
-            const copyBtn = document.getElementById('copyBtn');
+            var copyBtn = document.getElementById('copyBtn');
             copyBtn.textContent = 'Copié';
             setTimeout(() => { copyBtn.textContent = 'Copier'; }, 2000);
         }
     </script>
 </x-settings-layout>
+

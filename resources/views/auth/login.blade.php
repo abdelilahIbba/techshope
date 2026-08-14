@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Droguerie POS</title>
     @vite(['resources/css/app.css'])
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -105,7 +106,7 @@
                 class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-2 pb-2 relative z-10 flex-1 content-start">
                 @foreach($users as $user)
                     <!--------- cmt if === -------->
-                    @if($user->name === 'Abdelilah') @continue @endif
+                    {{-- @if($user->name === 'Abdelilah') @continue @endif --}}
                     <div class="user-card border border-slate-700 bg-slate-800/40 hover:bg-slate-800 rounded-2xl p-4 cursor-pointer flex flex-col items-center gap-3"
                         onclick="selectUser({{ $user->id }}, this)">
                         <div

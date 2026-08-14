@@ -1,56 +1,14 @@
-<!DOCTYPE html>
-<html lang="fr">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Système POS</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        /* Hide number input arrows */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        /* Modern Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        /* Smooth transitions */
-        .transition-smooth {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Glass effect */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-        }
-    </style>
-</head>
-
-<body class="bg-gray-100 text-slate-800 h-screen flex flex-col overflow-hidden antialiased">
+@extends('layouts.pos')
+@section('title', 'Système POS')
+@push('styles')
+<style>
+/* Hide number input arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+</style>
+@endpush
+@section('content')
 
     @php
         $preparedCategories = $categories->map(function ($category) {
@@ -73,7 +31,7 @@
         })->values();
     @endphp
 
-    @include('partials.pos-nav')
+    
 
     @if(session('success'))
         <div id="flash-success"
@@ -85,11 +43,11 @@
             </svg>
             {{ session('success') }}
         </div>
-        <script>setTimeout(() => { const el = document.getElementById('flash-success'); if (el) el.style.display = 'none'; }, 4000);</script>
+        <script>setTimeout(() => { var el = document.getElementById('flash-success'); if (el) el.style.display = 'none'; }, 4000);</script>
     @endif
 
     <div
-        class="flex-1 p-4 grid grid-cols-1 lg:grid-cols-[240px_1fr_400px] gap-4 h-[calc(100vh-64px)] min-h-0 container mx-auto max-w-[1920px]">
+        class="flex-1 p-4 grid grid-cols-1 lg:grid-cols-[240px_1fr_400px] gap-4 h-full min-h-0 container mx-auto max-w-[1920px]">
 
         <!-- Left Sidebar: Categories -->
         <aside class="glass-panel rounded-3xl p-1 shadow-sm border border-white/50 flex flex-col overflow-hidden">
@@ -103,7 +61,18 @@
         </aside>
 
         <!-- Main Content: Products & Search -->
-        <main class="flex flex-col gap-4 min-h-0">
+        <main class="flex flex-col gap-3 min-h-0">
+            <div class="glass-panel rounded-3xl px-5 py-4 shadow-sm border border-white/50 flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground/60">Catalogue instantané</p>
+                    <h3 class="text-2xl font-black text-card-foreground leading-tight">Choisissez un produit et encaissez vite</h3>
+                </div>
+                <div class="hidden xl:flex items-center gap-2 rounded-full bg-indigo-50 text-indigo-700 px-4 py-2 text-xs font-bold whitespace-nowrap">
+                    <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                    Recherche, scan et panier en un seul écran
+                </div>
+            </div>
+
             <!-- Search & Scanner Bar -->
             <div class="glass-panel rounded-3xl p-3 shadow-sm border border-white/50 shrink-0">
                 <div class="flex gap-3">
@@ -154,7 +123,7 @@
             <div
                 class="glass-panel rounded-3xl p-4 shadow-sm border border-white/50 flex-1 overflow-hidden flex flex-col">
                 <div id="products-grid"
-                    class="products-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 overflow-y-auto pr-1 pb-2 content-start h-full">
+                    class="products-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 overflow-y-auto pr-1 pb-2 content-start h-full">
                     <!-- Products injected by JS -->
                 </div>
             </div>
@@ -267,31 +236,32 @@
     </div>
 
     <script>
-        const categories = @json($preparedCategories);
-        const currencySymbol = @json($currencySymbol);
-        const categoryList = document.getElementById('category-list');
-        const productsGrid = document.getElementById('products-grid');
-        const activeCategoryName = document.getElementById('active-category-name');
-        const cartBody = document.getElementById('cart-body');
-        const cartTotal = document.getElementById('cart-total');
-        const hiddenItems = document.getElementById('hidden-items');
-        const barcodeInput = document.getElementById('barcode-input');
-        const scanQuantityInput = document.getElementById('scan-quantity');
-        const scanBtn = document.getElementById('scan-btn');
-        const emptyCartMsg = document.getElementById('empty-cart-msg');
-        const receivedAmountInput = document.getElementById('received-amount');
-        const changeAmountDisplay = document.getElementById('change-amount');
+(function() {
+var categories = @json($preparedCategories);
+        var currencySymbol = @json($currencySymbol);
+        var categoryList = document.getElementById('category-list');
+        var productsGrid = document.getElementById('products-grid');
+        var activeCategoryName = document.getElementById('active-category-name');
+        var cartBody = document.getElementById('cart-body');
+        var cartTotal = document.getElementById('cart-total');
+        var hiddenItems = document.getElementById('hidden-items');
+        var barcodeInput = document.getElementById('barcode-input');
+        var scanQuantityInput = document.getElementById('scan-quantity');
+        var scanBtn = document.getElementById('scan-btn');
+        var emptyCartMsg = document.getElementById('empty-cart-msg');
+        var receivedAmountInput = document.getElementById('received-amount');
+        var changeAmountDisplay = document.getElementById('change-amount');
 
         // AZERTY to QWERTY mapping for numbers (Dual support: FR/EN)
-        const azertyMap = {
+        var azertyMap = {
             '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
             '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
             ')': '°', '=': '+', '§': '!'
         };
 
-        let activeCategoryId = categories.length ? categories[0].id : null;
-        const allProducts = categories.flatMap(c => c.products);
-        const cart = {};
+        var activeCategoryId = categories.length ? categories[0].id : null;
+        var allProducts = categories.flatMap(c => c.products);
+        var cart = {};
 
         function getCategoryById(categoryId) {
             return categories.find((category) => category.id === categoryId);
@@ -301,19 +271,19 @@
             categoryList.innerHTML = '';
 
             categories.forEach((category) => {
-                const button = document.createElement('button');
+                var button = document.createElement('button');
                 button.type = 'button';
 
-                const isActive = category.id === activeCategoryId;
+                var isActive = category.id === activeCategoryId;
 
-                let baseClasses = 'w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 border flex items-center justify-between group ';
-                let activeClasses = isActive
+                var baseClasses = 'w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 border flex items-center justify-between group ';
+                var activeClasses = isActive
                     ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-transparent shadow-lg shadow-indigo-200 scale-[1.02]'
                     : 'bg-card border-border/60 text-muted-foreground hover:border-border hover:bg-muted/20 hover:text-foreground shadow-sm';
 
                 button.className = baseClasses + activeClasses;
 
-                const countBadge = isActive
+                var countBadge = isActive
                     ? `<span class="bg-white/20 text-white px-2 py-0.5 rounded text-[10px] font-bold">${category.products.length}</span>`
                     : `<span class="bg-gray-100 text-slate-500 px-2 py-0.5 rounded text-[10px] font-bold group-hover:bg-gray-200">${category.products.length}</span>`;
 
@@ -330,11 +300,11 @@
         }
 
         function renderProducts() {
-            const searchTerm = barcodeInput.value.trim().toLowerCase();
-            let productsToDisplay = [];
+            var searchTerm = barcodeInput.value.trim().toLowerCase();
+            var productsToDisplay = [];
 
             if (searchTerm === '') {
-                const activeCategory = getCategoryById(activeCategoryId);
+                var activeCategory = getCategoryById(activeCategoryId);
                 if (!activeCategory) {
                     activeCategoryName.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400"></span> Aucune catégorie`;
                     productsGrid.innerHTML = `
@@ -368,52 +338,59 @@
             }
 
             productsToDisplay.forEach((product) => {
-                const card = document.createElement('div');
-                const cartQty = cart[product.barcode]?.quantity || 0;
+                var card = document.createElement('div');
+                var cartQty = cart[product.barcode]?.quantity || 0;
 
                 // Modern Product Card
-                card.className = 'group bg-card border border-border/60 rounded-3xl p-4 flex flex-col gap-2 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none h-44';
+                card.className = 'group bg-card border border-border/60 rounded-2xl p-3 flex flex-col gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100/30 hover:-translate-y-0.5 hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none min-h-[13rem]';
 
-                let isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
-                let stockFormatted = isLengthProduct ? parseFloat(Number(product.stock_quantity).toFixed(3)) : Math.floor(product.stock_quantity);
-                let stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
-                let stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
-                let unitBadge = '';
+                var isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
+                var stockFormatted = isLengthProduct ? parseFloat(Number(product.stock_quantity).toFixed(3)) : Math.floor(product.stock_quantity);
+                var stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
+                var stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
+                var unitBadge = '';
                 if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📏 m</span>';
                 if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📐 cm</span>';
 
                 card.innerHTML = `
+                <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 opacity-80"></div>
+
                 <!-- Hover Add Icon (Top Left for LTR, Top Right for RTL visual balance) -->
-                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 transform translate-y-1 group-hover:translate-y-0">
+                <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 transform translate-y-1 group-hover:translate-y-0">
                     <div class="bg-indigo-600 text-white w-8 h-8 flex items-center justify-center rounded-full shadow-lg shadow-indigo-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                     </div>
                 </div>
 
                 <!-- Product Content -->
-                <div class="flex-1 flex flex-col relative z-0">
-                    <!-- Title with auto-RTL detection support via CSS dir=auto typically, but here we enforce right align if arabic? No, let's keep it standard but give breathing room -->
-                    <div class="product-name font-bold text-card-foreground text-[16px] leading-[1.3] line-clamp-2 h-[2.6em] mb-1" dir="auto">${product.name}</div>
-                    
-                    <div class="flex items-center gap-2 mt-auto">
-                        <div class="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 truncate max-w-[120px]">${product.barcode}</div>
-                        ${unitBadge}
+                <div class="flex-1 flex flex-col relative z-0 pt-1">
+                    <div class="flex items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="product-name font-black text-card-foreground text-[15px] leading-[1.25] line-clamp-2 h-[2.5em]" dir="auto">${product.name}</div>
+                            <div class="mt-2 flex items-center gap-2 flex-wrap">
+                                <div class="text-[10px] font-mono text-slate-500 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100 truncate max-w-[128px]">${product.barcode}</div>
+                                ${unitBadge}
+                            </div>
+                        </div>
+                        <div class="shrink-0 rounded-2xl bg-slate-50 border border-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                            Sale
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Footer -->
-                <div class="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                <div class="mt-auto pt-3 border-t border-border/40 flex items-center justify-between gap-2">
                     <div class="flex flex-col">
-                         <div class="font-black text-indigo-600 text-xl tracking-tight leading-none flex items-baseline gap-0.5">
+                         <div class="font-black text-indigo-600 text-2xl tracking-tight leading-none flex items-baseline gap-0.5">
                             ${Number(product.price).toFixed(2)}
-                            <span class="text-[10px] font-bold text-slate-400 self-start mt-1">${currencySymbol}</span>
+                            <span class="text-[10px] font-bold text-slate-400 self-start mt-1.5">${currencySymbol}</span>
                          </div>
-                         <div class="text-[11px] font-bold text-slate-400 mt-0.5">
+                         <div class="text-[11px] font-semibold text-slate-400 mt-1">
                              A: ${Number(product.purchase_price).toFixed(2)} ${currencySymbol}
                          </div>
                     </div>
                     
-                    <div class="${stockColor} px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm border border-transparent">
+                    <div class="${stockColor} px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm border border-transparent text-center leading-tight min-w-[92px]">
                         ${stockText}
                     </div>
                 </div>
@@ -431,8 +408,8 @@
         }
 
         function addProductToCart(product, quantityToAdd) {
-            const currentQuantity = cart[product.barcode]?.quantity || 0;
-            const nextQuantity = currentQuantity + quantityToAdd;
+            var currentQuantity = cart[product.barcode]?.quantity || 0;
+            var nextQuantity = currentQuantity + quantityToAdd;
 
             if (nextQuantity > product.stock_quantity) {
                 // Toast notification instead of alert could be better, but sticking to alert for simplicity unless upgrade desired
@@ -457,17 +434,17 @@
         }
 
         function changeQuantity(barcode, delta) {
-            const item = cart[barcode];
+            var item = cart[barcode];
 
             if (!item) {
                 return;
             }
 
-            const isLength = item.unit === 'metre' || item.unit === 'cm';
-            const defaultDelta = isLength ? 0.1 : 1;
-            const finalDelta = typeof delta === 'number' ? delta : defaultDelta;
+            var isLength = item.unit === 'metre' || item.unit === 'cm';
+            var defaultDelta = isLength ? 0.1 : 1;
+            var finalDelta = typeof delta === 'number' ? delta : defaultDelta;
             
-            const nextQuantity = Math.max(0, item.quantity + finalDelta);
+            var nextQuantity = Math.max(0, item.quantity + finalDelta);
 
             if (nextQuantity <= 0) {
                 delete cart[barcode];
@@ -483,8 +460,8 @@
         }
 
         function updateCartTotal() {
-            const items = Object.values(cart);
-            let total = 0;
+            var items = Object.values(cart);
+            var total = 0;
             items.forEach((item) => {
                 total += item.unit_price * item.quantity;
             });
@@ -493,9 +470,9 @@
         }
 
         function calculateChange() {
-            const total = parseFloat(cartTotal.textContent) || 0;
-            const received = parseFloat(receivedAmountInput.value) || 0;
-            const change = received - total;
+            var total = parseFloat(cartTotal.textContent) || 0;
+            var received = parseFloat(receivedAmountInput.value) || 0;
+            var change = received - total;
 
             if (received > 0 && change >= 0) {
                 changeAmountDisplay.textContent = change.toFixed(2);
@@ -512,7 +489,7 @@
         receivedAmountInput.addEventListener('input', calculateChange);
 
         function renderCart() {
-            const items = Object.values(cart);
+            var items = Object.values(cart);
             cartBody.innerHTML = '';
             hiddenItems.innerHTML = '';
 
@@ -524,11 +501,11 @@
 
             emptyCartMsg.classList.add('hidden');
 
-            let total = 0;
+            var total = 0;
 
             items.forEach((item, index) => {
-                const row = document.createElement('tr');
-                const lineTotal = item.unit_price * item.quantity;
+                var row = document.createElement('tr');
+                var lineTotal = item.unit_price * item.quantity;
                 total += lineTotal;
 
                 // Updated Cart Item Design
@@ -569,16 +546,16 @@
             `;
 
                 // Handle price input changes
-                const priceInput = row.querySelector('.price-input');
+                var priceInput = row.querySelector('.price-input');
                 priceInput.addEventListener('input', (event) => {
-                    const newPrice = parseFloat(event.target.value);
+                    var newPrice = parseFloat(event.target.value);
                     if (!isNaN(newPrice) && newPrice >= 0) {
                         item.unit_price = newPrice;
-                        const newLineTotal = item.unit_price * item.quantity;
+                        var newLineTotal = item.unit_price * item.quantity;
                         row.querySelector('.line-total').textContent = newLineTotal.toFixed(2);
                         
                         // Update hidden field immediately
-                        const hiddenPriceField = hiddenItems.querySelector(`input[name="items[${index}][price]"]`);
+                        var hiddenPriceField = hiddenItems.querySelector(`input[name="items[${index}][price]"]`);
                         if (hiddenPriceField) {
                             hiddenPriceField.value = newPrice;
                         }
@@ -593,19 +570,19 @@
                 });
 
                 row.querySelector('.qty-minus').addEventListener('click', () => {
-                    const delta = (item.unit === 'metre' || item.unit === 'cm') ? -0.1 : -1;
+                    var delta = (item.unit === 'metre' || item.unit === 'cm') ? -0.1 : -1;
                     changeQuantity(item.barcode, delta);
                 });
                 row.querySelector('.qty-plus').addEventListener('click', () => {
-                    const delta = (item.unit === 'metre' || item.unit === 'cm') ? 0.1 : 1;
+                    var delta = (item.unit === 'metre' || item.unit === 'cm') ? 0.1 : 1;
                     changeQuantity(item.barcode, delta);
                 });
 
                 // Handle direct quantity input
-                const directInput = row.querySelector('.qty-direct-input');
+                var directInput = row.querySelector('.qty-direct-input');
                 if (directInput) {
                     directInput.addEventListener('change', () => {
-                        const newQty = parseFloat(parseFloat(directInput.value).toFixed(3));
+                        var newQty = parseFloat(parseFloat(directInput.value).toFixed(3));
                         
                         if (isNaN(newQty) || newQty <= 0) {
                             delete cart[item.barcode];
@@ -636,9 +613,9 @@
                     directInput.addEventListener('keydown', (event) => {
                         if (azertyMap[event.key]) {
                             event.preventDefault();
-                            const start = directInput.selectionStart;
-                            const end = directInput.selectionEnd;
-                            const val = directInput.value;
+                            var start = directInput.selectionStart;
+                            var end = directInput.selectionEnd;
+                            var val = directInput.value;
                             directInput.value = val.slice(0, start) + azertyMap[event.key] + val.slice(end);
                             directInput.setSelectionRange(start + 1, start + 1);
                             directInput.dispatchEvent(new Event('change'));
@@ -654,17 +631,17 @@
                 cartBody.appendChild(row);
 
                 // Form Fields
-                const barcodeField = document.createElement('input');
+                var barcodeField = document.createElement('input');
                 barcodeField.type = 'hidden';
                 barcodeField.name = `items[${index}][barcode]`;
                 barcodeField.value = item.barcode;
 
-                const quantityField = document.createElement('input');
+                var quantityField = document.createElement('input');
                 quantityField.type = 'hidden';
                 quantityField.name = `items[${index}][quantity]`;
                 quantityField.value = item.quantity;
 
-                const priceField = document.createElement('input');
+                var priceField = document.createElement('input');
                 priceField.type = 'hidden';
                 priceField.name = `items[${index}][price]`;
                 priceField.value = item.unit_price;
@@ -678,8 +655,8 @@
         }
 
         async function scanAndAdd() {
-            const barcode = barcodeInput.value.trim();
-            const quantity = parseFloat(scanQuantityInput.value) || 1;
+            var barcode = barcodeInput.value.trim();
+            var quantity = parseFloat(scanQuantityInput.value) || 1;
 
             if (!barcode) {
                 return;
@@ -693,7 +670,7 @@
         `;
 
             try {
-                const response = await fetch("{{ route('pos.scan') }}?barcode=" + encodeURIComponent(barcode));
+                var response = await fetch("{{ route('pos.scan') }}?barcode=" + encodeURIComponent(barcode));
 
                 if (!response.ok) {
                     // Show error effect on input
@@ -704,7 +681,7 @@
                     return;
                 }
 
-                const product = await response.json();
+                var product = await response.json();
                 activeCategoryId = product.category_id;
                 addProductToCart(product, quantity);
 
@@ -731,9 +708,9 @@
 
 
         barcodeInput.addEventListener('input', (event) => {
-            let value = barcodeInput.value;
-            let corrected = '';
-            let changed = false;
+            var value = barcodeInput.value;
+            var corrected = '';
+            var changed = false;
 
             for (let char of value) {
                 if (azertyMap[char]) {
@@ -757,9 +734,9 @@
         scanQuantityInput.addEventListener('keydown', (event) => {
             if (azertyMap[event.key]) {
                 event.preventDefault();
-                const start = scanQuantityInput.selectionStart;
-                const end = scanQuantityInput.selectionEnd;
-                const val = scanQuantityInput.value;
+                var start = scanQuantityInput.selectionStart;
+                var end = scanQuantityInput.selectionEnd;
+                var val = scanQuantityInput.value;
                 scanQuantityInput.value = val.slice(0, start) + azertyMap[event.key] + val.slice(end);
                 scanQuantityInput.setSelectionRange(start + 1, start + 1);
                 // Trigger input event
@@ -792,7 +769,10 @@
                 barcodeInput.focus();
             }
         });
-    </script>
-</body>
+})();
+</script>
+@endsection
 
-</html>
+
+
+

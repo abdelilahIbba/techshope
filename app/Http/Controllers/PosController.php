@@ -7,17 +7,21 @@ use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\License;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Receipt;
 use App\Models\Sale;
 use App\Models\SaleCancellation;
+use App\Models\SaleExchange;
 use App\Models\SaleItem;
 use App\Models\Role;
 use App\Models\Permission;
 use App\Models\AuditLog;
 use App\Models\Setting;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\LicenseService;
+use App\Services\VariantStockService;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +35,9 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class PosController extends Controller
 {
+    public function __construct(private readonly VariantStockService $variantStock)
+    {
+    }
     private function permissionCatalog(): array
     {
         return [
@@ -169,7 +176,7 @@ class PosController extends Controller
             });
 
         $productsCount = $productsSold->count();
-        $lowStockCount = Product::query()->where('stock_quantity', '<=', 10)->count();
+        $lowStockCount = ProductVariant::query()->where('stock_quantity', '<=', 10)->count();
 
         return view('pos.dashboard', [
             'sales' => $sales,
@@ -215,21 +222,33 @@ class PosController extends Controller
             ->with([
                 'products' => function ($query) {
                     $query
-                        ->select('id', 'name', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id')
+                        ->select('id', 'name', 'brand', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id', 'unit')
+                        ->with(['variants' => function ($q) {
+                            $q->select('id', 'product_id', 'size', 'color', 'barcode', 'stock_quantity', 'is_default')
+                                ->orderBy('size')
+                                ->orderBy('color');
+                        }])
                         ->orderBy('name');
                 },
             ])
             ->get();
 
+        $filterSizes = ProductVariant::query()->whereNotNull('size')->distinct()->orderBy('size')->pluck('size');
+        $filterColors = ProductVariant::query()->whereNotNull('color')->distinct()->orderBy('color')->pluck('color');
+        $filterBrands = Product::query()->whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand');
+
         return view('pos.index', [
             'categories' => $categories,
+            'filterSizes' => $filterSizes,
+            'filterColors' => $filterColors,
+            'filterBrands' => $filterBrands,
         ]);
     }
 
     public function stock(): View
     {
         $products = Product::query()
-            ->with(['category:id,name', 'supplier:id,name'])
+            ->with(['category:id,name', 'supplier:id,name', 'variants'])
             ->orderBy('name')
             ->get();
 
@@ -243,60 +262,98 @@ class PosController extends Controller
             ->orderBy('name')
             ->get();
 
+        $filterSizes = ProductVariant::query()->whereNotNull('size')->distinct()->orderBy('size')->pluck('size');
+        $filterColors = ProductVariant::query()->whereNotNull('color')->distinct()->orderBy('color')->pluck('color');
+        $filterBrands = Product::query()->whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand');
+
+        $stockHistory = StockMovement::query()
+            ->with(['variant.product:id,name,brand', 'user:id,name'])
+            ->latest()
+            ->limit(50)
+            ->get();
+
         return view('pos.stock', [
             'products' => $products,
             'suppliers' => $suppliers,
             'categories' => $categories,
+            'filterSizes' => $filterSizes,
+            'filterColors' => $filterColors,
+            'filterBrands' => $filterBrands,
+            'stockHistory' => $stockHistory,
         ]);
     }
 
     public function addProduct(Request $request)
     {
         $validated = $request->validate([
-            'name'           => ['required', 'string', 'max:255'],
-            'barcode'        => ['nullable', 'string', 'unique:products,barcode'],
-            'category_id'    => ['required', 'exists:categories,id'],
-            'supplier_id'    => ['nullable', 'exists:suppliers,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'brand' => ['nullable', 'string', 'max:255'],
+            'barcode' => ['nullable', 'string', 'unique:products,barcode', 'unique:product_variants,barcode'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'stock_quantity' => ['required', 'numeric', 'min:0'],
-            'unit'           => ['nullable', 'string', 'in:unité,metre,cm,m'],
+            'unit' => ['nullable', 'string', 'in:unité,metre,cm,m'],
             'sell_by_length' => ['nullable', 'boolean'],
-            'length_unit'    => ['nullable', 'string', 'in:m,cm'],
+            'length_unit' => ['nullable', 'string', 'in:m,cm'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
-            'sale_price'     => ['required', 'numeric', 'min:0'],
+            'sale_price' => ['required', 'numeric', 'min:0'],
+            'sizes' => ['nullable', 'array'],
+            'sizes.*' => ['nullable', 'string', 'max:50'],
+            'colors' => ['nullable', 'array'],
+            'colors.*' => ['nullable', 'string', 'max:50'],
+            'sizes_text' => ['nullable', 'string', 'max:500'],
+            'colors_text' => ['nullable', 'string', 'max:500'],
         ]);
 
         $validated['sell_by_length'] = (bool) ($validated['sell_by_length'] ?? false);
 
-        // If sold by length, sync unit with length_unit
-        if ($validated['sell_by_length'] && !empty($validated['length_unit'])) {
+        if ($validated['sell_by_length'] && ! empty($validated['length_unit'])) {
             $validated['unit'] = $validated['length_unit'];
         } else {
             $validated['unit'] = $validated['unit'] ?? 'unité';
         }
 
-
-        // Auto-generate barcode if not provided
         if (empty($validated['barcode'])) {
-            $validated['barcode'] = $this->generateUniqueBarcode();
+            $validated['barcode'] = $this->variantStock->generateUniqueBarcode();
         }
 
-        $product = Product::query()->create($validated);
+        $sizes = $validated['sizes'] ?? [];
+        $colors = $validated['colors'] ?? [];
+        if (! empty($validated['sizes_text'])) {
+            $sizes[] = $validated['sizes_text'];
+        }
+        if (! empty($validated['colors_text'])) {
+            $colors[] = $validated['colors_text'];
+        }
 
-        // After creation, redirect back and pass the new product id to allow printing
+        $stockPerVariant = (float) $validated['stock_quantity'];
+        $productData = collect($validated)->except([
+            'sizes', 'colors', 'sizes_text', 'colors_text', 'stock_quantity',
+        ])->all();
+        $productData['stock_quantity'] = 0;
+
+        $product = DB::transaction(function () use ($productData, $sizes, $colors, $stockPerVariant, $validated) {
+            $product = Product::query()->create($productData);
+            $this->variantStock->syncVariants(
+                $product,
+                $sizes,
+                $colors,
+                $stockPerVariant,
+                $validated['barcode'] ?? null,
+            );
+
+            return $product;
+        });
+
         return redirect()->route('pos.stock')->with([
-            'success' => 'Produit ajouté avec succès!',
+            'success' => 'Produit ajouté avec succès! Variantes générées automatiquement.',
             'new_product_id' => $product->id,
         ]);
     }
 
     private function generateUniqueBarcode(): string
     {
-        do {
-            // 12-digit numeric code (can be adjusted)
-            $barcode = (string) random_int(100000000000, 999999999999);
-        } while (Product::query()->where('barcode', $barcode)->exists());
-
-        return $barcode;
+        return $this->variantStock->generateUniqueBarcode();
     }
 
     /**
@@ -342,15 +399,46 @@ class PosController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'barcode' => ['required', 'string', 'unique:products,barcode,' . $product->id],
+            'brand' => ['nullable', 'string', 'max:255'],
+            'barcode' => ['required', 'string', 'unique:products,barcode,'.$product->id],
             'category_id' => ['required', 'exists:categories,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'sale_price' => ['required', 'numeric', 'min:0'],
             'unit' => ['nullable', 'string', 'in:unité,metre,cm'],
+            'sizes' => ['nullable', 'array'],
+            'sizes.*' => ['nullable', 'string', 'max:50'],
+            'colors' => ['nullable', 'array'],
+            'colors.*' => ['nullable', 'string', 'max:50'],
+            'sizes_text' => ['nullable', 'string', 'max:500'],
+            'colors_text' => ['nullable', 'string', 'max:500'],
+            'stock_per_variant' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $product->update($validated);
+        $sizes = $validated['sizes'] ?? [];
+        $colors = $validated['colors'] ?? [];
+        if (! empty($validated['sizes_text'])) {
+            $sizes[] = $validated['sizes_text'];
+        }
+        if (! empty($validated['colors_text'])) {
+            $colors[] = $validated['colors_text'];
+        }
+
+        // Preserve existing size/color sets when fields omitted.
+        if ($sizes === [] && $colors === [] && $product->variants()->where('is_default', false)->exists()) {
+            $sizes = $product->variants()->whereNotNull('size')->pluck('size')->unique()->all();
+            $colors = $product->variants()->whereNotNull('color')->pluck('color')->unique()->all();
+        }
+
+        $stockPerNew = (float) ($validated['stock_per_variant'] ?? 0);
+
+        DB::transaction(function () use ($product, $validated, $sizes, $colors, $stockPerNew) {
+            $product->update(collect($validated)->only([
+                'name', 'brand', 'barcode', 'category_id', 'supplier_id', 'purchase_price', 'sale_price', 'unit',
+            ])->all());
+
+            $this->variantStock->syncVariants($product->fresh(), $sizes, $colors, $stockPerNew);
+        });
 
         return redirect()->route('pos.stock')->with('success', 'Produit modifié avec succès!');
     }
@@ -365,35 +453,44 @@ class PosController extends Controller
     public function adjustStock(Request $request, Product $product)
     {
         $validated = $request->validate([
+            'product_variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
             'adjustment_type' => ['required', 'in:add,remove,set'],
             'quantity' => ['required', 'numeric', 'min:0'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $currentStock = (float) $product->stock_quantity;
-        $adjustmentQty = (float) $validated['quantity'];
-        $newStock = $currentStock;
-
-        switch ($validated['adjustment_type']) {
-            case 'add':
-                $newStock = $currentStock + $adjustmentQty;
-                break;
-            case 'remove':
-                $newStock = max(0, $currentStock - $adjustmentQty);
-                break;
-            case 'set':
-                $newStock = $adjustmentQty;
-                break;
+        $variant = null;
+        if (! empty($validated['product_variant_id'])) {
+            $variant = ProductVariant::query()
+                ->where('product_id', $product->id)
+                ->where('id', $validated['product_variant_id'])
+                ->firstOrFail();
+        } else {
+            $variant = $this->variantStock->ensureDefaultVariant($product);
         }
 
-        $product->update(['stock_quantity' => $newStock]);
+        $variant = $this->variantStock->adjust(
+            $variant,
+            $validated['adjustment_type'],
+            (float) $validated['quantity'],
+            $validated['reason'] ?? null,
+        );
 
         $unitLabel = $product->unit ?? 'unités';
-        if ($unitLabel === 'metre') $unitLabel = 'mètres';
-        if ($unitLabel === 'cm') $unitLabel = 'cm';
-        if ($unitLabel === 'unité') $unitLabel = 'pièces';
+        if ($unitLabel === 'metre') {
+            $unitLabel = 'mètres';
+        }
+        if ($unitLabel === 'cm') {
+            $unitLabel = 'cm';
+        }
+        if ($unitLabel === 'unité') {
+            $unitLabel = 'pièces';
+        }
 
-        return redirect()->route('pos.stock')->with('success', 'Stock ajusté avec succès! Nouveau stock: ' . (float)$newStock . ' ' . $unitLabel);
+        return redirect()->route('pos.stock')->with(
+            'success',
+            'Stock variante ajusté ('.$variant->label().') ! Nouveau stock: '.(float) $variant->stock_quantity.' '.$unitLabel
+        );
     }
 
     public function editSupplier(Request $request, Supplier $supplier)
@@ -459,14 +556,15 @@ class PosController extends Controller
 
     public function notifications(): View
     {
-        $lowStockProducts = Product::query()
-            ->with('category:id,name')
+        $lowStockVariants = ProductVariant::query()
+            ->with(['product:id,name,brand,unit,category_id', 'product.category:id,name'])
             ->where('stock_quantity', '<=', 10)
             ->orderBy('stock_quantity')
             ->get();
 
         return view('pos.notifications', [
-            'lowStockProducts' => $lowStockProducts,
+            'lowStockVariants' => $lowStockVariants,
+            'lowStockProducts' => $lowStockVariants,
         ]);
     }
 
@@ -798,33 +896,87 @@ class PosController extends Controller
     public function scan(Request $request): JsonResponse
     {
         $barcode = $request->query('barcode');
+        $size = $request->query('size');
+        $color = $request->query('color');
+        $brand = $request->query('brand');
 
-        if (!$barcode) {
-             return response()->json([
+        if (! $barcode) {
+            return response()->json([
                 'message' => 'Barcode is required.',
             ], 400);
         }
 
-        /** @var Product|null $product */
-        $product = Product::query()
-            ->where('barcode', $barcode)
-            ->orWhere('name', $barcode)
-            ->first();
+        $variant = $this->variantStock->findByBarcode($barcode);
 
-        if ($product === null) {
-            return response()->json([
-                'message' => 'Product not found for this barcode.',
-            ], 404);
+        if ($variant === null) {
+            /** @var Product|null $product */
+            $product = Product::query()
+                ->with('variants')
+                ->where('barcode', $barcode)
+                ->orWhere('name', $barcode)
+                ->first();
+
+            if ($product === null) {
+                return response()->json([
+                    'message' => 'Product not found for this barcode.',
+                ], 404);
+            }
+
+            if ($size !== null || $color !== null || $brand !== null) {
+                $variant = $product->variants
+                    ->first(function (ProductVariant $v) use ($size, $color, $brand) {
+                        return ($size === null || $v->size === $size)
+                            && ($color === null || $v->color === $color)
+                            && ($brand === null || $v->product?->brand === $brand);
+                    });
+            }
+
+            if ($variant === null && $product->variants->count() === 1) {
+                $variant = $product->variants->first();
+            }
+
+            if ($variant === null) {
+                return response()->json([
+                    'needs_variant' => true,
+                    'product' => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'brand' => $product->brand,
+                        'barcode' => $product->barcode,
+                        'category_id' => $product->category_id,
+                        'price' => (float) $product->sale_price,
+                        'purchase_price' => (float) $product->purchase_price,
+                        'unit' => $product->unit ?? 'unité',
+                        'sizes' => $product->available_sizes,
+                        'colors' => $product->available_colors,
+                        'variants' => $product->variants->map(fn (ProductVariant $v) => [
+                            'id' => $v->id,
+                            'size' => $v->size,
+                            'color' => $v->color,
+                            'barcode' => $v->barcode,
+                            'stock_quantity' => (float) $v->stock_quantity,
+                            'label' => $v->label(),
+                        ])->values(),
+                    ],
+                ]);
+            }
         }
+
+        $product = $variant->product;
 
         return response()->json([
             'id' => $product->id,
+            'variant_id' => $variant->id,
             'name' => $product->name,
-            'barcode' => $product->barcode,
+            'brand' => $product->brand,
+            'size' => $variant->size,
+            'color' => $variant->color,
+            'variant_label' => $variant->label(),
+            'barcode' => $variant->barcode,
             'category_id' => $product->category_id,
-            'price' => (float) ($product->sale_price ?? $product->price ?? 0),
+            'price' => (float) ($product->sale_price ?? 0),
             'purchase_price' => (float) ($product->purchase_price ?? 0),
-            'stock_quantity' => (float) $product->stock_quantity,
+            'stock_quantity' => (float) $variant->stock_quantity,
             'unit' => $product->unit ?? 'unité',
         ]);
     }
@@ -836,13 +988,14 @@ class PosController extends Controller
             'items.*.barcode' => ['required', 'string'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
             'items.*.price' => ['required', 'numeric', 'min:0'],
+            'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
         ]);
 
         $customerId = $validated['customer_id'] ?? Customer::query()->value('id');
 
-        if (!$customerId) {
+        if (! $customerId) {
             return back()->withErrors([
                 'customer_id' => 'No customer found. Create at least one customer before checkout.',
             ]);
@@ -853,32 +1006,44 @@ class PosController extends Controller
             $totalAmount = 0;
 
             foreach ($validated['items'] as $item) {
-                /** @var Product|null $product */
-                $product = Product::query()
-                    ->where('barcode', $item['barcode'])
-                    ->lockForUpdate()
-                    ->first();
+                $variant = null;
 
-                if ($product === null) {
-                    abort(422, 'Product not found for barcode: ' . $item['barcode']);
+                if (! empty($item['variant_id'])) {
+                    $variant = ProductVariant::query()
+                        ->with('product')
+                        ->where('id', $item['variant_id'])
+                        ->lockForUpdate()
+                        ->first();
+                }
+
+                if ($variant === null) {
+                    $variant = ProductVariant::query()
+                        ->with('product')
+                        ->where('barcode', $item['barcode'])
+                        ->lockForUpdate()
+                        ->first();
+                }
+
+                if ($variant === null) {
+                    abort(422, 'Variant not found for barcode: '.$item['barcode']);
                 }
 
                 $quantity = (float) $item['quantity'];
-
-                if ($product->stock_quantity < $quantity) {
-                    abort(422, 'Insufficient stock for: ' . $product->name);
-                }
-
-                // Use custom price from request
                 $unitPrice = (float) $item['price'];
-
                 $subtotal = $unitPrice * $quantity;
 
-                $product->stock_quantity = $product->stock_quantity - $quantity;
-                $product->save();
+                $this->variantStock->decrement(
+                    $variant,
+                    $quantity,
+                    StockMovement::TYPE_SALE,
+                    Sale::class,
+                    null,
+                    'Vente POS'
+                );
 
                 $resolvedItems[] = [
-                    'product' => $product,
+                    'product' => $variant->product,
+                    'variant' => $variant,
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'subtotal' => $subtotal,
@@ -900,15 +1065,18 @@ class PosController extends Controller
                 SaleItem::query()->create([
                     'sale_id' => $sale->id,
                     'product_id' => $row['product']->id,
+                    'product_variant_id' => $row['variant']->id,
                     'quantity' => $row['quantity'],
                     'unit_price' => $row['unit_price'],
                     'subtotal' => $row['subtotal'],
                 ]);
             }
 
+            // Attach sale id on movements for the just-created sale (optional refinement skipped).
+
             $receipt = Receipt::query()->create([
                 'sale_id' => $sale->id,
-                'receipt_number' => 'RCP-' . now()->format('Ymd') . '-' . $sale->id,
+                'receipt_number' => 'RCP-'.now()->format('Ymd').'-'.$sale->id,
                 'printed_at' => now(),
             ]);
 
@@ -1109,20 +1277,37 @@ PS;
         $salesData = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('product_variants', 'sale_items.product_variant_id', '=', 'product_variants.id')
             ->whereBetween('sales.date', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('sales.status', 'completed')
             ->select(
                 'products.id',
                 'products.name',
+                'products.brand',
                 'products.unit',
                 'products.category_id',
                 'products.purchase_price',
+                'product_variants.id as variant_id',
+                'product_variants.size',
+                'product_variants.color',
+                'product_variants.barcode as variant_barcode',
                 DB::raw('SUM(sale_items.quantity) as total_quantity'),
                 DB::raw('SUM(sale_items.subtotal) as total_revenue'),
                 DB::raw('SUM(sale_items.quantity * products.purchase_price) as total_cost'),
                 DB::raw('MAX(sales.date) as last_sale_date')
             )
-            ->groupBy('products.id', 'products.name', 'products.unit', 'products.category_id', 'products.purchase_price')
+            ->groupBy(
+                'products.id',
+                'products.name',
+                'products.brand',
+                'products.unit',
+                'products.category_id',
+                'products.purchase_price',
+                'product_variants.id',
+                'product_variants.size',
+                'product_variants.color',
+                'product_variants.barcode'
+            )
             ->orderByDesc('total_revenue')
             ->get();
 
@@ -1182,7 +1367,13 @@ PS;
 
         // Active sales list (completed, not cancelled) for the period
         $salesQuery = Sale::query()
-            ->with(['cashier:id,name', 'customer:id,name', 'items.product:id,name,barcode'])
+            ->with([
+                'cashier:id,name',
+                'customer:id,name',
+                'items.product:id,name,barcode,brand,unit',
+                'items.variant:id,product_id,size,color,barcode,stock_quantity',
+                'items.variant.product:id,name,brand,sale_price',
+            ])
             ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', 'completed')
             ->orderByDesc('date');
@@ -1243,12 +1434,20 @@ PS;
             // Update sale status
             $sale->update(['status' => 'cancelled']);
 
-            // Restore stock
+            // Restore stock at variant level
             foreach ($sale->items as $item) {
-                $product = $item->product;
-                if ($product) {
-                    $product->stock_quantity = (float)$product->stock_quantity + (float)$item->quantity;
-                    $product->save();
+                $variant = $item->variant
+                    ?? ($item->product ? $this->variantStock->ensureDefaultVariant($item->product) : null);
+
+                if ($variant) {
+                    $this->variantStock->increment(
+                        $variant,
+                        (float) $item->quantity,
+                        StockMovement::TYPE_RETURN,
+                        Sale::class,
+                        $sale->id,
+                        'Annulation ticket'
+                    );
                 }
             }
 
@@ -1296,11 +1495,19 @@ PS;
         DB::transaction(function () use ($sale, $item, $validated, $qtyToCancel, $refundAmount) {
             $fullItemCancel = abs($qtyToCancel - (float)$item->quantity) < 0.0001;
 
-            // Restore stock for cancelled quantity
-            $product = $item->product;
-            if ($product) {
-                $product->stock_quantity = (float)$product->stock_quantity + $qtyToCancel;
-                $product->save();
+            // Restore stock for cancelled quantity (variant-level)
+            $variant = $item->variant
+                ?? ($item->product ? $this->variantStock->ensureDefaultVariant($item->product) : null);
+
+            if ($variant) {
+                $this->variantStock->increment(
+                    $variant,
+                    $qtyToCancel,
+                    StockMovement::TYPE_RETURN,
+                    Sale::class,
+                    $sale->id,
+                    'Annulation article'
+                );
             }
 
             if ($fullItemCancel) {
@@ -1345,6 +1552,186 @@ PS;
         });
 
         return back()->with('success', 'Article annulé avec succès. Stock restauré.');
+    }
+
+    /**
+     * Exchange a sold variant for another size/color/brand variant.
+     * Restocks the returned variant and decrements the exchanged variant automatically.
+     */
+    public function exchangeSaleItem(Request $request, Sale $sale, SaleItem $item): RedirectResponse
+    {
+        if ($item->sale_id !== $sale->id) {
+            return back()->with('error', 'Cet article n\'appartient pas à cette vente.');
+        }
+
+        if ($sale->status === 'cancelled') {
+            return back()->with('error', 'Cette vente est déjà entièrement annulée.');
+        }
+
+        $validated = $request->validate([
+            'qty_to_exchange' => 'required|numeric|min:0.001|max:'.$item->quantity,
+            'new_variant_id' => 'nullable|integer|exists:product_variants,id',
+            'new_barcode' => 'nullable|string',
+            'reason' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500',
+            'settlement_method' => 'nullable|in:cash,card,transfer',
+        ]);
+
+        if (empty($validated['new_variant_id']) && empty($validated['new_barcode'])) {
+            return back()->with('error', 'Sélectionnez la variante d\'échange (taille / couleur / marque).');
+        }
+
+        $qty = (float) $validated['qty_to_exchange'];
+
+        DB::transaction(function () use ($sale, $item, $validated, $qty) {
+            $returnedVariant = $item->variant
+                ?? ($item->product ? $this->variantStock->ensureDefaultVariant($item->product) : null);
+
+            if (! $returnedVariant) {
+                abort(422, 'Variante d\'origine introuvable.');
+            }
+
+            $returnedVariant = ProductVariant::query()->whereKey($returnedVariant->id)->lockForUpdate()->firstOrFail();
+
+            $newVariant = null;
+            if (! empty($validated['new_variant_id'])) {
+                $newVariant = ProductVariant::query()
+                    ->with('product')
+                    ->whereKey($validated['new_variant_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            } else {
+                $newVariant = ProductVariant::query()
+                    ->with('product')
+                    ->where('barcode', $validated['new_barcode'])
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            if (! $newVariant) {
+                abort(422, 'Variante d\'échange introuvable.');
+            }
+
+            if ($newVariant->id === $returnedVariant->id) {
+                abort(422, 'Choisissez une variante différente pour l\'échange.');
+            }
+
+            // Restock returned item
+            $this->variantStock->increment(
+                $returnedVariant,
+                $qty,
+                StockMovement::TYPE_EXCHANGE_IN,
+                Sale::class,
+                $sale->id,
+                'Échange — retour'
+            );
+
+            // Decrement new variant
+            $this->variantStock->decrement(
+                $newVariant,
+                $qty,
+                StockMovement::TYPE_EXCHANGE_OUT,
+                Sale::class,
+                $sale->id,
+                'Échange — sortie'
+            );
+
+            $oldPrice = (float) $item->unit_price;
+            $newPrice = (float) $newVariant->product->sale_price;
+            $priceDiff = round(($newPrice - $oldPrice) * $qty, 2);
+
+            $fullExchange = abs($qty - (float) $item->quantity) < 0.0001;
+
+            if ($fullExchange) {
+                $item->update([
+                    'product_id' => $newVariant->product_id,
+                    'product_variant_id' => $newVariant->id,
+                    'unit_price' => $newPrice,
+                    'subtotal' => round($newPrice * $qty, 2),
+                ]);
+            } else {
+                $item->quantity = (float) $item->quantity - $qty;
+                $item->subtotal = round((float) $item->quantity * $oldPrice, 2);
+                $item->save();
+
+                SaleItem::query()->create([
+                    'sale_id' => $sale->id,
+                    'product_id' => $newVariant->product_id,
+                    'product_variant_id' => $newVariant->id,
+                    'quantity' => $qty,
+                    'unit_price' => $newPrice,
+                    'subtotal' => round($newPrice * $qty, 2),
+                ]);
+            }
+
+            $sale->refresh();
+            $sale->update([
+                'total_amount' => $sale->items()->sum('subtotal'),
+            ]);
+
+            SaleExchange::query()->create([
+                'sale_id' => $sale->id,
+                'original_sale_item_id' => $item->id,
+                'returned_variant_id' => $returnedVariant->id,
+                'exchanged_variant_id' => $newVariant->id,
+                'processed_by_user_id' => Auth::id(),
+                'quantity' => $qty,
+                'price_difference' => $priceDiff,
+                'reason' => $validated['reason'] ?? 'exchange',
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            $this->writeAudit('sale.item.exchanged', Sale::class, $sale->id, [
+                'from_variant' => $returnedVariant->id,
+                'to_variant' => $newVariant->id,
+                'qty' => $qty,
+                'price_difference' => $priceDiff,
+            ]);
+        });
+
+        return back()->with('success', 'Échange effectué. Stocks variantes mis à jour automatiquement.');
+    }
+
+    /**
+     * JSON helper: list variants for exchange UI (same product or any brand).
+     */
+    public function variantOptions(Request $request): JsonResponse
+    {
+        $productId = $request->query('product_id');
+        $brand = $request->query('brand');
+        $q = ProductVariant::query()->with('product:id,name,brand,sale_price');
+
+        if ($productId) {
+            $q->where('product_id', $productId);
+        }
+
+        if ($brand) {
+            $q->whereHas('product', fn ($p) => $p->where('brand', $brand));
+        }
+
+        if ($request->filled('size')) {
+            $q->where('size', $request->query('size'));
+        }
+
+        if ($request->filled('color')) {
+            $q->where('color', $request->query('color'));
+        }
+
+        $variants = $q->orderBy('product_id')->orderBy('size')->orderBy('color')->limit(200)->get()
+            ->map(fn (ProductVariant $v) => [
+                'id' => $v->id,
+                'product_id' => $v->product_id,
+                'name' => $v->product?->name,
+                'brand' => $v->product?->brand,
+                'size' => $v->size,
+                'color' => $v->color,
+                'barcode' => $v->barcode,
+                'stock_quantity' => (float) $v->stock_quantity,
+                'price' => (float) ($v->product?->sale_price ?? 0),
+                'label' => $v->displayName(),
+            ]);
+
+        return response()->json(['variants' => $variants]);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -1,17 +1,8 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ventes par Article - POS System</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-50">
+@extends('layouts.pos')
+@section('title', 'Rapports - POS System')
+@section('content')
 
-@include('partials.pos-nav')
+
 
 <div class="container p-6 lg:p-8 max-w-7xl mx-auto">
     <div class="mb-6">
@@ -50,6 +41,7 @@
             <thead class="bg-slate-50 border-b border-slate-200">
                 <tr>
                     <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase">Article</th>
+                    <th class="px-6 py-4 text-left text-sm font-bold text-slate-700 uppercase">Variante</th>
                     <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">Qté Vendue</th>
                     <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">Prix Achat</th>
                     <th class="px-6 py-4 text-right text-sm font-bold text-slate-700 uppercase">CA Total</th>
@@ -66,7 +58,16 @@
                     <tr class="border-b border-slate-100 hover:bg-slate-50">
                         <td class="px-6 py-4">
                             <div class="font-semibold text-slate-900">{{ $item->name }}</div>
+                            <div class="text-sm text-slate-500">{{ $item->brand ?: 'Marque non définie' }}</div>
                             <div class="text-sm text-slate-500">ID: {{ $item->id }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-semibold text-slate-800">
+                                {{ $item->size ? 'Taille '.$item->size : 'Taille standard' }}
+                                ·
+                                {{ $item->color ? 'Couleur '.$item->color : 'Couleur standard' }}
+                            </div>
+                            <div class="text-xs text-slate-400 font-mono">{{ $item->variant_barcode ?: 'N/A' }}</div>
                         </td>
                         <td class="px-6 py-4 text-right font-semibold text-slate-900">
                             {{ (float)$item->total_quantity }} <span class="text-[10px] text-slate-400 uppercase">{{ $item->unit === 'metre' ? 'm' : ($item->unit === 'cm' ? 'cm' : 'pcs') }}</span>
@@ -86,7 +87,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
                             <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
@@ -100,5 +101,5 @@
     </div>
 </div>
 
-</body>
-</html>
+@endsection
+

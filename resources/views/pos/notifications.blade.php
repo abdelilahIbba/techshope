@@ -1,23 +1,8 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notifications stock - POS</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden antialiased">
+@extends('layouts.pos')
+@section('title', 'Notifications stock - POS')
+@section('content')
 
-@include('partials.pos-nav')
+
 
 <div class="container flex-1 p-6 lg:p-8 overflow-y-auto w-full max-w-4xl mx-auto">
     
@@ -111,5 +96,4 @@
         </div>
     @endif
 </div>
-</body>
-</html>
+@endsection

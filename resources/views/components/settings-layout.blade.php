@@ -73,29 +73,20 @@
         ],
     ];
 @endphp
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title }} - POS System</title>
-    @vite(['resources/css/app.css'])
-    <style>
-        body { font-family: 'Sora', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-900 antialiased min-h-screen">
+@extends('layouts.pos')
+@section('title', $title . ' - POS System')
+@push('styles')
+<style>
+
+</style>
+@endpush
+@section('content')
     <div class="pointer-events-none fixed inset-0 -z-10">
         <div class="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-gradient-to-br from-blue-100/70 via-white/40 to-transparent blur-3xl"></div>
         <div class="absolute top-32 -left-20 h-72 w-72 rounded-full bg-gradient-to-tr from-slate-100/80 via-white/40 to-transparent blur-3xl"></div>
     </div>
 
-    @include('partials.pos-nav')
+    
 
     <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <div class="flex flex-col lg:flex-row gap-6">
@@ -156,8 +147,10 @@
     @endif
 
     <script>
-        const successToast = document.getElementById('toast-success');
-        const errorToast = document.getElementById('toast-error');
+(function() {
+
+        var successToast = document.getElementById('toast-success');
+        var errorToast = document.getElementById('toast-error');
         [successToast, errorToast].forEach((toast) => {
             if (!toast) return;
             setTimeout(() => {
@@ -165,6 +158,11 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3200);
         });
-    </script>
-</body>
-</html>
+    
+})();
+</script>
+@endsection
+
+
+
+

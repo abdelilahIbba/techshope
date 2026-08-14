@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ventes & Annulations - Droguerie POS</title>
-    @vite(['resources/css/app.css'])
-    <style>
+@extends('layouts.pos')
+@section('title', 'Ventes & Annulations')
+@push('styles')
+<style>
         body { font-family: 'Inter', sans-serif; }
         .tab-btn { transition: all .2s; }
         .tab-btn.active { background: #2563eb; color: #fff; box-shadow: 0 4px 14px rgba(37,99,235,.3); }
@@ -22,11 +18,11 @@
         #barcodeInput:focus { box-shadow: 0 0 0 3px rgba(37,99,235,.25); }
         .barcode-scanning { border-color: #2563eb !important; background: #eff6ff !important; }
     </style>
-</head>
-<body class="bg-slate-100 min-h-screen antialiased text-slate-800">
+@endpush
+@section('content')
 
 {{-- ── Nav ── --}}
-@include('partials.pos-nav')
+
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
@@ -232,9 +228,34 @@
                                 </summary>
                                 <ul class="mt-1 pl-2 space-y-0.5">
                                     @foreach($sale->items as $item)
+                                        @php
+                                            $exchangePayload = [
+                                                'id' => $item->id,
+                                                'product_id' => $item->product_id,
+                                                'variant_id' => $item->product_variant_id,
+                                                'name' => $item->product->name ?? ('Art.#'.$item->product_id),
+                                                'qty' => (float) $item->quantity,
+                                                'unit_price' => (float) $item->unit_price,
+                                                'subtotal' => (float) $item->subtotal,
+                                                'unit' => $item->product->unit ?? 'unité',
+                                                'brand' => $item->variant?->product?->brand ?? $item->product?->brand,
+                                                'size' => $item->variant?->size,
+                                                'color' => $item->variant?->color,
+                                                'barcode' => $item->variant?->barcode ?? $item->product?->barcode,
+                                                'variant_label' => $item->variant?->label(),
+                                            ];
+                                        @endphp
                                         <li class="text-xs text-slate-500">
-                                            {{ $item->product->name ?? '#'.$item->product_id }}
-                                            — {{ number_format($item->quantity, 2) }} × {{ number_format($item->unit_price, 2) }} {{ $currencySymbol }}
+                                            <div class="flex items-center justify-between gap-2">
+                                                <div>
+                                                    {{ $item->product->name ?? '#'.$item->product_id }}
+                                                    @if($item->variant)
+                                                        <span class="text-slate-400">({{ $item->variant->label() }}{{ $item->variant->product?->brand ? ' · '.$item->variant->product?->brand : '' }})</span>
+                                                    @endif
+                                                    — {{ number_format($item->quantity, 2) }} × {{ number_format($item->unit_price, 2) }} {{ $currencySymbol }}
+                                                </div>
+                                                <button type="button" onclick='openExchangeModal({{ $sale->id }}, @json($exchangePayload))' class="px-2 py-1 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200 font-semibold text-[10px] hover:bg-indigo-100 transition">Échanger</button>
+                                            </div>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -254,7 +275,7 @@
                         </td>
                         <td class="px-5 py-3.5 text-center">
                             <button
-                                onclick="openCancelModal({{ $sale->id }}, {{ $sale->total_amount }}, {{ $sale->items->map(fn($i)=>['id'=>$i->id,'name'=>$i->product->name??'Art.#'.$i->product_id,'qty'=>(float)$i->quantity,'unit_price'=>(float)$i->unit_price,'subtotal'=>(float)$i->subtotal,'unit'=>$i->product->unit??'unité'])->toJson() }})"
+                                onclick="openCancelModal({{ $sale->id }}, {{ $sale->total_amount }}, {{ $sale->items->map(fn($i)=>['id'=>$i->id,'product_id'=>$i->product_id,'variant_id'=>$i->product_variant_id,'name'=>$i->product->name??'Art.#'.$i->product_id,'qty'=>(float)$i->quantity,'unit_price'=>(float)$i->unit_price,'subtotal'=>(float)$i->subtotal,'unit'=>$i->product->unit??'unité','brand'=>$i->variant?->product?->brand ?? $i->product?->brand,'size'=>$i->variant?->size,'color'=>$i->variant?->color,'barcode'=>$i->variant?->barcode ?? $i->product?->barcode,'variant_label'=>$i->variant?->label()])->toJson() }})"
                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 font-semibold text-xs hover:bg-red-100 transition">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                 Annuler
@@ -521,12 +542,94 @@
 
   </div>
 </div>
+
+<div id="exchangeModal" class="modal-layer">
+  <div class="modal-box bg-white rounded-2xl shadow-2xl w-full max-w-xl">
+    <div class="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 5h5m-5 5h8M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-900">Échange de variante</h2>
+        <p id="exchangeItemLabel" class="text-xs text-slate-500"></p>
+      </div>
+      <button onclick="closeExchangeModal()" class="ml-auto text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="exchangeForm" method="POST" class="px-6 py-5 space-y-4">
+      @csrf
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Qté à échanger</label>
+          <input type="number" step="0.001" min="0.001" id="exchangeQty" name="qty_to_exchange" required class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Marque</label>
+          <input type="text" id="exchangeBrand" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Optionnel">
+        </div>
+      </div>
+      <label class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+        <input type="checkbox" id="exchangeSameProductOnly" class="rounded border-slate-300 text-indigo-600" checked>
+        Limiter la recherche au même article
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Taille</label>
+          <input type="text" id="exchangeSize" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Optionnel">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Couleur</label>
+          <input type="text" id="exchangeColor" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Optionnel">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Nouvelle variante</label>
+        <div class="flex gap-2">
+          <select id="exchangeVariantSelect" name="new_variant_id" required class="flex-1 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="">Sélectionner une variante</option>
+          </select>
+          <button type="button" onclick="loadExchangeVariants()" class="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">Rechercher</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Motif</label>
+          <input type="text" name="reason" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Ex: taille/couleur">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Règlement différence</label>
+          <select name="settlement_method" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="cash">Espèces</option>
+            <option value="card">Carte</option>
+            <option value="transfer">Virement</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1.5">Notes</label>
+        <textarea name="notes" rows="2" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" placeholder="Détails optionnels"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="button" onclick="closeExchangeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition">Fermer</button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition">Valider échange</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@push('scripts')
 <script>
-    const cancelModal = document.getElementById('cancelModal');
-    let currentSaleId    = null;
-    let currentSaleTotal = 0;
-    let currentItems     = [];
-    let selectedItem     = null; // {id, name, qty, unit_price, unit}
+(function() {
+
+    var cancelModal = document.getElementById('cancelModal');
+    var currentSaleId    = null;
+    var currentSaleTotal = 0;
+    var currentItems     = [];
+    var selectedItem     = null; // {id, name, qty, unit_price, unit}
+    var exchangeSaleId   = null;
+    var exchangeItem     = null;
 
     // ── Open/close ─────────────────────────────────────────────
     function openCancelModal(saleId, totalAmount, items) {
@@ -548,6 +651,72 @@
         cancelModal.classList.remove('open');
     }
 
+    function openExchangeModal(saleId, item) {
+        exchangeSaleId = saleId;
+        exchangeItem = item;
+
+        document.getElementById('exchangeItemLabel').textContent = `${item.name} (${item.variant_label || 'Standard'}${item.brand ? ' · ' + item.brand : ''})`;
+        document.getElementById('exchangeQty').value = Number(item.qty).toFixed(3);
+        document.getElementById('exchangeQty').max = Number(item.qty);
+        document.getElementById('exchangeBrand').value = item.brand || '';
+        document.getElementById('exchangeSize').value = item.size || '';
+        document.getElementById('exchangeColor').value = item.color || '';
+        document.getElementById('exchangeVariantSelect').innerHTML = '<option value="">Sélectionner une variante</option>';
+        document.getElementById('exchangeForm').action = `/pos/sales/${saleId}/exchange-item/${item.id}`;
+
+        exchangeModal.classList.add('open');
+        loadExchangeVariants();
+    }
+
+    function closeExchangeModal() {
+        exchangeModal.classList.remove('open');
+    }
+
+    async function loadExchangeVariants() {
+        if (!exchangeItem) return;
+
+        var params = new URLSearchParams();
+        var sameProductOnly = document.getElementById('exchangeSameProductOnly').checked;
+        if (sameProductOnly) {
+            params.set('product_id', exchangeItem.product_id);
+        }
+
+        var brand = document.getElementById('exchangeBrand').value.trim();
+        var size = document.getElementById('exchangeSize').value.trim();
+        var color = document.getElementById('exchangeColor').value.trim();
+
+        if (brand) params.set('brand', brand);
+        if (size) params.set('size', size);
+        if (color) params.set('color', color);
+
+        var select = document.getElementById('exchangeVariantSelect');
+        select.innerHTML = '<option value="">Chargement...</option>';
+
+        try {
+            var res = await fetch(`/pos/variants/options?${params.toString()}`);
+            var data = await res.json();
+            var variants = (data.variants || []).filter(v => Number(v.id) !== Number(exchangeItem.variant_id));
+
+            if (!variants.length) {
+                select.innerHTML = '<option value="">Aucune variante trouvée</option>';
+                return;
+            }
+
+            select.innerHTML = '<option value="">Sélectionner une variante</option>';
+            variants.forEach((v) => {
+                var opt = document.createElement('option');
+                opt.value = v.id;
+                opt.textContent = `${v.label} | Stock: ${Number(v.stock_quantity).toFixed(3)} | ${Number(v.price).toFixed(2)}`;
+                if (Number(v.stock_quantity) <= 0) {
+                    opt.disabled = true;
+                }
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            select.innerHTML = '<option value="">Erreur de chargement</option>';
+        }
+    }
+
     // ── Step navigation ───────────────────────────────────────
     function showStep(which) {
         document.getElementById('step1').classList.add('hidden');
@@ -567,7 +736,7 @@
 
     // ── Item list renderer ───────────────────────────────────────
     function renderItemList() {
-        const container = document.getElementById('itemList');
+        var container = document.getElementById('itemList');
         if (!currentItems.length) {
             container.innerHTML = '<p class="text-sm text-slate-400 italic text-center py-4">Aucun article dans ce ticket.</p>';
             return;
@@ -600,7 +769,7 @@
         document.getElementById('selectedItemInfo').textContent =
             `Qté: ${selectedItem.qty.toFixed(3)} ${selectedItem.unit} × ${selectedItem.unit_price.toFixed(2)} = ${selectedItem.subtotal.toFixed(2)}`;
 
-        const qtyInput = document.getElementById('qtyToCancel');
+        var qtyInput = document.getElementById('qtyToCancel');
         qtyInput.max   = selectedItem.qty;
         qtyInput.value = selectedItem.qty.toFixed(3);
         updateEstimatedRefund();
@@ -613,8 +782,8 @@
 
     function updateEstimatedRefund() {
         if (!selectedItem) return;
-        const qty = parseFloat(document.getElementById('qtyToCancel').value) || 0;
-        const refund = (qty * selectedItem.unit_price).toFixed(2);
+        var qty = parseFloat(document.getElementById('qtyToCancel').value) || 0;
+        var refund = (qty * selectedItem.unit_price).toFixed(2);
         document.getElementById('estimatedRefund').textContent = refund;
     }
 
@@ -624,11 +793,14 @@
     cancelModal.addEventListener('click', function(e) {
         if (e.target === cancelModal) closeCancelModal();
     });
+    exchangeModal.addEventListener('click', function(e) {
+        if (e.target === exchangeModal) closeExchangeModal();
+    });
 
     // ── Barcode Search ────────────────────────────────────────────
-    const barcodeInput  = document.getElementById('barcodeInput');
-    const barcodeHidden = document.getElementById('barcodeHidden');
-    const clearBtn      = document.getElementById('clearBarcode');
+    var barcodeInput  = document.getElementById('barcodeInput');
+    var barcodeHidden = document.getElementById('barcodeHidden');
+    var clearBtn      = document.getElementById('clearBarcode');
 
     if (barcodeInput) {
         barcodeInput.addEventListener('input', function() {
@@ -638,11 +810,11 @@
             if (e.key === 'Enter') { e.preventDefault(); submitBarcodeSearch(); }
         });
 
-        let scanBuffer = '', scanTimer = null;
+        var scanBuffer = '', scanTimer = null;
         document.addEventListener('keydown', function(e) {
-            const active = document.activeElement;
-            const isOurInput    = active === barcodeInput;
-            const isOtherInput  = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT') && !isOurInput;
+            var active = document.activeElement;
+            var isOurInput    = active === barcodeInput;
+            var isOtherInput  = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT') && !isOurInput;
             if (isOtherInput || cancelModal.classList.contains('open')) return;
             if (e.key === 'Enter') {
                 if (scanBuffer.length >= 4) {
@@ -673,8 +845,18 @@
     }
 
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeCancelModal();
+        if (e.key === 'Escape') {
+            closeCancelModal();
+            closeExchangeModal();
+        }
     });
+
+})();
 </script>
-</body>
-</html>
+@endpush
+@endsection
+
+
+
+
+

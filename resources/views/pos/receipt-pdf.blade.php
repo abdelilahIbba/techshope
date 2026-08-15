@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Reçu #{{ $receipt->receipt_number }}</title>
-    {{-- خط Tajawal: يدعم العربية والفرنسية ويُجبر الطابعة على Graphics Mode --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Tajawal';
+            src: url('{{ asset('fonts/Tajawal-Bold.woff2') }}') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
         /* إعدادات عامة تتوافق مع محركات الـ PDF */
         body { 
-            /* Tajawal: يدعم العربية + الفرنسية — يُجبر محرك PDF على تضمين الخط */
-            font-family: 'Tajawal', Arial, sans-serif; 
+            font-family: 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif; 
             font-size: 12px; 
             color: #000000; 
             margin: 0; 

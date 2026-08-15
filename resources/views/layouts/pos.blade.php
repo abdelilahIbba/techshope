@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'POS System')</title>
     @vite(['resources/css/app.css'])
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
         
         /* Modern Scrollbar */
         ::-webkit-scrollbar {
@@ -35,9 +34,8 @@
         .main-content { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
     @stack('styles')
-<script src="{{ asset('js/htmx.min.js') }}" defer></script>
 </head>
-<body class="text-slate-800 antialiased flex h-screen overflow-hidden" hx-boost="true">
+<body class="text-slate-800 antialiased flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
     <aside id="app-sidebar" class="sidebar w-64 bg-slate-900 text-slate-300 flex flex-col shadow-2xl relative shrink-0 z-50">

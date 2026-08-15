@@ -272,6 +272,18 @@ class PosController extends Controller
             ->limit(50)
             ->get();
 
+        // [MODIV] ── Couleurs personnalisées ────────────────────────────────────
+        // Récupère les couleurs créées manuellement par l'utilisateur depuis la table
+        // `settings` (clé: custom_product_colors, type: json).
+        // Ces couleurs s'ajoutent aux couleurs prédéfinies dans la vue stock.blade.php
+        // et restent disponibles pour tous les produits futurs.
+        // تُجلب الألوان المخصصة المحفوظة في جدول settings وتُمرَّر للـ View لعرضها
+        // في لوحة اختيار الألوان السريع عند إضافة منتج جديد.
+        $customColors = Setting::get('custom_product_colors', []);
+        if (! is_array($customColors)) {
+            $customColors = [];
+        }
+
         return view('pos.stock', [
             'products' => $products,
             'suppliers' => $suppliers,
@@ -280,6 +292,7 @@ class PosController extends Controller
             'filterColors' => $filterColors,
             'filterBrands' => $filterBrands,
             'stockHistory' => $stockHistory,
+            'customColors' => $customColors,
         ]);
     }
 
@@ -441,6 +454,74 @@ class PosController extends Controller
         });
 
         return redirect()->route('pos.stock')->with('success', 'Produit modifié avec succès!');
+    }
+
+    /**
+     * [MODIV] Sauvegarde une nouvelle couleur personnalisée dans la base de données.
+     *
+     * Cette méthode est appelée en AJAX depuis le modal "Créer une couleur"
+     * dans la page Stock (pos/stock). Elle stocke la couleur (nom + hex) dans
+     * la table `settings` sous la clé `custom_product_colors` (type JSON).
+     *
+     * Comportement :
+     * - Si la couleur (même nom, insensible à la casse) existe déjà → met à jour son hex.
+     * - Sinon → ajoute une nouvelle entrée dans le tableau.
+     *
+     * تحفظ هذه الدالة الألوان المخصصة التي يُنشئها المستخدم من نافذة
+     * "Créer une couleur" في صفحة المخزون. يتم تخزينها في جدول settings
+     * كـ JSON تحت المفتاح custom_product_colors وتظهر فوراً في لوحة
+     * الألوان السريعة دون الحاجة لإعادة تحميل الصفحة.
+     *
+     * Route : POST /pos/stock/save-color  (name: pos.stock.save-color)
+     * Permission : stock.create
+     * Response : JSON { success, color: {name, hex}, message }
+     */
+    public function saveColor(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:50'],
+            'hex'  => ['required', 'string', 'max:20', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
+        ]);
+
+        // Charge les couleurs existantes depuis la table settings
+        $customColors = Setting::get('custom_product_colors', []);
+        if (! is_array($customColors)) {
+            $customColors = [];
+        }
+
+        $name = trim($validated['name']);
+        $hex  = strtolower(trim($validated['hex']));
+
+        // Vérification de doublon (insensible à la casse) → mise à jour si trouvé
+        $exists = false;
+        foreach ($customColors as &$c) {
+            if (isset($c['name']) && strcasecmp($c['name'], $name) === 0) {
+                $c['hex'] = $hex;
+                $exists = true;
+                break;
+            }
+        }
+        unset($c);
+
+        // Nouvelle couleur → ajout au tableau
+        if (! $exists) {
+            $customColors[] = [
+                'name' => $name,
+                'hex'  => $hex,
+            ];
+        }
+
+        // Persistance JSON dans la table settings
+        Setting::set('custom_product_colors', $customColors, 'json');
+
+        return response()->json([
+            'success' => true,
+            'color' => [
+                'name' => $name,
+                'hex'  => $hex,
+            ],
+            'message' => 'Couleur enregistrée avec succès!',
+        ]);
     }
 
     public function deleteProduct(Product $product)

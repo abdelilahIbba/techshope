@@ -26,6 +26,9 @@ if [ "${RUN_MIGRATIONS}" = "true" ]; then
     timeout 120 php artisan migrate --force || echo "Migration timeout or error - continuing anyway"
 fi
 
+mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+
 # Cache Laravel bootstrap artefacts so they are read from bootstrap/cache/
 # (one file, warmed by OPcache) instead of parsing every config / route / view
 # from the slow bind-mounted filesystem on each request.

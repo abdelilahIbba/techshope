@@ -36,6 +36,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pos/dashboard/print', [PosController::class, 'dashboardPrint'])->middleware('permission:dashboard.view')->name('pos.dashboard.print');
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::get('/pos/stock', [PosController::class, 'stock'])->middleware('permission:stock.view')->name('pos.stock');
+        // [MODIV] Route AJAX pour sauvegarder une couleur personnalisée créée par l'utilisateur.
+        // تُستخدم هذه الـ Route لحفظ الألوان المخصصة التي ينشئها المستخدم من نافذة
+        // "Créer une couleur" في صفحة المخزون. تُرجع JSON مع success/color/message.
+        Route::post('/pos/stock/save-color', [PosController::class, 'saveColor'])->middleware('permission:stock.create')->name('pos.stock.save-color');
         Route::post('/pos/stock/add-product', [PosController::class, 'addProduct'])->middleware('permission:stock.create')->name('pos.stock.add-product');
         Route::put('/pos/stock/edit-product/{product}', [PosController::class, 'editProduct'])->middleware('permission:stock.edit')->name('pos.stock.edit-product');
         Route::delete('/pos/stock/delete-product/{product}', [PosController::class, 'deleteProduct'])->middleware('permission:stock.delete')->name('pos.stock.delete-product');

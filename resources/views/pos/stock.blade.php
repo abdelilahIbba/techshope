@@ -4,11 +4,11 @@
 <style>
 .tab-content { display: none; }
 .tab-content.active { display: block; }
-.modal { display: none; position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: rgba(15, 23, 42, 0.38); backdrop-filter: blur(10px); }
-.modal.active { display: grid; place-items: center; padding: 1.5rem; animation: fadeIn 0.2s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-.glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-.modal-content { width: min(100%, 44rem); max-height: calc(100vh - 3rem); overflow: auto; margin: auto; }
+.modal { display: none; position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.modal.active { display: grid; place-items: center; padding: 1rem; animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.glass-panel { background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); }
+.modal-content { width: min(100%, 48rem); max-height: calc(100vh - 2rem); overflow-y: auto; margin: auto; }
 .modal#numericKeyboardModal .modal-content { width: min(100%, 20rem); }
 </style>
 @endpush
@@ -354,201 +354,361 @@
 </div>
 
 <div class="modal" id="addProductModal">
-    <div class="modal-content glass-panel w-full max-w-md rounded-3xl shadow-2xl border border-white/70 p-5 relative my-auto">
-        <h3 class="text-lg font-bold text-slate-900 mb-2">Ajouter un produit</h3>
-        <form method="POST" action="{{ route('pos.stock.add-product') }}" class="flex flex-col gap-2">
+    <div class="modal-content glass-panel w-full max-w-3xl rounded-3xl shadow-2xl border border-white/80 p-6 md:p-7 relative my-auto bg-white/95 backdrop-blur-xl">
+        
+        {{-- Modal Header --}}
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md shadow-slate-900/10 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                </span>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900 tracking-tight">Ajouter un produit</h3>
+                    <p class="text-xs text-slate-400 font-medium">Enregistrer un nouvel article dans le stock textile & habillement</p>
+                </div>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-xl text-xl transition-all" onclick="closeModal('addProductModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form method="POST" action="{{ route('pos.stock.add-product') }}" class="flex flex-col gap-4" id="addProductForm">
             @csrf
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
-                <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Marque</label>
-                <input type="text" name="brand" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" placeholder="Ex: Zara, Nike, ...">
-            </div>
-            {{-- ── Barcode Type Selector ── --}}
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Type de Barcode</label>
-                <div class="flex gap-2 mb-3" id="barcode_type_toggle">
-                    <label id="btn_scanned" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold text-sm transition-all">
-                        <input type="radio" name="barcode_type" value="scanned" class="sr-only" checked onchange="onBarcodeTypeChange('scanned')">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                        Scanné (Produit avec barcode)
-                    </label>
-                    <label id="btn_internal" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-4 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
-                        <input type="radio" name="barcode_type" value="internal" class="sr-only" onchange="onBarcodeTypeChange('internal')">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        Interne (Pas de barcode)
-                    </label>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {{-- Row 1: Nom du produit & Type de Barcode --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nom du produit <span class="text-rose-500">*</span></label>
+                    <input type="text" name="name" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" placeholder="Ex: T-shirt Oversize Cotton" required>
                 </div>
-                {{-- Barcode input: only shown for 'scanned' type --}}
-                <div id="barcode_input_wrapper">
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Scanner ou saisir le barcode du produit</label>
-                    <input type="text" name="barcode" id="add_barcode_input" class="w-full bg-slate-50 border border-blue-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none font-mono" placeholder="Ex: 6111250450232" autofocus>
-                    <p class="text-xs text-slate-400 mt-1">Utilisez votre lecteur de codes-barres ou saisissez manuellement.</p>
-                </div>
-                <div id="barcode_auto_notice" class="hidden">
-                    <div class="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg p-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        <span class="text-sm text-violet-700 font-semibold">Un barcode unique sera généré automatiquement pour ce produit.</span>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Type de Barcode</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70" id="barcode_type_toggle">
+                        <label id="btn_scanned" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs">
+                            <input type="radio" name="barcode_type" value="scanned" class="sr-only" checked onchange="onBarcodeTypeChange('scanned')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                            <span>Scanné</span>
+                        </label>
+                        <label id="btn_internal" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800">
+                            <input type="radio" name="barcode_type" value="internal" class="sr-only" onchange="onBarcodeTypeChange('internal')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            <span>Interne</span>
+                        </label>
                     </div>
                 </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
+
+                {{-- Row 2: Marque & Barcode Input --}}
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Catégorie</label>
-                    <select name="category_id" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
-                        <option value="">Sélectionner</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Marque</label>
+                        <span class="text-[11px] text-slate-400 font-medium">Sélection ou écriture</span>
+                    </div>
+                    <input type="hidden" name="brand" id="add_product_brand" value="">
+                    <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
+                        <div id="selected_brand_tags" class="flex flex-wrap items-center gap-1.5"></div>
+                        <input type="text" id="brand_custom_input" placeholder="Écrire une marque..." class="flex-1 min-w-[120px] bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 py-1 px-1.5">
+                    </div>
+                    {{-- Quick brand presets --}}
+                    <div class="flex flex-wrap gap-1 mt-1.5" id="brand_quick_presets">
+                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Nike')">Nike</button>
+                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Zara')">Zara</button>
+                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Adidas')">Adidas</button>
+                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Puma')">Puma</button>
+                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('H&M')">H&M</button>
+                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Bershka')">Bershka</button>
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Fournisseur</label>
-                    <select name="supplier_id" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none">
-                        <option value="">Aucun</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Unité de vente</label>
-                    <select name="unit" id="add_product_unit" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
-                        <option value="unité">📦 Pièce (Unité)</option>
-                        <option value="metre">📏 Mètre (m)</option>
-                        <option value="cm">📐 Centimètre (cm)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Quantité initiale</label>
-                    <input type="text" name="stock_quantity" id="stock_quantity_input" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none cursor-pointer" value="0" required readonly onclick="openNumericKeyboard('stock_quantity_input')">
-                </div>
-            </div>
-            <!-- Numeric Keyboard Modal -->
-            <div class="modal fixed inset-0 z-50" id="numericKeyboardModal">
-                <div class="modal-content glass-panel w-full max-w-xs rounded-3xl shadow-2xl border border-white/70 p-6 flex flex-col items-center gap-4 relative">
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Entrer la quantité</h3>
-                    <input type="text" id="numericKeyboardInput" class="w-full text-center text-2xl font-bold bg-slate-100 border border-slate-300 rounded-lg p-2.5 mb-2" readonly>
-                    <div class="grid grid-cols-3 gap-2 w-full">
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('1')">1</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('2')">2</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('3')">3</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('4')">4</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('5')">5</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('6')">6</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('7')">7</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('8')">8</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('9')">9</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('.')">.</button>
-                        <button type="button" class="bg-slate-100 hover:bg-indigo-100 text-lg font-black rounded-xl p-3 transition-colors" onclick="appendNumericKey('0')">0</button>
-                        <button type="button" class="bg-rose-50 hover:bg-rose-100 text-lg font-black rounded-xl p-3 text-rose-500 transition-colors" onclick="clearNumericKey()">C</button>
-                        <div class="col-span-3">
-                            <button type="button" class="w-full bg-slate-900 text-white font-bold rounded-2xl p-3 mt-2 shadow-lg shadow-slate-200" onclick="confirmNumericKey()">Confirmer</button>
+                    <div id="barcode_input_wrapper">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Scanner / Barcode</label>
+                        <div class="relative flex items-center">
+                            <input type="text" name="barcode" id="add_barcode_input" class="w-full pl-10 pr-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-mono font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" placeholder="Ex: 6111250450232" autofocus>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Utilisez votre lecteur ou saisissez le code manuellement.</p>
+                    </div>
+                    <div id="barcode_auto_notice" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Génération Automatique</label>
+                        <div class="flex items-center gap-2.5 bg-indigo-50/90 border border-indigo-200/80 rounded-xl p-3 shadow-xs">
+                            <span class="p-1.5 bg-indigo-600 text-white rounded-lg inline-flex items-center justify-center shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            </span>
+                            <span class="text-xs text-indigo-950 font-bold leading-snug">Un barcode unique interne sera généré automatiquement.</span>
                         </div>
                     </div>
-                    <button type="button" class="absolute top-2 right-2 text-slate-400 hover:text-slate-700 text-xl" onclick="closeModal('numericKeyboardModal')">&times;</button>
                 </div>
+
+                {{-- Row 3: Catégorie & Fournisseur --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Catégorie <span class="text-rose-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <select name="category_id" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs" required>
+                            <option value="">Sélectionner une catégorie</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Fournisseur</label>
+                    <div class="relative flex items-center">
+                        <select name="supplier_id" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs">
+                            <option value="">Aucun fournisseur</option>
+                            @foreach($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                {{-- Row 4: Unité de vente & Quantité initiale --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Unité de vente</label>
+                    <div class="relative flex items-center">
+                        <select name="unit" id="add_product_unit" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs" required>
+                            <option value="unité">Pièce (Unité)</option>
+                            <option value="metre">Mètre (m)</option>
+                            <option value="cm">Centimètre (cm)</option>
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Quantité initiale</label>
+                    <div class="relative flex items-center">
+                        <input type="text" name="stock_quantity" id="stock_quantity_input" class="w-full pl-4 pr-11 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none cursor-pointer transition-all shadow-xs" value="0" required readonly onclick="openNumericKeyboard('stock_quantity_input')">
+                        <button type="button" onclick="openNumericKeyboard('stock_quantity_input')" class="absolute right-2 text-slate-400 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors" title="Ouvrir le pavé numérique">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Row 5: Prix d'achat & Prix vente --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Prix d'achat ({{ $currencySymbol }}) <span class="text-rose-500">*</span></label>
+                    <input type="number" step="0.01" name="purchase_price" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" placeholder="120.00" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Prix vente ({{ $currencySymbol }}) <span class="text-rose-500">*</span></label>
+                    <input type="number" step="0.01" name="sale_price" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-emerald-600 text-sm font-extrabold rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all shadow-xs" placeholder="250.00" required>
+                </div>
+
+                {{-- Row 6: Tailles (Sizes) & Couleurs (Colors) --}}
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Tailles (Tags)</label>
+                        <span class="text-[11px] text-slate-400 font-medium">Sélection rapide</span>
+                    </div>
+                    <input type="hidden" name="sizes_text" id="add_sizes_text" value="S,M,L">
+                    
+                    {{-- Selected Size Tags Container --}}
+                    <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
+                        <div id="selected_size_tags" class="flex flex-wrap items-center gap-1.5"></div>
+                        <input type="text" id="size_custom_input" placeholder="+ Taille..." class="flex-1 min-w-[80px] bg-transparent text-xs font-bold text-slate-800 outline-none placeholder:text-slate-400 py-1 px-1.5">
+                    </div>
+
+                    {{-- Quick Size Chips --}}
+                    <div class="flex flex-wrap gap-1 mt-1.5" id="size_quick_chips">
+                        @foreach(['S', 'M', 'L', 'XL', 'XXL', '38', '40', '42', '44'] as $quickSize)
+                            <button type="button" class="size-chip px-2.5 py-1 text-xs font-bold rounded-lg border transition-all" data-size="{{ $quickSize }}" onclick="toggleSizeTag('{{ $quickSize }}')">
+                                {{ $quickSize }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Couleurs (Pastilles)</label>
+                        <button type="button" onclick="openColorCreatorModal()" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 px-2 py-0.5 rounded-lg transition-all shadow-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            <span>+ Créer couleur</span>
+                        </button>
+                    </div>
+                    <input type="hidden" name="colors_text" id="add_colors_text" value="Bleu,Rouge">
+                    
+                    {{-- Selected Color Tags Container --}}
+                    <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
+                        <div id="selected_color_tags" class="flex flex-wrap items-center gap-1.5"></div>
+                        <input type="text" id="color_custom_input" placeholder="+ Couleur..." class="flex-1 min-w-[80px] bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 py-1 px-1.5">
+                    </div>
+
+                    {{-- Quick Color Swatches --}}
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5" id="color_quick_swatches">
+                        @php
+                            $defaultColors = [
+                                ['name' => 'Noir', 'hex' => '#0f172a'],
+                                ['name' => 'Blanc', 'hex' => '#ffffff'],
+                                ['name' => 'Bleu', 'hex' => '#2563eb'],
+                                ['name' => 'Rouge', 'hex' => '#dc2626'],
+                                ['name' => 'Vert', 'hex' => '#16a34a'],
+                                ['name' => 'Gris', 'hex' => '#64748b'],
+                                ['name' => 'Beige', 'hex' => '#d4b996'],
+                                ['name' => 'Rose', 'hex' => '#ec4899'],
+                                ['name' => 'Jaune', 'hex' => '#eab308'],
+                            ];
+                            $allColorList = array_merge($defaultColors, $customColors ?? []);
+                            // Deduplicate by name
+                            $uniqueColors = [];
+                            foreach ($allColorList as $c) {
+                                $uniqueColors[strtolower($c['name'])] = $c;
+                            }
+                        @endphp
+                        @foreach($uniqueColors as $pc)
+                            <button type="button" class="color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center shrink-0" data-color="{{ $pc['name'] }}" data-hex="{{ $pc['hex'] }}" title="{{ $pc['name'] }}" style="background-color: {{ $pc['hex'] }};" onclick="toggleColorTag('{{ $pc['name'] }}', '{{ $pc['hex'] }}')">
+                                <span class="swatch-check hidden w-1.5 h-1.5 rounded-full {{ in_array(strtolower($pc['name']), ['blanc', 'beige', 'jaune', 'menthe', 'lavande']) ? 'bg-slate-900' : 'bg-white' }}"></span>
+                            </button>
+                        @endforeach
+                        
+                        {{-- Add custom color round palette button --}}
+                        <button type="button" onclick="openColorCreatorModal()" class="w-6 h-6 rounded-full border-2 border-dashed border-indigo-400 hover:border-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-all shadow-xs hover:scale-110 shrink-0" title="Créer une couleur personnalisée">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                    </div>
+                </div>
+
             </div>
-            <script>
-(function() {
 
-                var numericTargetInput = null;
-                var azertyKeyMap = {
-                    '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
-                    '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
-                    ')': '°', '=': '+', '§': '!'
-                };
-
-                function openNumericKeyboard(inputId) {
-                    numericTargetInput = document.getElementById(inputId);
-                    document.getElementById('numericKeyboardInput').value = numericTargetInput.value || '';
-                    document.getElementById('numericKeyboardModal').classList.add('active');
-                    
-                    // Add global keydown listener when modal is open.
-                    // Stored on window so closeModal (defined in the later <script> block)
-                    // can call removeEventListener with the same function reference.
-                    document.addEventListener('keydown', window.numericKeyboardHandler);
-                }
-
-                window.numericKeyboardHandler = function(e) {
-                    var modal = document.getElementById('numericKeyboardModal');
-                    if (!modal.classList.contains('active')) return;
-
-                    var key = e.key;
-                    
-                    // Handle AZERTY mapping
-                    if (azertyKeyMap[key]) {
-                        key = azertyKeyMap[key];
-                    }
-
-                    if ((key >= '0' && key <= '9') || key === '.' || key === ',') {
-                        if (key === ',') key = '.';
-                        appendNumericKey(key);
-                    } else if (key === 'Backspace') {
-                        var input = document.getElementById('numericKeyboardInput');
-                        input.value = input.value.slice(0, -1);
-                    } else if (key === 'Enter') {
-                        confirmNumericKey();
-                    } else if (key === 'Escape') {
-                        closeModal('numericKeyboardModal');
-                    }
-                };
-
-                function appendNumericKey(digit) {
-                    var input = document.getElementById('numericKeyboardInput');
-                    
-                    if (digit === '.') {
-                        if (input.value.includes('.')) return;
-                        if (input.value === '') input.value = '0';
-                    }
-                    
-                    if (input.value.length < 10) {
-                        input.value = (input.value === '0' && digit !== '.') ? digit : input.value + digit;
-                    }
-                }
-                function clearNumericKey() {
-                    document.getElementById('numericKeyboardInput').value = '';
-                }
-                function confirmNumericKey() {
-                    if (numericTargetInput) {
-                        var val = document.getElementById('numericKeyboardInput').value;
-                        if (val === '' || isNaN(val)) val = '0';
-                        numericTargetInput.value = val;
-                    }
-                    closeModal('numericKeyboardModal');
-                }
-            
-})();
-</script>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat ({{ $currencySymbol }})</label>
-                    <input type="number" step="0.01" name="purchase_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix vente ({{ $currencySymbol }})</label>
-                    <input type="number" step="0.01" name="sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" required>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Tailles (virgules)</label>
-                    <input type="text" name="sizes_text" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" placeholder="S,M,L ou 38,40,42">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Couleurs (virgules)</label>
-                    <input type="text" name="colors_text" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none" placeholder="Noir,Blanc,Rouge">
-                </div>
-            </div>
-            <div class="flex justify-end gap-3 mt-2 pt-3 border-t border-slate-100">
-                <button type="button" class="px-5 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors" onclick="closeModal('addProductModal')">Annuler</button>
-                <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Ajouter</button>
+            {{-- Footer Action Buttons --}}
+            <div class="flex items-center justify-end gap-3 mt-3 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all active:scale-95" onclick="closeModal('addProductModal')">
+                    Annuler
+                </button>
+                <button type="submit" class="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-lg shadow-slate-900/20 transition-all hover:scale-[1.01] active:scale-[0.98]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>Ajouter</span>
+                </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal: Créer une nouvelle couleur personnalisée -->
+<div class="modal fixed inset-0 z-[75]" id="createColorModal">
+    <div class="modal-content glass-panel w-full max-w-sm rounded-3xl shadow-2xl border border-white/80 p-6 relative bg-white/98 my-auto">
+        {{-- Header --}}
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 text-white flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4 5 5 0 014-4h4a5 5 0 014 4 4 4 0 01-4 4H7zm0 0l-3-3m0 0l3-3m-3 3h18M14 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </span>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 tracking-tight">Créer une couleur</h3>
+                    <p class="text-[11px] text-slate-400 font-medium">Sauvegarder dans la base de données</p>
+                </div>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 text-lg transition-all" onclick="closeModal('createColorModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {{-- Form Fields --}}
+        <div class="space-y-4">
+            
+            {{-- Color Picker & Swatch Preview --}}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Choisir la nuance visuelle</label>
+                <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div class="relative w-12 h-12 rounded-2xl overflow-hidden shadow-inner border border-black/10 shrink-0">
+                        <input type="color" id="custom_color_picker" value="#06b6d4" class="absolute -inset-2 w-16 h-16 cursor-pointer border-0 p-0" oninput="onCustomColorPickerChange(this.value)">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[11px] font-semibold text-slate-400 block mb-0.5">Code couleur (HEX)</span>
+                        <input type="text" id="custom_color_hex" value="#06B6D4" maxlength="7" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-slate-800 outline-none uppercase focus:border-slate-800 transition-all" oninput="onCustomColorHexChange(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            {{-- Nom de la couleur --}}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nom de la couleur <span class="text-rose-500">*</span></label>
+                <input type="text" id="custom_color_name" placeholder="Ex: Turquoise, Bordeaux, Menthe..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();saveNewCustomColor();}">
+            </div>
+
+            {{-- Quick Palette Ideas --}}
+            <div>
+                <span class="text-[11px] font-bold text-slate-500 block mb-1.5">Nuances populaires :</span>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center gap-1.5" onclick="setPresetInColorCreator('Turquoise', '#06b6d4')">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#06b6d4]"></span> Turquoise
+                    </button>
+                    <button type="button" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center gap-1.5" onclick="setPresetInColorCreator('Bordeaux', '#800020')">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#800020]"></span> Bordeaux
+                    </button>
+                    <button type="button" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center gap-1.5" onclick="setPresetInColorCreator('Menthe', '#a7f3d0')">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#a7f3d0]"></span> Menthe
+                    </button>
+                    <button type="button" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center gap-1.5" onclick="setPresetInColorCreator('Corail', '#fb7185')">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#fb7185]"></span> Corail
+                    </button>
+                    <button type="button" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center gap-1.5" onclick="setPresetInColorCreator('Olive', '#65a30d')">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#65a30d]"></span> Olive
+                    </button>
+                    <button type="button" class="px-2 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center gap-1.5" onclick="setPresetInColorCreator('Marine', '#1e3a8a')">
+                        <span class="w-2.5 h-2.5 rounded-full bg-[#1e3a8a]"></span> Marine
+                    </button>
+                </div>
+            </div>
+
+            {{-- Actions --}}
+            <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button type="button" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all" onclick="closeModal('createColorModal')">
+                    Annuler
+                </button>
+                <button type="button" id="btn_save_custom_color" onclick="saveNewCustomColor()" class="flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-lg shadow-slate-900/15 transition-all active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span>Sauvegarder</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toast Notification -->
+<div id="stock_toast" class="fixed top-5 right-5 z-[100] transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-800">
+        <span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+        </span>
+        <span id="stock_toast_message" class="text-xs font-bold tracking-wide">Action effectuée</span>
+    </div>
+</div>
+
+<!-- Numeric Keyboard Modal (Cleanly styled on top) -->
+<div class="modal fixed inset-0 z-[70]" id="numericKeyboardModal">
+    <div class="modal-content glass-panel w-full max-w-xs rounded-3xl shadow-2xl border border-white/80 p-6 flex flex-col items-center gap-4 relative bg-white/98">
+        <h3 class="text-lg font-black text-slate-900 mb-1">Entrer la quantité</h3>
+        <input type="text" id="numericKeyboardInput" class="w-full text-center text-3xl font-black bg-slate-100 border border-slate-300 rounded-2xl p-3 mb-2 text-slate-900 font-mono tracking-wider outline-none" readonly>
+        <div class="grid grid-cols-3 gap-2 w-full">
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('1')">1</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('2')">2</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('3')">3</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('4')">4</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('5')">5</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('6')">6</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('7')">7</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('8')">8</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('9')">9</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('.')">.</button>
+            <button type="button" class="bg-slate-100 hover:bg-indigo-50 text-xl font-black text-slate-800 rounded-2xl p-3.5 shadow-xs transition-all active:scale-95" onclick="appendNumericKey('0')">0</button>
+            <button type="button" class="bg-rose-50 hover:bg-rose-100 text-xl font-black rounded-2xl p-3.5 text-rose-600 transition-all active:scale-95" onclick="clearNumericKey()">C</button>
+            <div class="col-span-3">
+                <button type="button" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl p-3.5 mt-1 shadow-lg shadow-slate-900/10 transition-all active:scale-98" onclick="confirmNumericKey()">Confirmer</button>
+            </div>
+        </div>
+        <button type="button" class="absolute top-3 right-3 text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 text-xl" onclick="closeModal('numericKeyboardModal')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
     </div>
 </div>
 
@@ -1057,22 +1217,499 @@
         var input = document.getElementById('add_barcode_input');
 
         if (type === 'scanned') {
-            wrapper.classList.remove('hidden');
-            notice.classList.add('hidden');
-            btnScanned.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
-            btnScanned.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
-            btnInternal.classList.remove('border-violet-500', 'bg-violet-50', 'text-violet-700');
-            btnInternal.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            if (wrapper) wrapper.classList.remove('hidden');
+            if (notice) notice.classList.add('hidden');
+            if (btnScanned) {
+                btnScanned.className = 'flex items-center justify-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs';
+            }
+            if (btnInternal) {
+                btnInternal.className = 'flex items-center justify-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800';
+            }
             if (input) input.focus();
         } else {
-            wrapper.classList.add('hidden');
-            notice.classList.remove('hidden');
-            btnInternal.classList.add('border-violet-500', 'bg-violet-50', 'text-violet-700');
-            btnInternal.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
-            btnScanned.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
-            btnScanned.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            if (wrapper) wrapper.classList.add('hidden');
+            if (notice) notice.classList.remove('hidden');
+            if (btnInternal) {
+                btnInternal.className = 'flex items-center justify-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs';
+            }
+            if (btnScanned) {
+                btnScanned.className = 'flex items-center justify-center gap-1.5 cursor-pointer py-1.5 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800';
+            }
         }
     }
+
+    // ── Interactive Tag System for Brands, Sizes, and Colors ───────────
+    var selectedBrands = ['Nike', 'Zara'];
+    var selectedSizes  = ['S', 'M', 'L'];
+    var selectedColors = [
+        { name: 'Bleu', hex: '#2563eb' },
+        { name: 'Rouge', hex: '#dc2626' }
+    ];
+
+    var knownColorMap = {
+        'noir': '#0f172a',
+        'blanc': '#ffffff',
+        'bleu': '#2563eb',
+        'rouge': '#dc2626',
+        'vert': '#16a34a',
+        'gris': '#64748b',
+        'beige': '#d4b996',
+        'rose': '#ec4899',
+        'jaune': '#eab308',
+        'marron': '#78350f',
+        'kaki': '#57534e',
+        'violet': '#9333ea',
+        'orange': '#f97316',
+        'turquoise': '#06b6d4',
+        'bordeaux': '#800020',
+        'menthe': '#a7f3d0',
+        'corail': '#fb7185',
+        'olive': '#65a30d',
+        'marine': '#1e3a8a'
+    };
+
+    // Load persisted custom colors from database into knownColorMap
+    @if(isset($customColors) && is_array($customColors))
+        @foreach($customColors as $cc)
+            knownColorMap['{{ strtolower($cc['name']) }}'] = '{{ $cc['hex'] }}';
+        @endforeach
+    @endif
+
+    // ── Custom Color Creation Functions ────────────────────────────────
+    window.openColorCreatorModal = function() {
+        var picker = document.getElementById('custom_color_picker');
+        var hexInput = document.getElementById('custom_color_hex');
+        var nameInput = document.getElementById('custom_color_name');
+        
+        if (picker) picker.value = '#06b6d4';
+        if (hexInput) hexInput.value = '#06B6D4';
+        if (nameInput) {
+            nameInput.value = '';
+            setTimeout(() => nameInput.focus(), 150);
+        }
+        openModal('createColorModal');
+    };
+
+    window.onCustomColorPickerChange = function(hex) {
+        var hexInput = document.getElementById('custom_color_hex');
+        if (hexInput) hexInput.value = hex.toUpperCase();
+    };
+
+    window.onCustomColorHexChange = function(hex) {
+        if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            var picker = document.getElementById('custom_color_picker');
+            if (picker) picker.value = hex;
+        }
+    };
+
+    window.setPresetInColorCreator = function(name, hex) {
+        var nameInput = document.getElementById('custom_color_name');
+        var picker = document.getElementById('custom_color_picker');
+        var hexInput = document.getElementById('custom_color_hex');
+        
+        if (nameInput) nameInput.value = name;
+        if (picker) picker.value = hex;
+        if (hexInput) hexInput.value = hex.toUpperCase();
+    };
+
+    window.showStockToast = function(message) {
+        var toast = document.getElementById('stock_toast');
+        var msgElem = document.getElementById('stock_toast_message');
+        if (!toast || !msgElem) return;
+
+        msgElem.textContent = message;
+        toast.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+        toast.classList.add('opacity-100', 'translate-y-0');
+
+        setTimeout(function() {
+            toast.classList.remove('opacity-100', 'translate-y-0');
+            toast.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+        }, 3500);
+    };
+
+    window.saveNewCustomColor = function() {
+        var nameInput = document.getElementById('custom_color_name');
+        var hexInput = document.getElementById('custom_color_hex');
+        var btn = document.getElementById('btn_save_custom_color');
+
+        var name = nameInput ? nameInput.value.trim() : '';
+        var hex = hexInput ? hexInput.value.trim() : '#06B6D4';
+
+        if (!name) {
+            if (nameInput) {
+                nameInput.classList.add('ring-2', 'ring-rose-500');
+                nameInput.focus();
+                setTimeout(() => nameInput.classList.remove('ring-2', 'ring-rose-500'), 2000);
+            }
+            return;
+        }
+
+        if (!/^#[0-9A-Fa-f]{6}$/i.test(hex)) {
+            hex = '#06B6D4';
+        }
+
+        // Capitalize color name
+        var cleanName = name.charAt(0).toUpperCase() + name.slice(1);
+
+        // 1. Immediately register in known color map
+        knownColorMap[cleanName.toLowerCase()] = hex.toLowerCase();
+
+        // 2. Select this color tag immediately
+        if (!selectedColors.some(c => c.name.toLowerCase() === cleanName.toLowerCase())) {
+            selectedColors.push({ name: cleanName, hex: hex });
+            renderColorTags();
+        }
+
+        // 3. Dynamically insert swatch button into quick swatches if not existing
+        var swatchesContainer = document.getElementById('color_quick_swatches');
+        if (swatchesContainer) {
+            var existingSwatch = swatchesContainer.querySelector(`[data-color="${cleanName}"]`);
+            if (!existingSwatch) {
+                var newBtn = document.createElement('button');
+                newBtn.type = 'button';
+                newBtn.className = 'color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center ring-2 ring-slate-900 ring-offset-2 scale-110 shrink-0';
+                newBtn.setAttribute('data-color', cleanName);
+                newBtn.setAttribute('data-hex', hex);
+                newBtn.title = cleanName;
+                newBtn.style.backgroundColor = hex;
+                newBtn.onclick = function() { toggleColorTag(cleanName, hex); };
+                
+                var isLight = ['blanc', 'beige', 'jaune', 'menthe', 'lavande'].includes(cleanName.toLowerCase());
+                newBtn.innerHTML = `<span class="swatch-check w-1.5 h-1.5 rounded-full ${isLight ? 'bg-slate-900' : 'bg-white'}"></span>`;
+                
+                // Insert right before the last "+" button
+                var lastPlusBtn = swatchesContainer.lastElementChild;
+                if (lastPlusBtn) {
+                    swatchesContainer.insertBefore(newBtn, lastPlusBtn);
+                } else {
+                    swatchesContainer.appendChild(newBtn);
+                }
+            }
+        }
+
+        // 4. Save asynchronously to database
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+        }
+
+        fetch('{{ url("/pos/stock/save-color") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                name: cleanName,
+                hex: hex
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            closeModal('createColorModal');
+            showStockToast(`Couleur "${cleanName}" enregistrée avec succès!`);
+        })
+        .catch(err => {
+            console.error('Error saving custom color:', err);
+            closeModal('createColorModal');
+            showStockToast(`Couleur "${cleanName}" ajoutée.`);
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+            }
+        });
+    };
+
+    function getBrandIcon(name) {
+        var n = name.toLowerCase();
+        if (n === 'nike') {
+            return `<svg class="w-3.5 h-3.5 text-slate-900 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M21.707 5.293a1 1 0 0 0-1.414 0L8 17.586l-4.293-4.293a1 1 0 0 0-1.414 1.414l5 5a1 1 0 0 0 1.414 0l13-13a1 1 0 0 0 0-1.414z"/></svg>`;
+        }
+        if (n === 'zara') {
+            return `<span class="px-1.5 py-0.5 text-[9px] font-black bg-slate-900 text-white rounded shrink-0">Z</span>`;
+        }
+        if (n === 'adidas') {
+            return `<svg class="w-3.5 h-3.5 text-slate-900 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18h3l-3-8H3l3 8zm6 0h3l-4.5-12h-3L12 18zm6 0h3l-6-16h-3l6 16z"/></svg>`;
+        }
+        if (n === 'puma') {
+            return `<span class="px-1.5 py-0.5 text-[9px] font-black bg-slate-900 text-white rounded shrink-0">P</span>`;
+        }
+        return `<svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>`;
+    }
+
+    // ── Numeric Keyboard Handlers ──────────────────────────────────────
+    var numericTargetInput = null;
+    var azertyKeyMap = {
+        '&': '1', 'é': '2', '"': '3', "'": '4', '(': '5',
+        '-': '6', 'è': '7', '_': '8', 'ç': '9', 'à': '0',
+        ')': '°', '=': '+', '§': '!'
+    };
+
+    window.openNumericKeyboard = function(inputId) {
+        numericTargetInput = document.getElementById(inputId);
+        var currentVal = numericTargetInput ? numericTargetInput.value : '0';
+        var inputElem = document.getElementById('numericKeyboardInput');
+        if (inputElem) inputElem.value = currentVal || '0';
+        openModal('numericKeyboardModal');
+        document.addEventListener('keydown', window.numericKeyboardHandler);
+    };
+
+    window.numericKeyboardHandler = function(e) {
+        var modal = document.getElementById('numericKeyboardModal');
+        if (!modal || !modal.classList.contains('active')) return;
+
+        var key = e.key;
+        if (azertyKeyMap[key]) {
+            key = azertyKeyMap[key];
+        }
+
+        if ((key >= '0' && key <= '9') || key === '.' || key === ',') {
+            if (key === ',') key = '.';
+            appendNumericKey(key);
+        } else if (key === 'Backspace') {
+            var input = document.getElementById('numericKeyboardInput');
+            if (input) input.value = input.value.slice(0, -1);
+        } else if (key === 'Enter') {
+            confirmNumericKey();
+        } else if (key === 'Escape') {
+            closeModal('numericKeyboardModal');
+        }
+    };
+
+    window.appendNumericKey = function(digit) {
+        var input = document.getElementById('numericKeyboardInput');
+        if (!input) return;
+        if (digit === '.') {
+            if (input.value.includes('.')) return;
+            if (input.value === '') input.value = '0';
+        }
+        if (input.value.length < 10) {
+            input.value = (input.value === '0' && digit !== '.') ? digit : input.value + digit;
+        }
+    };
+
+    window.clearNumericKey = function() {
+        var input = document.getElementById('numericKeyboardInput');
+        if (input) input.value = '';
+    };
+
+    window.confirmNumericKey = function() {
+        if (numericTargetInput) {
+            var input = document.getElementById('numericKeyboardInput');
+            var val = input ? input.value : '0';
+            if (val === '' || isNaN(val)) val = '0';
+            numericTargetInput.value = val;
+        }
+        closeModal('numericKeyboardModal');
+    };
+
+    function renderBrandTags() {
+        var container = document.getElementById('selected_brand_tags');
+        var hiddenInput = document.getElementById('add_product_brand');
+        if (!container || !hiddenInput) return;
+
+        container.innerHTML = '';
+        selectedBrands.forEach(function(b) {
+            var tag = document.createElement('span');
+            tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-white text-slate-800 border border-slate-200 rounded-lg shadow-xs animate-in fade-in zoom-in-95';
+            tag.innerHTML = `
+                ${getBrandIcon(b)}
+                <span>${b}</span>
+                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeBrandTag('${b}')">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            `;
+            container.appendChild(tag);
+        });
+
+        hiddenInput.value = selectedBrands.join(', ');
+
+        // Update brand quick presets appearance
+        document.querySelectorAll('#brand_quick_presets .brand-chip').forEach(function(chip) {
+            var brandName = chip.textContent.trim();
+            if (selectedBrands.includes(brandName)) {
+                chip.className = 'brand-chip px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-white border border-slate-900 rounded-lg shadow-xs transition-all';
+            } else {
+                chip.className = 'brand-chip px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all';
+            }
+        });
+    }
+
+    function toggleBrandTag(brandName) {
+        var idx = selectedBrands.indexOf(brandName);
+        if (idx > -1) {
+            selectedBrands.splice(idx, 1);
+        } else {
+            selectedBrands.push(brandName);
+        }
+        renderBrandTags();
+    }
+
+    function removeBrandTag(brandName) {
+        selectedBrands = selectedBrands.filter(b => b !== brandName);
+        renderBrandTags();
+    }
+
+    function renderSizeTags() {
+        var container = document.getElementById('selected_size_tags');
+        var hiddenInput = document.getElementById('add_sizes_text');
+        if (!container || !hiddenInput) return;
+
+        container.innerHTML = '';
+        selectedSizes.forEach(function(s) {
+            var tag = document.createElement('span');
+            tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-white text-slate-900 border border-slate-200 rounded-lg shadow-xs animate-in fade-in zoom-in-95';
+            tag.innerHTML = `
+                <span>${s}</span>
+                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeSizeTag('${s}')">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            `;
+            container.appendChild(tag);
+        });
+
+        hiddenInput.value = selectedSizes.join(',');
+
+        // Update size quick chips
+        document.querySelectorAll('#size_quick_chips .size-chip').forEach(function(chip) {
+            var s = chip.getAttribute('data-size');
+            if (selectedSizes.includes(s)) {
+                chip.className = 'size-chip px-2.5 py-0.5 text-xs font-bold rounded-lg border bg-slate-900 text-white border-slate-900 shadow-xs transition-all';
+            } else {
+                chip.className = 'size-chip px-2.5 py-0.5 text-xs font-bold rounded-lg border bg-white hover:bg-slate-100 text-slate-700 border-slate-200 transition-all';
+            }
+        });
+    }
+
+    function toggleSizeTag(sizeName) {
+        var idx = selectedSizes.indexOf(sizeName);
+        if (idx > -1) {
+            selectedSizes.splice(idx, 1);
+        } else {
+            selectedSizes.push(sizeName);
+        }
+        renderSizeTags();
+    }
+
+    function removeSizeTag(sizeName) {
+        selectedSizes = selectedSizes.filter(s => s !== sizeName);
+        renderSizeTags();
+    }
+
+    function renderColorTags() {
+        var container = document.getElementById('selected_color_tags');
+        var hiddenInput = document.getElementById('add_colors_text');
+        if (!container || !hiddenInput) return;
+
+        container.innerHTML = '';
+        selectedColors.forEach(function(c) {
+            var tag = document.createElement('span');
+            tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-white text-slate-800 border border-slate-200 rounded-lg shadow-xs animate-in fade-in zoom-in-95';
+            tag.innerHTML = `
+                <span class="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style="background-color: ${c.hex}"></span>
+                <span>${c.name}</span>
+                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeColorTag('${c.name}')">
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            `;
+            container.appendChild(tag);
+        });
+
+        hiddenInput.value = selectedColors.map(c => c.name).join(',');
+
+        // Update swatch visual state
+        document.querySelectorAll('#color_quick_swatches .color-swatch-btn').forEach(function(btn) {
+            var colorName = btn.getAttribute('data-color');
+            var isSelected = selectedColors.some(c => c.name.toLowerCase() === colorName.toLowerCase());
+            var checkSpan = btn.querySelector('.swatch-check');
+
+            if (isSelected) {
+                btn.classList.add('ring-2', 'ring-slate-900', 'ring-offset-2', 'scale-110');
+                if (checkSpan) checkSpan.classList.remove('hidden');
+            } else {
+                btn.classList.remove('ring-2', 'ring-slate-900', 'ring-offset-2', 'scale-110');
+                if (checkSpan) checkSpan.classList.add('hidden');
+            }
+        });
+    }
+
+    function toggleColorTag(colorName, colorHex) {
+        var idx = selectedColors.findIndex(c => c.name.toLowerCase() === colorName.toLowerCase());
+        if (idx > -1) {
+            selectedColors.splice(idx, 1);
+        } else {
+            var hex = colorHex || knownColorMap[colorName.toLowerCase()] || '#64748b';
+            selectedColors.push({ name: colorName, hex: hex });
+        }
+        renderColorTags();
+    }
+
+    function removeColorTag(colorName) {
+        selectedColors = selectedColors.filter(c => c.name !== colorName);
+        renderColorTags();
+    }
+
+    // Initialize custom inputs and tags on load
+    document.addEventListener('DOMContentLoaded', function() {
+        renderBrandTags();
+        renderSizeTags();
+        renderColorTags();
+
+        // Custom Brand Input
+        var brandInput = document.getElementById('brand_custom_input');
+        if (brandInput) {
+            brandInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    var val = this.value.trim().replace(/^,+|,+$/g, '');
+                    if (val && !selectedBrands.includes(val)) {
+                        selectedBrands.push(val);
+                        renderBrandTags();
+                    }
+                    this.value = '';
+                }
+            });
+        }
+
+        // Custom Size Input
+        var sizeInput = document.getElementById('size_custom_input');
+        if (sizeInput) {
+            sizeInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    var val = this.value.trim().toUpperCase().replace(/^,+|,+$/g, '');
+                    if (val && !selectedSizes.includes(val)) {
+                        selectedSizes.push(val);
+                        renderSizeTags();
+                    }
+                    this.value = '';
+                }
+            });
+        }
+
+        // Custom Color Input
+        var colorInput = document.getElementById('color_custom_input');
+        if (colorInput) {
+            colorInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    var val = this.value.trim().replace(/^,+|,+$/g, '');
+                    if (val) {
+                        var capitalVal = val.charAt(0).toUpperCase() + val.slice(1);
+                        var hex = knownColorMap[val.toLowerCase()] || '#64748b';
+                        if (!selectedColors.some(c => c.name.toLowerCase() === val.toLowerCase())) {
+                            selectedColors.push({ name: capitalVal, hex: hex });
+                            renderColorTags();
+                        }
+                    }
+                    this.value = '';
+                }
+            });
+        }
+    });
 
     // ── Barcode type toggle for EDIT PRODUCT modal ─────────────────────
     function onEditBarcodeTypeChange(type) {

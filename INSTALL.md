@@ -108,8 +108,8 @@ php -m
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Twamof/-droguerie_s.git droguerie
-cd droguerie
+git clone https://github.com/abdelilahIbba/techshope.git techshope
+cd techshope
 ```
 
 ---
@@ -284,8 +284,8 @@ chown -R www-data:www-data storage bootstrap/cache
 ## Quick Reference — All Steps in One Go
 
 ```bash
-git clone https://github.com/Twamof/-droguerie_s.git droguerie
-cd droguerie
+git clone https://github.com/abdelilahIbba/techshope.git techshope
+cd techshope
 composer install
 cp .env.example .env
 php artisan key:generate

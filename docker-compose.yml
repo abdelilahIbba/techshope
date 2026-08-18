@@ -7,6 +7,14 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
+      # Anonymous/named volumes shadow the slow Windows bind mount for
+      # directories that don't need to be edited from the host. This keeps
+      # vendor/, node_modules/, and Laravel's runtime cache dirs on the fast
+      # native Linux VM filesystem instead of the 9p/drvfs bridge to C:\.
+      - techshope_vendor_v2:/var/www/html/vendor
+      - techshope_bootstrap_cache_v2:/var/www/html/bootstrap/cache
+      - techshope_storage_framework_v2:/var/www/html/storage/framework
+      - techshope_storage_logs_v2:/var/www/html/storage/logs
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -52,6 +60,10 @@ services:
         condition: service_started
     volumes:
       - ./:/var/www/html
+      - techshope_vendor_v2:/var/www/html/vendor
+      - techshope_bootstrap_cache_v2:/var/www/html/bootstrap/cache
+      - techshope_storage_framework_v2:/var/www/html/storage/framework
+      - techshope_storage_logs_v2:/var/www/html/storage/logs
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -87,7 +99,9 @@ services:
       - techshope_net_v2
 
   techshope_vite_v2:
-    image: node:22-alpine
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
     container_name: techshope_vite_v2
     profiles: ["frontend"]
     working_dir: /var/www/html
@@ -96,6 +110,11 @@ services:
       - "15173:15173"
     volumes:
       - ./:/var/www/html
+      # node_modules and Vite's dependency-optimization cache on native
+      # volumes: npm installs and Vite's dep scans are also very slow over
+      # the Windows bind mount (same 9p bottleneck as vendor/ for PHP).
+      - techshope_node_modules_v2:/var/www/html/node_modules
+      - techshope_vite_cache_v2:/var/www/html/node_modules/.vite
     depends_on:
       - techshope_app_v2
     networks:
@@ -107,3 +126,9 @@ networks:
 
 volumes:
   techshope_pgdata_v2:
+  techshope_vendor_v2:
+  techshope_bootstrap_cache_v2:
+  techshope_storage_framework_v2:
+  techshope_storage_logs_v2:
+  techshope_node_modules_v2:
+  techshope_vite_cache_v2:

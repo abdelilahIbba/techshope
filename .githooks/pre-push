@@ -1,0 +1,27 @@
+#!/bin/sh
+# Blocks any push whose target URL belongs to the old, retired repository
+# (Twamof/-droguerie_s). This project now lives exclusively at
+# https://github.com/abdelilahIbba/techshope
+#
+# Activate on a given clone with:
+#   git config core.hooksPath .githooks
+
+remote_url="$2"
+
+case "$remote_url" in
+    *Twamof*droguerie_s*|*Twamof/-droguerie_s*)
+        echo "" >&2
+        echo "BLOCKED: push target is the retired repository:" >&2
+        echo "  $remote_url" >&2
+        echo "" >&2
+        echo "This project now lives at:" >&2
+        echo "  https://github.com/abdelilahIbba/techshope" >&2
+        echo "" >&2
+        echo "Fix your remote with:" >&2
+        echo "  git remote set-url origin https://github.com/abdelilahIbba/techshope.git" >&2
+        echo "" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

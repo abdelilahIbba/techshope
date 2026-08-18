@@ -35,5 +35,11 @@ COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 COPY docker/php/entrypoint.sh /usr/local/bin/techshope-v2-entrypoint
 RUN chmod +x /usr/local/bin/techshope-v2-entrypoint
 
+# Bake composer.json/lock and run install at build time so the `vendor/`
+# volume is pre-seeded with a warm autoloader instead of being empty and
+# forcing a slow `composer install` over the Windows bind mount on first run.
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
+
 ENTRYPOINT ["techshope-v2-entrypoint"]
 CMD ["php-fpm"]

@@ -28,6 +28,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -153,13 +154,15 @@ class PosController extends Controller
 
     public function dashboard(Request $request): View
     {
-        $from = $request->input('from', now()->format('Y-m-d'));
+        $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
         $to = $request->input('to', now()->format('Y-m-d'));
+        $date = $request->input('date', now()->format('Y-m-d'));
 
+        // ── Period report (existing "Rapport détaillé" section) ────────────
         $sales = Sale::query()
             ->with('customer')
-            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
-            ->where('status', 'completed')
+            ->completed()
+            ->dateRange($from, $to)
             ->orderBy('date', 'desc')
             ->get();
 
@@ -185,15 +188,116 @@ class PosController extends Controller
             });
 
         $productsCount = $productsSold->count();
-        $lowStockCount = ProductVariant::query()->where('stock_quantity', '<=', 10)->count();
+
+        $lowStockThreshold = (int) Setting::get('low_stock_threshold', 10);
+        $criticalThreshold = (int) max(1, intdiv($lowStockThreshold, 2));
+        $lowStockCount = ProductVariant::query()->where('stock_quantity', '<=', $lowStockThreshold)->count();
+        $criticalStockCount = ProductVariant::query()->where('stock_quantity', '<=', $criticalThreshold)->count();
+        $alertStockCount = max(0, $lowStockCount - $criticalStockCount);
+
+        // ── Daily snapshot: "Tickets du jour" (day-filterable, defaults to today) ──
+        $dailyTickets = Sale::query()
+            ->with(['customer:id,name', 'cashier:id,name', 'cancellation'])
+            ->dateRange($date, $date)
+            ->orderByDesc('date')
+            ->get();
+
+        $dailyCompleted = $dailyTickets->where('status', 'completed');
+        $dailyRevenue = $dailyCompleted->sum('total_amount');
+        $dailySalesCount = $dailyCompleted->count();
+        $dailyCancellations = SaleCancellation::query()
+            ->whereBetween('cancelled_at', [$date . ' 00:00:00', $date . ' 23:59:59'])
+            ->get();
+        $dailyCancellationsCount = $dailyCancellations->count();
+        $dailyRefundedAmount = $dailyCancellations->sum('refund_amount');
+        $dailyProductsCount = (float) DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereBetween('sales.date', [$date . ' 00:00:00', $date . ' 23:59:59'])
+            ->where('sales.status', 'completed')
+            ->sum('sale_items.quantity');
+
+        // ── Chart data ───────────────────────────────────────────────────
+        $trendEnd = \Illuminate\Support\Carbon::parse($date)->startOfDay();
+        $trendStart = $trendEnd->copy()->subDays(13);
+
+        $revenueRows = Sale::query()
+            ->selectRaw('DATE(date) as day, SUM(total_amount) as revenue, COUNT(*) as cnt')
+            ->completed()
+            ->dateRange($trendStart->format('Y-m-d'), $trendEnd->format('Y-m-d'))
+            ->groupBy('day')
+            ->get()
+            ->keyBy(fn ($row) => substr($row->day, 0, 10));
+
+        $cancelRows = SaleCancellation::query()
+            ->selectRaw('DATE(cancelled_at) as day, COUNT(*) as cnt')
+            ->whereBetween('cancelled_at', [$trendStart->format('Y-m-d') . ' 00:00:00', $trendEnd->format('Y-m-d') . ' 23:59:59'])
+            ->groupBy('day')
+            ->get()
+            ->keyBy(fn ($row) => substr($row->day, 0, 10));
+
+        $salesTrend = [];
+        $cancellationsTrend = [];
+        for ($cursor = $trendStart->copy(); $cursor->lte($trendEnd); $cursor->addDay()) {
+            $key = $cursor->format('Y-m-d');
+            $revenueRow = $revenueRows->get($key);
+            $cancelRow = $cancelRows->get($key);
+
+            $salesTrend[] = [
+                'label' => $cursor->format('d/m'),
+                'revenue' => (float) ($revenueRow->revenue ?? 0),
+                'count' => (int) ($revenueRow->cnt ?? 0),
+            ];
+            $cancellationsTrend[] = [
+                'label' => $cursor->format('d/m'),
+                'count' => (int) ($cancelRow->cnt ?? 0),
+            ];
+        }
+
+        $topProducts = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->whereBetween('sales.date', [$date . ' 00:00:00', $date . ' 23:59:59'])
+            ->where('sales.status', 'completed')
+            ->select(
+                'products.name as product_name',
+                DB::raw('SUM(sale_items.quantity) as total_quantity'),
+                DB::raw('SUM(sale_items.subtotal) as total_revenue')
+            )
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('total_revenue')
+            ->limit(6)
+            ->get();
+
+        $paymentBreakdownDaily = Sale::query()
+            ->completed()
+            ->dateRange($date, $date)
+            ->select('payment_method', DB::raw('COUNT(*) as cnt'), DB::raw('SUM(total_amount) as total'))
+            ->groupBy('payment_method')
+            ->get();
 
         return view('pos.dashboard', [
+            'from' => $from,
+            'to' => $to,
+            'date' => $date,
             'sales' => $sales,
             'totalRevenue' => $totalRevenue,
             'salesCount' => $salesCount,
             'productsCount' => $productsCount,
             'lowStockCount' => $lowStockCount,
+            'criticalStockCount' => $criticalStockCount,
+            'alertStockCount' => $alertStockCount,
             'productsSold' => $productsSold,
+            'lowStockThreshold' => $lowStockThreshold,
+            'dailyTickets' => $dailyTickets,
+            'dailyRevenue' => $dailyRevenue,
+            'dailySalesCount' => $dailySalesCount,
+            'dailyCancellationsCount' => $dailyCancellationsCount,
+            'dailyRefundedAmount' => $dailyRefundedAmount,
+            'dailyProductsCount' => $dailyProductsCount,
+            'salesTrend' => $salesTrend,
+            'cancellationsTrend' => $cancellationsTrend,
+            'topProducts' => $topProducts,
+            'paymentBreakdownDaily' => $paymentBreakdownDaily,
         ]);
     }
 
@@ -755,15 +859,20 @@ class PosController extends Controller
 
     public function notifications(): View
     {
+        $threshold = (int) Setting::get('low_stock_threshold', 10);
+        $criticalThreshold = (int) max(1, intdiv($threshold, 2));
+
         $lowStockVariants = ProductVariant::query()
-            ->with(['product:id,name,brand_id,unit,category_id', 'product.category:id,name'])
-            ->where('stock_quantity', '<=', 10)
+            ->with(['product:id,name,brand_id,unit,category_id', 'product.category:id,name', 'product.brand:id,name'])
+            ->where('stock_quantity', '<=', $threshold)
             ->orderBy('stock_quantity')
             ->get();
 
         return view('pos.notifications', [
             'lowStockVariants' => $lowStockVariants,
             'lowStockProducts' => $lowStockVariants,
+            'lowStockThreshold' => $threshold,
+            'criticalThreshold' => $criticalThreshold,
         ]);
     }
 
@@ -1087,6 +1196,14 @@ class PosController extends Controller
                 $type = in_array($key, $integerKeys, true) ? 'integer' : 'string';
                 Setting::set($key, $value, $type);
             }
+        }
+
+        if (array_key_exists('low_stock_threshold', $settings) && $settings['low_stock_threshold'] !== null) {
+            // The sidebar badge count is cached for 30s (see ShareNavData) to
+            // avoid re-querying on every nav render — bust it here so a
+            // changed threshold is reflected immediately instead of after
+            // a stale delay.
+            Cache::forget('nav:low_stock_count');
         }
 
         return back()->with('success', 'Paramètres mis à jour avec succès');

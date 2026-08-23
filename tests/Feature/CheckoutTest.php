@@ -3,6 +3,7 @@
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Receipt;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -25,7 +26,7 @@ beforeEach(function () {
 function makeProduct(string $barcode = 'PROD001', float $stock = 100, float $price = 15.0): Product
 {
     $category = Category::query()->firstOrCreate(['name' => 'Test Category'], ['description' => '']);
-    return Product::query()->create([
+    $product = Product::query()->create([
         'name'           => "Product {$barcode}",
         'barcode'        => $barcode,
         'category_id'    => $category->id,
@@ -34,6 +35,17 @@ function makeProduct(string $barcode = 'PROD001', float $stock = 100, float $pri
         'sale_price'     => $price,
         'unit'           => 'pcs',
     ]);
+
+    // Scan/checkout sell against product_variants, not the product row
+    // directly — a product with none is unsellable ("Variant not found").
+    ProductVariant::query()->create([
+        'product_id' => $product->id,
+        'barcode' => $barcode,
+        'stock_quantity' => $stock,
+        'is_default' => true,
+    ]);
+
+    return $product;
 }
 
 function makeCustomer(): Customer
@@ -115,6 +127,12 @@ test('checkout handles length-based products correctly', function () {
         'sell_by_length' => true,
         'length_unit'    => 'm',
         'unit'           => 'm',
+    ]);
+    ProductVariant::query()->create([
+        'product_id' => $product->id,
+        'barcode' => 'EDGE001',
+        'stock_quantity' => 100.0,
+        'is_default' => true,
     ]);
     $customer = makeCustomer();
 
@@ -210,7 +228,7 @@ test('checkout creates multi-item sale correctly', function () {
 
 // ─── Checkout: error cases ────────────────────────────────────────────────────
 
-test('checkout with unknown barcode aborts with 422', function () {
+test('checkout with unknown barcode redirects back with a flashed error instead of crashing', function () {
     $admin    = userWithRole('Admin');
     $customer = makeCustomer();
 
@@ -219,11 +237,13 @@ test('checkout with unknown barcode aborts with 422', function () {
         'customer_id' => $customer->id,
     ]);
 
-    $response->assertStatus(422);
+    $response->assertRedirect();
+    $response->assertSessionHas('error');
+    expect(session('error'))->toContain('GHOST999');
     expect(Sale::query()->count())->toBe(0);
 });
 
-test('checkout with insufficient stock aborts with 422', function () {
+test('checkout with insufficient stock redirects back with a flashed error instead of crashing', function () {
     $admin    = userWithRole('Admin');
     $product  = makeProduct('LOW001', 3, 5.0); // only 3 in stock
     $customer = makeCustomer();
@@ -233,8 +253,11 @@ test('checkout with insufficient stock aborts with 422', function () {
         'customer_id' => $customer->id,
     ]);
 
-    $response->assertStatus(422);
+    $response->assertRedirect();
+    $response->assertSessionHas('error');
+    expect(session('error'))->toContain('Stock insuffisant');
     expect((float)$product->fresh()->stock_quantity)->toBe(3.0); // untouched
+    expect(Sale::query()->count())->toBe(0);
 });
 
 test('checkout fails validation when items array is empty', function () {

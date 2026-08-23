@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Expense;
@@ -29,12 +30,16 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class PosController extends Controller
 {
+    /** A product image_url must point directly at an image file, not a webpage. */
+    private const IMAGE_URL_REGEX = '/\.(jpe?g|png|gif|webp|svg|avif|bmp)(\?.*)?$/i';
+
     public function __construct(private readonly VariantStockService $variantStock)
     {
     }
@@ -50,6 +55,7 @@ class PosController extends Controller
             ['key' => 'stock.adjust', 'label' => 'Ajuster stock', 'page' => 'Stock', 'action' => 'Edit'],
             ['key' => 'supplier.manage', 'label' => 'Gérer fournisseurs', 'page' => 'Stock', 'action' => 'Edit'],
             ['key' => 'category.manage', 'label' => 'Gérer catégories', 'page' => 'Stock', 'action' => 'Edit'],
+            ['key' => 'brand.manage', 'label' => 'Gérer marques', 'page' => 'Stock', 'action' => 'Edit'],
             ['key' => 'notifications.view', 'label' => 'Voir notifications', 'page' => 'Notifications', 'action' => 'View'],
             ['key' => 'settings.view', 'label' => 'Voir settings', 'page' => 'Settings', 'action' => 'View'],
             ['key' => 'settings.update', 'label' => 'Modifier settings', 'page' => 'Settings', 'action' => 'Edit'],
@@ -111,6 +117,7 @@ class PosController extends Controller
             'stock.adjust',
             'supplier.manage',
             'category.manage',
+            'brand.manage',
             'notifications.view',
             'checkout.create',
             'receipt.export',
@@ -152,6 +159,7 @@ class PosController extends Controller
         $sales = Sale::query()
             ->with('customer')
             ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'completed')
             ->orderBy('date', 'desc')
             ->get();
 
@@ -162,6 +170,7 @@ class PosController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->whereBetween('sales.date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('sales.status', 'completed')
             ->select(
                 'products.name as product_name',
                 DB::raw('SUM(sale_items.quantity) as total_quantity'),
@@ -194,7 +203,8 @@ class PosController extends Controller
         $to = $request->input('to', now()->format('Y-m-d'));
 
         $baseQuery = Sale::query()
-            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59']);
+            ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
+            ->where('status', 'completed');
 
         $totalRevenue = (clone $baseQuery)->sum('total_amount');
         $salesCount = (clone $baseQuery)->count();
@@ -222,7 +232,7 @@ class PosController extends Controller
             ->with([
                 'products' => function ($query) {
                     $query
-                        ->select('id', 'name', 'brand', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id', 'unit')
+                        ->select('id', 'name', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id', 'unit', 'image')
                         ->with(['variants' => function ($q) {
                             $q->select('id', 'product_id', 'size', 'color', 'barcode', 'stock_quantity', 'is_default')
                                 ->orderBy('size')
@@ -235,20 +245,18 @@ class PosController extends Controller
 
         $filterSizes = ProductVariant::query()->whereNotNull('size')->distinct()->orderBy('size')->pluck('size');
         $filterColors = ProductVariant::query()->whereNotNull('color')->distinct()->orderBy('color')->pluck('color');
-        $filterBrands = Product::query()->whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand');
 
         return view('pos.index', [
             'categories' => $categories,
             'filterSizes' => $filterSizes,
             'filterColors' => $filterColors,
-            'filterBrands' => $filterBrands,
         ]);
     }
 
     public function stock(): View
     {
         $products = Product::query()
-            ->with(['category:id,name', 'supplier:id,name', 'variants'])
+            ->with(['category:id,name', 'supplier:id,name', 'brand:id,name', 'variants'])
             ->orderBy('name')
             ->get();
 
@@ -262,12 +270,16 @@ class PosController extends Controller
             ->orderBy('name')
             ->get();
 
+        $brands = Brand::query()
+            ->withCount('products')
+            ->orderBy('name')
+            ->get();
+
         $filterSizes = ProductVariant::query()->whereNotNull('size')->distinct()->orderBy('size')->pluck('size');
         $filterColors = ProductVariant::query()->whereNotNull('color')->distinct()->orderBy('color')->pluck('color');
-        $filterBrands = Product::query()->whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand');
 
         $stockHistory = StockMovement::query()
-            ->with(['variant.product:id,name,brand', 'user:id,name'])
+            ->with(['variant.product:id,name,brand_id', 'user:id,name'])
             ->latest()
             ->limit(50)
             ->get();
@@ -288,9 +300,9 @@ class PosController extends Controller
             'products' => $products,
             'suppliers' => $suppliers,
             'categories' => $categories,
+            'brands' => $brands,
             'filterSizes' => $filterSizes,
             'filterColors' => $filterColors,
-            'filterBrands' => $filterBrands,
             'stockHistory' => $stockHistory,
             'customColors' => $customColors,
         ]);
@@ -300,7 +312,7 @@ class PosController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'brand' => ['nullable', 'string', 'max:255'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
             'barcode' => ['nullable', 'string', 'unique:products,barcode', 'unique:product_variants,barcode'],
             'category_id' => ['required', 'exists:categories,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
@@ -316,6 +328,10 @@ class PosController extends Controller
             'colors.*' => ['nullable', 'string', 'max:50'],
             'sizes_text' => ['nullable', 'string', 'max:500'],
             'colors_text' => ['nullable', 'string', 'max:500'],
+            'image_file' => ['nullable', 'image', 'max:4096'],
+            'image_url' => ['nullable', 'url', 'max:2048', 'regex:'.self::IMAGE_URL_REGEX],
+        ], [
+            'image_url.regex' => "L'URL doit pointer directement vers un fichier image (jpg, png, gif, webp...), pas vers une page web.",
         ]);
 
         $validated['sell_by_length'] = (bool) ($validated['sell_by_length'] ?? false);
@@ -339,9 +355,12 @@ class PosController extends Controller
             $colors[] = $validated['colors_text'];
         }
 
+        $validated['image'] = $this->resolveProductImage($request);
+
         $stockPerVariant = (float) $validated['stock_quantity'];
         $productData = collect($validated)->except([
             'sizes', 'colors', 'sizes_text', 'colors_text', 'stock_quantity',
+            'image_file', 'image_url',
         ])->all();
         $productData['stock_quantity'] = 0;
 
@@ -367,6 +386,63 @@ class PosController extends Controller
     private function generateUniqueBarcode(): string
     {
         return $this->variantStock->generateUniqueBarcode();
+    }
+
+    /**
+     * Resolve the product `image` column value from a request: an uploaded
+     * file, a pasted URL, an explicit removal, or — when none of those were
+     * submitted — the image already on the product (edit) / nothing (create).
+     */
+    private function resolveProductImage(Request $request, ?string $currentImage = null): ?string
+    {
+        if ($request->boolean('remove_image')) {
+            $this->deleteStoredProductImage($currentImage);
+
+            return null;
+        }
+
+        if ($request->hasFile('image_file')) {
+            $this->deleteStoredProductImage($currentImage);
+
+            $storedPath = $request->file('image_file')->store('products', 'public');
+
+            if ($storedPath === false) {
+                // The 'public' disk is configured with 'throw' => false, so a
+                // storage failure (permissions, disk full, ...) returns false
+                // instead of throwing — surface it instead of silently
+                // corrupting the product's image column.
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'image_file' => "Échec de l'enregistrement de l'image. Réessayez.",
+                ]);
+            }
+
+            return $storedPath;
+        }
+
+        if ($request->filled('image_url')) {
+            $this->deleteStoredProductImage($currentImage);
+
+            return $request->input('image_url');
+        }
+
+        return $currentImage;
+    }
+
+    /**
+     * Delete a product's previously stored image file — but only if it's a
+     * local upload. External URLs aren't ours to delete.
+     */
+    private function deleteStoredProductImage(?string $image): void
+    {
+        if (! $image) {
+            return;
+        }
+
+        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+            return;
+        }
+
+        Storage::disk('public')->delete($image);
     }
 
     /**
@@ -412,7 +488,7 @@ class PosController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'brand' => ['nullable', 'string', 'max:255'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
             'barcode' => ['required', 'string', 'unique:products,barcode,'.$product->id],
             'category_id' => ['required', 'exists:categories,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
@@ -426,6 +502,11 @@ class PosController extends Controller
             'sizes_text' => ['nullable', 'string', 'max:500'],
             'colors_text' => ['nullable', 'string', 'max:500'],
             'stock_per_variant' => ['nullable', 'numeric', 'min:0'],
+            'image_file' => ['nullable', 'image', 'max:4096'],
+            'image_url' => ['nullable', 'url', 'max:2048', 'regex:'.self::IMAGE_URL_REGEX],
+            'remove_image' => ['nullable', 'boolean'],
+        ], [
+            'image_url.regex' => "L'URL doit pointer directement vers un fichier image (jpg, png, gif, webp...), pas vers une page web.",
         ]);
 
         $sizes = $validated['sizes'] ?? [];
@@ -444,10 +525,11 @@ class PosController extends Controller
         }
 
         $stockPerNew = (float) ($validated['stock_per_variant'] ?? 0);
+        $validated['image'] = $this->resolveProductImage($request, $product->image);
 
         DB::transaction(function () use ($product, $validated, $sizes, $colors, $stockPerNew) {
             $product->update(collect($validated)->only([
-                'name', 'brand', 'barcode', 'category_id', 'supplier_id', 'purchase_price', 'sale_price', 'unit',
+                'name', 'brand_id', 'barcode', 'category_id', 'supplier_id', 'purchase_price', 'sale_price', 'unit', 'image',
             ])->all());
 
             $this->variantStock->syncVariants($product->fresh(), $sizes, $colors, $stockPerNew);
@@ -526,6 +608,7 @@ class PosController extends Controller
 
     public function deleteProduct(Product $product)
     {
+        $this->deleteStoredProductImage($product->image);
         $product->delete();
 
         return redirect()->route('pos.stock')->with('success', 'Produit supprimé avec succès!');
@@ -635,10 +718,45 @@ class PosController extends Controller
         return redirect()->route('pos.stock')->with('success', 'Catégorie supprimée avec succès!');
     }
 
+    public function addBrand(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:brands,name'],
+        ]);
+
+        Brand::query()->create($validated);
+
+        return redirect()->route('pos.stock')->with('success', 'Marque ajoutée avec succès!');
+    }
+
+    public function editBrand(Request $request, Brand $brand)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255', 'unique:brands,name,' . $brand->id],
+        ]);
+
+        $brand->update($validated);
+
+        return redirect()->route('pos.stock')->with('success', 'Marque modifiée avec succès!');
+    }
+
+    public function deleteBrand(Brand $brand)
+    {
+        $productsCount = $brand->products()->count();
+
+        if ($productsCount > 0) {
+            return redirect()->route('pos.stock')->with('error', 'Impossible de supprimer cette marque car elle est liée à ' . $productsCount . ' produit(s).');
+        }
+
+        $brand->delete();
+
+        return redirect()->route('pos.stock')->with('success', 'Marque supprimée avec succès!');
+    }
+
     public function notifications(): View
     {
         $lowStockVariants = ProductVariant::query()
-            ->with(['product:id,name,brand,unit,category_id', 'product.category:id,name'])
+            ->with(['product:id,name,brand_id,unit,category_id', 'product.category:id,name'])
             ->where('stock_quantity', '<=', 10)
             ->orderBy('stock_quantity')
             ->get();
@@ -992,7 +1110,7 @@ class PosController extends Controller
         if ($variant === null) {
             /** @var Product|null $product */
             $product = Product::query()
-                ->with('variants')
+                ->with(['variants', 'brand'])
                 ->where('barcode', $barcode)
                 ->orWhere('name', $barcode)
                 ->first();
@@ -1008,7 +1126,7 @@ class PosController extends Controller
                     ->first(function (ProductVariant $v) use ($size, $color, $brand) {
                         return ($size === null || $v->size === $size)
                             && ($color === null || $v->color === $color)
-                            && ($brand === null || $v->product?->brand === $brand);
+                            && ($brand === null || $v->product?->brand?->name === $brand);
                     });
             }
 
@@ -1022,7 +1140,7 @@ class PosController extends Controller
                     'product' => [
                         'id' => $product->id,
                         'name' => $product->name,
-                        'brand' => $product->brand,
+                        'brand' => $product->brand?->name,
                         'barcode' => $product->barcode,
                         'category_id' => $product->category_id,
                         'price' => (float) $product->sale_price,
@@ -1049,7 +1167,7 @@ class PosController extends Controller
             'id' => $product->id,
             'variant_id' => $variant->id,
             'name' => $product->name,
-            'brand' => $product->brand,
+            'brand' => $product->brand?->name,
             'size' => $variant->size,
             'color' => $variant->color,
             'variant_label' => $variant->label(),
@@ -1082,87 +1200,94 @@ class PosController extends Controller
             ]);
         }
 
-        $result = DB::transaction(function () use ($validated, $customerId) {
-            $resolvedItems = [];
-            $totalAmount = 0;
+        try {
+            $result = DB::transaction(function () use ($validated, $customerId) {
+                $resolvedItems = [];
+                $totalAmount = 0;
 
-            foreach ($validated['items'] as $item) {
-                $variant = null;
+                foreach ($validated['items'] as $item) {
+                    $variant = null;
 
-                if (! empty($item['variant_id'])) {
-                    $variant = ProductVariant::query()
-                        ->with('product')
-                        ->where('id', $item['variant_id'])
-                        ->lockForUpdate()
-                        ->first();
+                    if (! empty($item['variant_id'])) {
+                        $variant = ProductVariant::query()
+                            ->with('product')
+                            ->where('id', $item['variant_id'])
+                            ->lockForUpdate()
+                            ->first();
+                    }
+
+                    if ($variant === null) {
+                        $variant = ProductVariant::query()
+                            ->with('product')
+                            ->where('barcode', $item['barcode'])
+                            ->lockForUpdate()
+                            ->first();
+                    }
+
+                    if ($variant === null) {
+                        abort(422, 'Variant not found for barcode: '.$item['barcode']);
+                    }
+
+                    $quantity = (float) $item['quantity'];
+                    $unitPrice = (float) $item['price'];
+                    $subtotal = $unitPrice * $quantity;
+
+                    $this->variantStock->decrement(
+                        $variant,
+                        $quantity,
+                        StockMovement::TYPE_SALE,
+                        Sale::class,
+                        null,
+                        'Vente POS'
+                    );
+
+                    $resolvedItems[] = [
+                        'product' => $variant->product,
+                        'variant' => $variant,
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'subtotal' => $subtotal,
+                    ];
+
+                    $totalAmount += $subtotal;
                 }
 
-                if ($variant === null) {
-                    $variant = ProductVariant::query()
-                        ->with('product')
-                        ->where('barcode', $item['barcode'])
-                        ->lockForUpdate()
-                        ->first();
-                }
-
-                if ($variant === null) {
-                    abort(422, 'Variant not found for barcode: '.$item['barcode']);
-                }
-
-                $quantity = (float) $item['quantity'];
-                $unitPrice = (float) $item['price'];
-                $subtotal = $unitPrice * $quantity;
-
-                $this->variantStock->decrement(
-                    $variant,
-                    $quantity,
-                    StockMovement::TYPE_SALE,
-                    Sale::class,
-                    null,
-                    'Vente POS'
-                );
-
-                $resolvedItems[] = [
-                    'product' => $variant->product,
-                    'variant' => $variant,
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'subtotal' => $subtotal,
-                ];
-
-                $totalAmount += $subtotal;
-            }
-
-            $sale = Sale::query()->create([
-                'customer_id' => $customerId,
-                'cashier_user_id' => Auth::id(),
-                'date' => now(),
-                'total_amount' => $totalAmount,
-                'payment_method' => $validated['payment_method'] ?? 'cash',
-                'status' => 'completed',
-            ]);
-
-            foreach ($resolvedItems as $row) {
-                SaleItem::query()->create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $row['product']->id,
-                    'product_variant_id' => $row['variant']->id,
-                    'quantity' => $row['quantity'],
-                    'unit_price' => $row['unit_price'],
-                    'subtotal' => $row['subtotal'],
+                $sale = Sale::query()->create([
+                    'customer_id' => $customerId,
+                    'cashier_user_id' => Auth::id(),
+                    'date' => now(),
+                    'total_amount' => $totalAmount,
+                    'payment_method' => $validated['payment_method'] ?? 'cash',
+                    'status' => 'completed',
                 ]);
-            }
 
-            // Attach sale id on movements for the just-created sale (optional refinement skipped).
+                foreach ($resolvedItems as $row) {
+                    SaleItem::query()->create([
+                        'sale_id' => $sale->id,
+                        'product_id' => $row['product']->id,
+                        'product_variant_id' => $row['variant']->id,
+                        'quantity' => $row['quantity'],
+                        'unit_price' => $row['unit_price'],
+                        'subtotal' => $row['subtotal'],
+                    ]);
+                }
 
-            $receipt = Receipt::query()->create([
-                'sale_id' => $sale->id,
-                'receipt_number' => 'RCP-'.now()->format('Ymd').'-'.$sale->id,
-                'printed_at' => now(),
-            ]);
+                // Attach sale id on movements for the just-created sale (optional refinement skipped).
 
-            return [$sale->id, $receipt->id];
-        });
+                $receipt = Receipt::query()->create([
+                    'sale_id' => $sale->id,
+                    'receipt_number' => 'RCP-'.now()->format('Ymd').'-'.$sale->id,
+                    'printed_at' => now(),
+                ]);
+
+                return [$sale->id, $receipt->id];
+            });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            // abort(422, '...') for "variant not found" / "insufficient stock" —
+            // surface it as a friendly flash instead of crashing the whole POS
+            // screen to a raw exception page mid-sale.
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('pos.receipt.print', ['receipt' => $result[1]]);
     }
@@ -1358,13 +1483,14 @@ PS;
         $salesData = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
             ->leftJoin('product_variants', 'sale_items.product_variant_id', '=', 'product_variants.id')
             ->whereBetween('sales.date', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('sales.status', 'completed')
             ->select(
                 'products.id',
                 'products.name',
-                'products.brand',
+                'brands.name as brand',
                 'products.unit',
                 'products.category_id',
                 'products.purchase_price',
@@ -1380,7 +1506,7 @@ PS;
             ->groupBy(
                 'products.id',
                 'products.name',
-                'products.brand',
+                'brands.name',
                 'products.unit',
                 'products.category_id',
                 'products.purchase_price',
@@ -1451,9 +1577,11 @@ PS;
             ->with([
                 'cashier:id,name',
                 'customer:id,name',
-                'items.product:id,name,barcode,brand,unit',
+                'items.product:id,name,barcode,brand_id,unit',
+                'items.product.brand:id,name',
                 'items.variant:id,product_id,size,color,barcode,stock_quantity',
-                'items.variant.product:id,name,brand,sale_price',
+                'items.variant.product:id,name,brand_id,sale_price',
+                'items.variant.product.brand:id,name',
             ])
             ->whereBetween('date', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->where('status', 'completed')
@@ -1780,14 +1908,14 @@ PS;
     {
         $productId = $request->query('product_id');
         $brand = $request->query('brand');
-        $q = ProductVariant::query()->with('product:id,name,brand,sale_price');
+        $q = ProductVariant::query()->with(['product:id,name,brand_id,sale_price', 'product.brand:id,name']);
 
         if ($productId) {
             $q->where('product_id', $productId);
         }
 
         if ($brand) {
-            $q->whereHas('product', fn ($p) => $p->where('brand', $brand));
+            $q->whereHas('product.brand', fn ($b) => $b->where('name', $brand));
         }
 
         if ($request->filled('size')) {
@@ -1803,7 +1931,7 @@ PS;
                 'id' => $v->id,
                 'product_id' => $v->product_id,
                 'name' => $v->product?->name,
-                'brand' => $v->product?->brand,
+                'brand' => $v->product?->brand?->name,
                 'size' => $v->size,
                 'color' => $v->color,
                 'barcode' => $v->barcode,

@@ -69,6 +69,7 @@
         <button class="tab-btn active px-4 py-2.5 rounded-2xl text-sm font-black text-slate-500 border border-transparent bg-white shadow-sm hover:text-slate-900 transition-all [&.active]:text-indigo-700 [&.active]:bg-indigo-50 [&.active]:border-indigo-100" onclick="switchTab('products')">Produits</button>
         <button class="tab-btn px-4 py-2.5 rounded-2xl text-sm font-black text-slate-500 border border-transparent bg-transparent hover:bg-slate-50 hover:text-slate-900 transition-all [&.active]:text-indigo-700 [&.active]:bg-indigo-50 [&.active]:border-indigo-100" onclick="switchTab('suppliers')">Fournisseurs</button>
         <button class="tab-btn px-4 py-2.5 rounded-2xl text-sm font-black text-slate-500 border border-transparent bg-transparent hover:bg-slate-50 hover:text-slate-900 transition-all [&.active]:text-indigo-700 [&.active]:bg-indigo-50 [&.active]:border-indigo-100" onclick="switchTab('categories')">Catégories</button>
+        <button class="tab-btn px-4 py-2.5 rounded-2xl text-sm font-black text-slate-500 border border-transparent bg-transparent hover:bg-slate-50 hover:text-slate-900 transition-all [&.active]:text-indigo-700 [&.active]:bg-indigo-50 [&.active]:border-indigo-100" onclick="switchTab('brands')">Marques</button>
     </div>
 
     <div class="tab-content active" id="products-tab">
@@ -115,12 +116,24 @@
                         @forelse ($products as $product)
                             <tr ondblclick='showProductDetails({{ json_encode($product) }})' class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
                                 <td class="px-6 py-4 font-bold text-slate-800">
-                                    <div>{{ $product->name }}</div>
-                                    <div class="text-xs font-medium text-slate-500 mt-0.5">
-                                        {{ $product->brand ?: 'Sans marque' }}
-                                        @if(($product->variants?->count() ?? 0) > 1)
-                                            · {{ $product->variants->count() }} variantes
-                                        @endif
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                                            @if($product->image_url)
+                                                <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            @endif
+                                            <span class="w-full h-full items-center justify-center text-slate-300 {{ $product->image_url ? 'hidden' : 'flex' }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div>{{ $product->name }}</div>
+                                            <div class="text-xs font-medium text-slate-500 mt-0.5">
+                                                {{ $product->brand->name ?? 'Sans marque' }}
+                                                @if(($product->variants?->count() ?? 0) > 1)
+                                                    · {{ $product->variants->count() }} variantes
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4"><span class="text-slate-400 font-mono tracking-wider text-xs">{{ $product->barcode }}</span></td>
@@ -351,6 +364,64 @@
             </div>
         </div>
     </div>
+
+    <div class="tab-content" id="brands-tab">
+        <div class="glass-panel mb-4 flex flex-wrap gap-4 items-center p-4 rounded-3xl border border-white/60 shadow-sm">
+            <div class="relative flex-1 min-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <input type="text" id="searchBrand" class="pl-10 form-input bg-white border border-slate-200 text-slate-900 text-sm rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full h-12 px-3 outline-none transition-all shadow-sm" placeholder="Rechercher une marque (nom)..." onkeyup="filterBrands()">
+            </div>
+            <button class="bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-sm px-5 py-3 shadow-lg shadow-slate-200 transition-all flex items-center gap-2 active:scale-[0.98]" onclick="openModal('addBrandModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                Ajouter marque
+            </button>
+        </div>
+        <div class="table-container glass-panel shadow-sm ring-1 ring-black/5 rounded-3xl overflow-hidden border border-white/60">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50/90 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4 font-bold">Nom de la marque</th>
+                            <th class="px-6 py-4 font-bold text-center">Nombre de produits</th>
+                            <th class="px-6 py-4 font-bold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($brands as $brand)
+                            <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors last:border-0 group">
+                                <td class="px-6 py-4 font-bold text-slate-800">{{ $brand->name }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold text-xs">{{ $brand->products_count ?? 0 }} produit(s)</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex justify-end gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <button class="flex items-center gap-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm" onclick='editBrand({{ json_encode($brand) }})'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            Éditer
+                                        </button>
+                                        <form method="POST" action="{{ route('pos.stock.delete-brand', $brand) }}" class="inline" onsubmit="return confirm('Supprimer cette marque ?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="flex items-center gap-1.5 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white font-semibold text-xs px-3 py-2 rounded-lg transition-all shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-8 text-center text-slate-500 font-medium">Aucune marque</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="modal" id="addProductModal">
@@ -372,7 +443,7 @@
             </button>
         </div>
 
-        <form method="POST" action="{{ route('pos.stock.add-product') }}" class="flex flex-col gap-4" id="addProductForm">
+        <form method="POST" action="{{ route('pos.stock.add-product') }}" enctype="multipart/form-data" class="flex flex-col gap-4" id="addProductForm">
             @csrf
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -401,23 +472,15 @@
 
                 {{-- Row 2: Marque & Barcode Input --}}
                 <div>
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Marque</label>
-                        <span class="text-[11px] text-slate-400 font-medium">Sélection ou écriture</span>
-                    </div>
-                    <input type="hidden" name="brand" id="add_product_brand" value="">
-                    <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
-                        <div id="selected_brand_tags" class="flex flex-wrap items-center gap-1.5"></div>
-                        <input type="text" id="brand_custom_input" placeholder="Écrire une marque..." class="flex-1 min-w-[120px] bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 py-1 px-1.5">
-                    </div>
-                    {{-- Quick brand presets --}}
-                    <div class="flex flex-wrap gap-1 mt-1.5" id="brand_quick_presets">
-                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Nike')">Nike</button>
-                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Zara')">Zara</button>
-                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Adidas')">Adidas</button>
-                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Puma')">Puma</button>
-                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('H&M')">H&M</button>
-                        <button type="button" class="brand-chip px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all" onclick="toggleBrandTag('Bershka')">Bershka</button>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Marque</label>
+                    <div class="relative flex items-center">
+                        <select name="brand_id" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs">
+                            <option value="">Aucune marque</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
                 </div>
 
@@ -519,7 +582,7 @@
                     {{-- Quick Size Chips --}}
                     <div class="flex flex-wrap gap-1 mt-1.5" id="size_quick_chips">
                         @foreach(['S', 'M', 'L', 'XL', 'XXL', '38', '40', '42', '44'] as $quickSize)
-                            <button type="button" class="size-chip px-2.5 py-1 text-xs font-bold rounded-lg border transition-all" data-size="{{ $quickSize }}" onclick="toggleSizeTag('{{ $quickSize }}')">
+                            <button type="button" class="size-chip px-2.5 py-1 text-xs font-bold rounded-lg border transition-all" data-size="{{ $quickSize }}" onclick="toggleSizeTag('{{ $quickSize }}', 'add')">
                                 {{ $quickSize }}
                             </button>
                         @endforeach
@@ -529,13 +592,13 @@
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Couleurs (Pastilles)</label>
-                        <button type="button" onclick="openColorCreatorModal()" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 px-2 py-0.5 rounded-lg transition-all shadow-xs">
+                        <button type="button" onclick="openColorCreatorModal('add')" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 px-2 py-0.5 rounded-lg transition-all shadow-xs">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                             <span>+ Créer couleur</span>
                         </button>
                     </div>
                     <input type="hidden" name="colors_text" id="add_colors_text" value="Bleu,Rouge">
-                    
+
                     {{-- Selected Color Tags Container --}}
                     <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
                         <div id="selected_color_tags" class="flex flex-wrap items-center gap-1.5"></div>
@@ -564,15 +627,46 @@
                             }
                         @endphp
                         @foreach($uniqueColors as $pc)
-                            <button type="button" class="color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center shrink-0" data-color="{{ $pc['name'] }}" data-hex="{{ $pc['hex'] }}" title="{{ $pc['name'] }}" style="background-color: {{ $pc['hex'] }};" onclick="toggleColorTag('{{ $pc['name'] }}', '{{ $pc['hex'] }}')">
+                            <button type="button" class="color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center shrink-0" data-color="{{ $pc['name'] }}" data-hex="{{ $pc['hex'] }}" title="{{ $pc['name'] }}" style="background-color: {{ $pc['hex'] }};" onclick="toggleColorTag('{{ $pc['name'] }}', '{{ $pc['hex'] }}', 'add')">
                                 <span class="swatch-check hidden w-1.5 h-1.5 rounded-full {{ in_array(strtolower($pc['name']), ['blanc', 'beige', 'jaune', 'menthe', 'lavande']) ? 'bg-slate-900' : 'bg-white' }}"></span>
                             </button>
                         @endforeach
-                        
+
                         {{-- Add custom color round palette button --}}
-                        <button type="button" onclick="openColorCreatorModal()" class="w-6 h-6 rounded-full border-2 border-dashed border-indigo-400 hover:border-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-all shadow-xs hover:scale-110 shrink-0" title="Créer une couleur personnalisée">
+                        <button type="button" onclick="openColorCreatorModal('add')" class="w-6 h-6 rounded-full border-2 border-dashed border-indigo-400 hover:border-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-all shadow-xs hover:scale-110 shrink-0" title="Créer une couleur personnalisée">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                         </button>
+                    </div>
+                </div>
+
+                {{-- Row 7: Image du produit --}}
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Image du produit</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70 mb-2 max-w-xs" id="image_type_toggle">
+                        <button type="button" id="image_btn_upload" onclick="onImageTypeChange('add', 'upload')" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v10"/></svg>
+                            <span>Upload</span>
+                        </button>
+                        <button type="button" id="image_btn_url" onclick="onImageTypeChange('add', 'url')" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5m5.656-1.172a4 4 0 000-5.656l-3-3a4 4 0 00-5.656 5.656l1.5 1.5"/></svg>
+                            <span>URL</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/90 flex items-center justify-center overflow-hidden shrink-0">
+                            <img id="image_preview" src="" class="hidden w-full h-full object-cover" alt="Aperçu">
+                            <svg id="image_placeholder_icon" class="w-8 h-8 text-slate-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div id="image_upload_wrapper">
+                                <input type="file" name="image_file" id="image_file" accept="image/*" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer" onchange="previewImageFile('add', this)">
+                                <p class="text-[11px] text-slate-400 mt-1">JPG, PNG ou WebP — 4 Mo max.</p>
+                            </div>
+                            <div id="image_url_wrapper" class="hidden">
+                                <input type="url" name="image_url" id="image_url" placeholder="https://exemple.com/photo.jpg" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" oninput="previewImageUrl('add', this.value)">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -713,102 +807,261 @@
 </div>
 
 <div class="modal" id="editProductModal">
-    <div class="modal-content glass-panel w-full max-w-md rounded-3xl shadow-2xl border border-white/70 p-5 relative my-auto">
-        <h3 class="text-lg font-bold text-slate-900 mb-2">Modifier le produit</h3>
-        <form method="POST" id="editProductForm" class="flex flex-col gap-2">
+    <div class="modal-content glass-panel w-full max-w-3xl rounded-3xl shadow-2xl border border-white/80 p-6 md:p-7 relative my-auto bg-white/95 backdrop-blur-xl">
+
+        {{-- Modal Header --}}
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md shadow-slate-900/10 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </span>
+                <div>
+                    <h3 class="text-lg font-black text-slate-900 tracking-tight">Modifier le produit</h3>
+                    <p class="text-xs text-slate-400 font-medium">Mettre à jour les informations de l'article</p>
+                </div>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-xl text-xl transition-all" onclick="closeModal('editProductModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form method="POST" id="editProductForm" enctype="multipart/form-data" class="flex flex-col gap-4">
             @csrf
             @method('PUT')
             <input type="hidden" id="edit_product_id">
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom du produit</label>
-                <input type="text" name="name" id="edit_product_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2 outline-none" required>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Marque</label>
-                <input type="text" name="brand" id="edit_product_brand" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2 outline-none" placeholder="Ex: Zara, Nike, ...">
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-2">Type de Barcode</label>
-                <div class="flex gap-2 mb-3">
-                    <label id="edit_btn_scanned" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
-                        <input type="radio" name="barcode_type" id="edit_type_scanned" value="scanned" class="sr-only" onchange="onEditBarcodeTypeChange('scanned')">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                        Scanné
-                    </label>
-                    <label id="edit_btn_internal" class="flex-1 flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 font-semibold text-sm transition-all">
-                        <input type="radio" name="barcode_type" id="edit_type_internal" value="internal" class="sr-only" onchange="onEditBarcodeTypeChange('internal')">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        Interne
-                    </label>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {{-- Row 1: Nom du produit & Type de Barcode --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nom du produit <span class="text-rose-500">*</span></label>
+                    <input type="text" name="name" id="edit_product_name" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" required>
                 </div>
-                <div id="edit_barcode_input_wrapper">
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Barcode du produit</label>
-                    <input type="text" name="barcode" id="edit_product_barcode" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none font-mono" required>
-                </div>
-                <div id="edit_barcode_auto_notice" class="hidden">
-                    <div class="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-lg p-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                        <span class="text-sm text-violet-700 font-semibold">Un nouveau barcode interne sera généré automatiquement.</span>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Type de Barcode</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70" id="edit_barcode_type_toggle">
+                        <label id="edit_btn_scanned" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800">
+                            <input type="radio" name="barcode_type" id="edit_type_scanned" value="scanned" class="sr-only" onchange="onEditBarcodeTypeChange('scanned')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                            <span>Scanné</span>
+                        </label>
+                        <label id="edit_btn_internal" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800">
+                            <input type="radio" name="barcode_type" id="edit_type_internal" value="internal" class="sr-only" onchange="onEditBarcodeTypeChange('internal')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            <span>Interne</span>
+                        </label>
                     </div>
-                    <input type="hidden" name="barcode" id="edit_product_barcode_hidden" value="">
                 </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
+
+                {{-- Row 2: Marque & Barcode Input --}}
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Catégorie</label>
-                    <select name="category_id" id="edit_product_category" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
-                        <option value="">Sélectionner</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Marque</label>
+                    <div class="relative flex items-center">
+                        <select name="brand_id" id="edit_product_brand" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs">
+                            <option value="">Aucune marque</option>
+                            @foreach($brands as $brand)
+                                <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                <div>
+                    <div id="edit_barcode_input_wrapper">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Scanner / Barcode</label>
+                        <div class="relative flex items-center">
+                            <input type="text" name="barcode" id="edit_product_barcode" class="w-full pl-10 pr-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-mono font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" required>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                        </div>
+                    </div>
+                    <div id="edit_barcode_auto_notice" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Génération Automatique</label>
+                        <div class="flex items-center gap-2.5 bg-indigo-50/90 border border-indigo-200/80 rounded-xl p-3 shadow-xs">
+                            <span class="p-1.5 bg-indigo-600 text-white rounded-lg inline-flex items-center justify-center shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            </span>
+                            <span class="text-xs text-indigo-950 font-bold leading-snug">Un nouveau barcode interne sera généré automatiquement.</span>
+                        </div>
+                        <input type="hidden" name="barcode" id="edit_product_barcode_hidden" value="">
+                    </div>
+                </div>
+
+                {{-- Row 3: Catégorie & Fournisseur --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Catégorie <span class="text-rose-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <select name="category_id" id="edit_product_category" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs" required>
+                            <option value="">Sélectionner une catégorie</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Fournisseur</label>
+                    <div class="relative flex items-center">
+                        <select name="supplier_id" id="edit_product_supplier" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs">
+                            <option value="">Aucun fournisseur</option>
+                            @foreach($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                {{-- Row 4: Unité de vente & Quantité en stock --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Unité de vente</label>
+                    <div class="relative flex items-center">
+                        <select name="unit" id="edit_product_unit" class="w-full px-4 pr-10 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none appearance-none transition-all shadow-xs" required>
+                            <option value="unité">Pièce (Unité)</option>
+                            <option value="metre">Mètre (m)</option>
+                            <option value="cm">Centimètre (cm)</option>
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Quantité en stock</label>
+                        <span class="text-[11px] text-slate-400 font-medium">Lecture seule</span>
+                    </div>
+                    <div class="relative flex items-center">
+                        <input type="text" id="edit_current_stock_display" class="w-full pl-4 pr-11 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl outline-none cursor-pointer transition-all shadow-xs" value="0" readonly title="Cliquez pour ajuster le stock" onclick="openAdjustFromEdit()">
+                        <button type="button" onclick="openAdjustFromEdit()" class="absolute right-2 text-slate-400 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors" title="Ajuster le stock">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Valeur actuelle chargée depuis la base. Cliquez pour l'ajuster (avec traçabilité).</p>
+                </div>
+
+                {{-- Row 5: Prix d'achat & Prix vente --}}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Prix d'achat ({{ $currencySymbol }}) <span class="text-rose-500">*</span></label>
+                    <input type="number" step="0.01" name="purchase_price" id="edit_product_purchase_price" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Prix vente ({{ $currencySymbol }}) <span class="text-rose-500">*</span></label>
+                    <input type="number" step="0.01" name="sale_price" id="edit_product_sale_price" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-emerald-600 text-sm font-extrabold rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all shadow-xs" required>
+                </div>
+
+                {{-- Row 6: Tailles (Sizes) & Couleurs (Colors) --}}
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Tailles (Tags)</label>
+                        <span class="text-[11px] text-slate-400 font-medium">Sélection rapide</span>
+                    </div>
+                    <input type="hidden" name="sizes_text" id="edit_sizes_text" value="">
+
+                    {{-- Selected Size Tags Container --}}
+                    <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
+                        <div id="edit_selected_size_tags" class="flex flex-wrap items-center gap-1.5"></div>
+                        <input type="text" id="edit_size_custom_input" placeholder="+ Taille..." class="flex-1 min-w-[80px] bg-transparent text-xs font-bold text-slate-800 outline-none placeholder:text-slate-400 py-1 px-1.5">
+                    </div>
+
+                    {{-- Quick Size Chips --}}
+                    <div class="flex flex-wrap gap-1 mt-1.5" id="edit_size_quick_chips">
+                        @foreach(['S', 'M', 'L', 'XL', 'XXL', '38', '40', '42', '44'] as $quickSize)
+                            <button type="button" class="size-chip px-2.5 py-1 text-xs font-bold rounded-lg border transition-all" data-size="{{ $quickSize }}" onclick="toggleSizeTag('{{ $quickSize }}', 'edit')">
+                                {{ $quickSize }}
+                            </button>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Fournisseur</label>
-                    <select name="supplier_id" id="edit_product_supplier" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none">
-                        <option value="">Aucun</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Couleurs (Pastilles)</label>
+                        <button type="button" onclick="openColorCreatorModal('edit')" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/60 px-2 py-0.5 rounded-lg transition-all shadow-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            <span>+ Créer couleur</span>
+                        </button>
+                    </div>
+                    <input type="hidden" name="colors_text" id="edit_colors_text" value="">
+
+                    {{-- Selected Color Tags Container --}}
+                    <div class="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50/90 border border-slate-200 rounded-xl min-h-[46px] focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 focus-within:border-slate-800 transition-all shadow-xs">
+                        <div id="edit_selected_color_tags" class="flex flex-wrap items-center gap-1.5"></div>
+                        <input type="text" id="edit_color_custom_input" placeholder="+ Couleur..." class="flex-1 min-w-[80px] bg-transparent text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 py-1 px-1.5">
+                    </div>
+
+                    {{-- Quick Color Swatches --}}
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5" id="edit_color_quick_swatches">
+                        @foreach($uniqueColors as $pc)
+                            <button type="button" class="color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center shrink-0" data-color="{{ $pc['name'] }}" data-hex="{{ $pc['hex'] }}" title="{{ $pc['name'] }}" style="background-color: {{ $pc['hex'] }};" onclick="toggleColorTag('{{ $pc['name'] }}', '{{ $pc['hex'] }}', 'edit')">
+                                <span class="swatch-check hidden w-1.5 h-1.5 rounded-full {{ in_array(strtolower($pc['name']), ['blanc', 'beige', 'jaune', 'menthe', 'lavande']) ? 'bg-slate-900' : 'bg-white' }}"></span>
+                            </button>
                         @endforeach
-                    </select>
+
+                        {{-- Add custom color round palette button --}}
+                        <button type="button" onclick="openColorCreatorModal('edit')" class="w-6 h-6 rounded-full border-2 border-dashed border-indigo-400 hover:border-indigo-700 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-all shadow-xs hover:scale-110 shrink-0" title="Créer une couleur personnalisée">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix d'achat</label>
-                    <input type="number" step="0.01" name="purchase_price" id="edit_product_purchase_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+
+                {{-- Row 7: Stock initial pour nouvelle variante --}}
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Stock initial pour nouvelle taille/couleur (optionnel)</label>
+                    <input type="number" name="stock_per_variant" step="0.001" min="0" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-bold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" placeholder="0">
+                    <p class="text-[11px] text-slate-400 mt-1">Utilisé uniquement si vous ajoutez une taille ou couleur qui n'existait pas encore sur ce produit.</p>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Prix de vente</label>
-                    <input type="number" step="0.01" name="sale_price" id="edit_product_sale_price" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+
+                {{-- Row 8: Image du produit --}}
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Image du produit</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70 mb-2 max-w-xs" id="edit_image_type_toggle">
+                        <button type="button" id="edit_image_btn_upload" onclick="onImageTypeChange('edit', 'upload')" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v10"/></svg>
+                            <span>Upload</span>
+                        </button>
+                        <button type="button" id="edit_image_btn_url" onclick="onImageTypeChange('edit', 'url')" class="flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5m5.656-1.172a4 4 0 000-5.656l-3-3a4 4 0 00-5.656 5.656l1.5 1.5"/></svg>
+                            <span>URL</span>
+                        </button>
+                    </div>
+
+                    <input type="hidden" name="remove_image" id="edit_remove_image" value="0">
+
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/90 flex items-center justify-center overflow-hidden shrink-0">
+                            <img id="edit_image_preview" src="" class="hidden w-full h-full object-cover" alt="Aperçu">
+                            <svg id="edit_image_placeholder_icon" class="w-8 h-8 text-slate-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div id="edit_image_upload_wrapper">
+                                <input type="file" name="image_file" id="edit_image_file" accept="image/*" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer" onchange="previewImageFile('edit', this)">
+                                <p class="text-[11px] text-slate-400 mt-1">JPG, PNG ou WebP — 4 Mo max.</p>
+                            </div>
+                            <div id="edit_image_url_wrapper" class="hidden">
+                                <input type="url" name="image_url" id="edit_image_url" placeholder="https://exemple.com/photo.jpg" class="w-full px-4 py-2.5 bg-slate-50/90 border border-slate-200 text-slate-900 text-sm font-semibold rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 outline-none transition-all shadow-xs" oninput="previewImageUrl('edit', this.value)">
+                            </div>
+                            <button type="button" id="edit_image_remove_btn" onclick="removeProductImage()" class="hidden mt-1.5 text-[11px] font-bold text-rose-600 hover:text-rose-800">
+                                Supprimer l'image actuelle
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
             </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Unité de vente</label>
-                <select name="unit" id="edit_product_unit" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
-                    <option value="unité">📦 Pièce (Unité)</option>
-                    <option value="metre">📏 Mètre (m)</option>
-                    <option value="cm">📐 Centimètre (cm)</option>
-                </select>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Tailles (virgules)</label>
-                    <input type="text" name="sizes_text" id="edit_sizes_text" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" placeholder="S,M,L ou 38,40,42">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Couleurs (virgules)</label>
-                    <input type="text" name="colors_text" id="edit_colors_text" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" placeholder="Noir,Blanc,Rouge">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Stock par nouvelle variante (optionnel)</label>
-                <input type="number" name="stock_per_variant" step="0.001" min="0" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" placeholder="0">
-            </div>
-            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors" onclick="closeModal('editProductModal')">Annuler</button>
-                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Enregistrer</button>
+
+            {{-- Footer Action Buttons --}}
+            <div class="flex items-center justify-end gap-3 mt-3 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all active:scale-95" onclick="closeModal('editProductModal')">
+                    Annuler
+                </button>
+                <button type="submit" class="flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-lg shadow-slate-900/20 transition-all hover:scale-[1.01] active:scale-[0.98]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span>Enregistrer</span>
+                </button>
             </div>
         </form>
     </div>
@@ -941,6 +1194,42 @@
     </div>
 </div>
 
+<div class="modal" id="addBrandModal">
+    <div class="modal-content glass-panel w-full max-w-sm rounded-3xl shadow-2xl border border-white/70 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Ajouter une marque</h3>
+        <form method="POST" action="{{ route('pos.stock.add-brand') }}" class="flex flex-col gap-4">
+            @csrf
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom de la marque</label>
+                <input type="text" name="name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required placeholder="Ex: Apple, Samsung...">
+            </div>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors" onclick="closeModal('addBrandModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm transition-colors">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="editBrandModal">
+    <div class="modal-content glass-panel w-full max-w-sm rounded-3xl shadow-2xl border border-white/70 p-6 relative">
+        <h3 class="text-xl font-bold text-slate-900 mb-5">Modifier la marque</h3>
+        <form method="POST" id="editBrandForm" class="flex flex-col gap-4">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="edit_brand_id">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nom de la marque</label>
+                <input type="text" name="name" id="edit_brand_name" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-2.5 outline-none" required>
+            </div>
+            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                <button type="button" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-2xl transition-colors" onclick="closeModal('editBrandModal')">Annuler</button>
+                <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function openModal(modalId) {
         document.getElementById(modalId).classList.add('active');
@@ -974,29 +1263,68 @@
         openModal('editCategoryModal');
     }
 
+    var BASE_EDIT_BRAND = '{{ url("/pos/stock/edit-brand") }}';
+    function editBrand(brand) {
+        document.getElementById('edit_brand_id').value = brand.id;
+        document.getElementById('edit_brand_name').value = brand.name;
+        document.getElementById('editBrandForm').action = BASE_EDIT_BRAND + '/' + brand.id;
+        openModal('editBrandModal');
+    }
+
+    function unitLabelFor(unit) {
+        if (unit === 'metre') return 'mètres';
+        if (unit === 'cm') return 'cm';
+        if (unit === 'unité') return 'pièces';
+        return 'unités';
+    }
+
     var BASE_EDIT_PRODUCT = '{{ url("/pos/stock/edit-product") }}';
+    window.currentEditProduct = null;
     function editProduct(product) {
+        window.currentEditProduct = product;
+
         document.getElementById('edit_product_id').value = product.id;
         document.getElementById('edit_product_name').value = product.name;
-        document.getElementById('edit_product_brand').value = product.brand || '';
+        document.getElementById('edit_product_brand').value = product.brand_id || '';
         document.getElementById('edit_product_barcode').value = product.barcode;
         document.getElementById('edit_product_category').value = product.category_id;
         document.getElementById('edit_product_supplier').value = product.supplier_id || '';
         document.getElementById('edit_product_purchase_price').value = product.purchase_price;
         document.getElementById('edit_product_sale_price').value = product.sale_price;
-        document.getElementById('edit_product_unit').value = product.unit || 'unité';
+
+        // Normalize the unit to one of the select's actual options — a stray
+        // or legacy value (e.g. from a direct DB edit or import) must never
+        // leave the select blank, or the browser blocks the whole form on
+        // submit with "Please select an item in the list."
+        var validUnits = ['unité', 'metre', 'cm'];
+        var unit = validUnits.includes(product.unit) ? product.unit : 'unité';
+        document.getElementById('edit_product_unit').value = unit;
+
+        // Quantité en stock — always loaded from the current database value.
+        // Read-only here: actual changes go through "Ajuster le stock" so every
+        // change keeps its audit trail (StockMovement).
+        var stockFormatted = (unit === 'unité')
+            ? Math.round(parseFloat(product.stock_quantity) || 0)
+            : (parseFloat(product.stock_quantity) || 0).toFixed(3);
+        document.getElementById('edit_current_stock_display').value = stockFormatted + ' ' + unitLabelFor(unit);
+
+        // Tailles / Couleurs — populate the same interactive tag UI as the Add
+        // form, pre-selected from this product's existing variants.
         var variantSizes = (product.variants || [])
             .map(v => v.size)
             .filter(v => v)
-            .filter((v, i, arr) => arr.indexOf(v) === i)
-            .join(',');
+            .filter((v, i, arr) => arr.indexOf(v) === i);
         var variantColors = (product.variants || [])
             .map(v => v.color)
             .filter(v => v)
             .filter((v, i, arr) => arr.indexOf(v) === i)
-            .join(',');
-        document.getElementById('edit_sizes_text').value = variantSizes;
-        document.getElementById('edit_colors_text').value = variantColors;
+            .map(c => ({ name: c, hex: knownColorMap[c.toLowerCase()] || '#64748b' }));
+
+        sizeState.edit = variantSizes;
+        colorState.edit = variantColors;
+        renderSizeTags('edit');
+        renderColorTags('edit');
+
         document.getElementById('editProductForm').action = BASE_EDIT_PRODUCT + '/' + product.id;
 
         // Set barcode_type toggle
@@ -1005,26 +1333,45 @@
         document.getElementById('edit_type_internal').checked = (barcodeType === 'internal');
         onEditBarcodeTypeChange(barcodeType);
 
+        // Image — always reload from the current database value, defaulting
+        // back to the "Upload" tab and clearing any stale file/URL selection
+        // left over from a previously edited product.
+        document.getElementById('edit_remove_image').value = '0';
+        document.getElementById('edit_image_file').value = '';
+        document.getElementById('edit_image_url').value = '';
+        onImageTypeChange('edit', 'upload');
+
+        var removeBtn = document.getElementById('edit_image_remove_btn');
+        if (product.image_url) {
+            showImagePreview('edit', product.image_url);
+            if (removeBtn) removeBtn.classList.remove('hidden');
+        } else {
+            hideImagePreview('edit');
+            if (removeBtn) removeBtn.classList.add('hidden');
+        }
+
         openModal('editProductModal');
+    }
+
+    function openAdjustFromEdit() {
+        if (!window.currentEditProduct) return;
+        closeModal('editProductModal');
+        adjustStock(window.currentEditProduct);
     }
 
     var BASE_ADJUST_STOCK = '{{ url("/pos/stock/adjust-stock") }}';
     function adjustStock(product) {
         document.getElementById('adjust_product_id').value = product.id;
         document.getElementById('adjust_product_name').value = product.name;
-        
-        var unitLabel = 'unités';
-        if (product.unit === 'metre') unitLabel = 'mètres';
-        if (product.unit === 'cm') unitLabel = 'cm';
-        if (product.unit === 'unité') unitLabel = 'pièces';
-        
+
+        var unitLabel = unitLabelFor(product.unit);
         document.getElementById('adjust_unit_badge').textContent = unitLabel;
-        
+
         var stockFormatted = product.stock_quantity;
         if (product.unit !== 'unité') {
             stockFormatted = parseFloat(product.stock_quantity).toFixed(3);
         }
-        
+
         document.getElementById('adjust_current_stock').value = stockFormatted + ' ' + unitLabel;
         document.getElementById('adjustStockForm').action = BASE_ADJUST_STOCK + '/' + product.id;
         openModal('adjustStockModal');
@@ -1115,6 +1462,24 @@
         }
     }
 
+    function filterBrands() {
+        var searchTerm = document.getElementById('searchBrand').value.toLowerCase();
+        var table = document.querySelector('#brands-tab table');
+        var rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        for (var row of rows) {
+            if (row.cells.length <= 1) continue;
+
+            var name = row.cells[0].textContent.toLowerCase();
+
+            if (name.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    }
+
     // Simple product lookup map for modal actions
     @php
         $products_for_js = $products->map(function($p) {
@@ -1190,6 +1555,17 @@
             });
         }
 
+        var searchBrandInput = document.getElementById('searchBrand');
+        if (searchBrandInput) {
+            searchBrandInput.addEventListener('input', function () {
+                var corrected = applyAzertyMap(this.value);
+                if (corrected !== null) {
+                    this.value = corrected;
+                    filterBrands();
+                }
+            });
+        }
+
         var addBarcodeInput = document.getElementById('add_barcode_input');
         if (addBarcodeInput) {
             addBarcodeInput.addEventListener('input', function () {
@@ -1238,13 +1614,30 @@
         }
     }
 
-    // ── Interactive Tag System for Brands, Sizes, and Colors ───────────
-    var selectedBrands = ['Nike', 'Zara'];
-    var selectedSizes  = ['S', 'M', 'L'];
-    var selectedColors = [
-        { name: 'Bleu', hex: '#2563eb' },
-        { name: 'Rouge', hex: '#dc2626' }
-    ];
+    // ── Interactive Tag System for Sizes and Colors (shared by Add & Edit) ──
+    // ctx is 'add' or 'edit' — each form keeps its own independent selection.
+    var sizeState = {
+        add: ['S', 'M', 'L'],
+        edit: []
+    };
+    var colorState = {
+        add: [
+            { name: 'Bleu', hex: '#2563eb' },
+            { name: 'Rouge', hex: '#dc2626' }
+        ],
+        edit: []
+    };
+
+    function tagIds(ctx, kind) {
+        if (kind === 'size') {
+            return ctx === 'edit'
+                ? { container: 'edit_selected_size_tags', hidden: 'edit_sizes_text', chips: 'edit_size_quick_chips' }
+                : { container: 'selected_size_tags', hidden: 'add_sizes_text', chips: 'size_quick_chips' };
+        }
+        return ctx === 'edit'
+            ? { container: 'edit_selected_color_tags', hidden: 'edit_colors_text', swatches: 'edit_color_quick_swatches' }
+            : { container: 'selected_color_tags', hidden: 'add_colors_text', swatches: 'color_quick_swatches' };
+    }
 
     var knownColorMap = {
         'noir': '#0f172a',
@@ -1276,11 +1669,12 @@
     @endif
 
     // ── Custom Color Creation Functions ────────────────────────────────
-    window.openColorCreatorModal = function() {
+    window.openColorCreatorModal = function(ctx) {
+        window.colorCreatorCtx = ctx || 'add';
         var picker = document.getElementById('custom_color_picker');
         var hexInput = document.getElementById('custom_color_hex');
         var nameInput = document.getElementById('custom_color_name');
-        
+
         if (picker) picker.value = '#06b6d4';
         if (hexInput) hexInput.value = '#06B6D4';
         if (nameInput) {
@@ -1327,6 +1721,36 @@
         }, 3500);
     };
 
+    // Inserts a swatch button for a newly-created custom color into a quick-swatch
+    // grid (add's or edit's). `selectedCtx` is whichever form actually opened the
+    // color creator — only that grid's button is rendered pre-selected.
+    function insertSwatchButton(containerId, name, hex, ctx, selectedCtx) {
+        var swatchesContainer = document.getElementById(containerId);
+        if (!swatchesContainer) return;
+        if (swatchesContainer.querySelector(`[data-color="${name}"]`)) return;
+
+        var isSelected = ctx === selectedCtx;
+        var newBtn = document.createElement('button');
+        newBtn.type = 'button';
+        newBtn.className = 'color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center shrink-0' + (isSelected ? ' ring-2 ring-slate-900 ring-offset-2 scale-110' : '');
+        newBtn.setAttribute('data-color', name);
+        newBtn.setAttribute('data-hex', hex);
+        newBtn.title = name;
+        newBtn.style.backgroundColor = hex;
+        newBtn.onclick = function() { toggleColorTag(name, hex, ctx); };
+
+        var isLight = ['blanc', 'beige', 'jaune', 'menthe', 'lavande'].includes(name.toLowerCase());
+        newBtn.innerHTML = `<span class="swatch-check ${isSelected ? '' : 'hidden'} w-1.5 h-1.5 rounded-full ${isLight ? 'bg-slate-900' : 'bg-white'}"></span>`;
+
+        // Insert right before the last "+" button
+        var lastPlusBtn = swatchesContainer.lastElementChild;
+        if (lastPlusBtn) {
+            swatchesContainer.insertBefore(newBtn, lastPlusBtn);
+        } else {
+            swatchesContainer.appendChild(newBtn);
+        }
+    }
+
     window.saveNewCustomColor = function() {
         var nameInput = document.getElementById('custom_color_name');
         var hexInput = document.getElementById('custom_color_hex');
@@ -1350,42 +1774,23 @@
 
         // Capitalize color name
         var cleanName = name.charAt(0).toUpperCase() + name.slice(1);
+        var creatorCtx = window.colorCreatorCtx || 'add';
 
         // 1. Immediately register in known color map
         knownColorMap[cleanName.toLowerCase()] = hex.toLowerCase();
 
-        // 2. Select this color tag immediately
-        if (!selectedColors.some(c => c.name.toLowerCase() === cleanName.toLowerCase())) {
-            selectedColors.push({ name: cleanName, hex: hex });
-            renderColorTags();
+        // 2. Select this color tag immediately in whichever form opened the creator
+        if (!colorState[creatorCtx].some(c => c.name.toLowerCase() === cleanName.toLowerCase())) {
+            colorState[creatorCtx].push({ name: cleanName, hex: hex });
+            renderColorTags(creatorCtx);
         }
 
-        // 3. Dynamically insert swatch button into quick swatches if not existing
-        var swatchesContainer = document.getElementById('color_quick_swatches');
-        if (swatchesContainer) {
-            var existingSwatch = swatchesContainer.querySelector(`[data-color="${cleanName}"]`);
-            if (!existingSwatch) {
-                var newBtn = document.createElement('button');
-                newBtn.type = 'button';
-                newBtn.className = 'color-swatch-btn relative w-6 h-6 rounded-full border border-slate-300 shadow-xs hover:scale-110 active:scale-95 transition-all flex items-center justify-center ring-2 ring-slate-900 ring-offset-2 scale-110 shrink-0';
-                newBtn.setAttribute('data-color', cleanName);
-                newBtn.setAttribute('data-hex', hex);
-                newBtn.title = cleanName;
-                newBtn.style.backgroundColor = hex;
-                newBtn.onclick = function() { toggleColorTag(cleanName, hex); };
-                
-                var isLight = ['blanc', 'beige', 'jaune', 'menthe', 'lavande'].includes(cleanName.toLowerCase());
-                newBtn.innerHTML = `<span class="swatch-check w-1.5 h-1.5 rounded-full ${isLight ? 'bg-slate-900' : 'bg-white'}"></span>`;
-                
-                // Insert right before the last "+" button
-                var lastPlusBtn = swatchesContainer.lastElementChild;
-                if (lastPlusBtn) {
-                    swatchesContainer.insertBefore(newBtn, lastPlusBtn);
-                } else {
-                    swatchesContainer.appendChild(newBtn);
-                }
-            }
-        }
+        // 3. Dynamically insert the swatch button into BOTH the Add and Edit
+        //    quick-swatch grids, so the new color is available in both forms
+        //    without a page reload. Only the grid that opened the creator
+        //    shows it pre-selected.
+        insertSwatchButton('color_quick_swatches', cleanName, hex, 'add', creatorCtx);
+        insertSwatchButton('edit_color_quick_swatches', cleanName, hex, 'edit', creatorCtx);
 
         // 4. Save asynchronously to database
         if (btn) {
@@ -1422,23 +1827,6 @@
             }
         });
     };
-
-    function getBrandIcon(name) {
-        var n = name.toLowerCase();
-        if (n === 'nike') {
-            return `<svg class="w-3.5 h-3.5 text-slate-900 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M21.707 5.293a1 1 0 0 0-1.414 0L8 17.586l-4.293-4.293a1 1 0 0 0-1.414 1.414l5 5a1 1 0 0 0 1.414 0l13-13a1 1 0 0 0 0-1.414z"/></svg>`;
-        }
-        if (n === 'zara') {
-            return `<span class="px-1.5 py-0.5 text-[9px] font-black bg-slate-900 text-white rounded shrink-0">Z</span>`;
-        }
-        if (n === 'adidas') {
-            return `<svg class="w-3.5 h-3.5 text-slate-900 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18h3l-3-8H3l3 8zm6 0h3l-4.5-12h-3L12 18zm6 0h3l-6-16h-3l6 16z"/></svg>`;
-        }
-        if (n === 'puma') {
-            return `<span class="px-1.5 py-0.5 text-[9px] font-black bg-slate-900 text-white rounded shrink-0">P</span>`;
-        }
-        return `<svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>`;
-    }
 
     // ── Numeric Keyboard Handlers ──────────────────────────────────────
     var numericTargetInput = null;
@@ -1506,212 +1894,169 @@
         closeModal('numericKeyboardModal');
     };
 
-    function renderBrandTags() {
-        var container = document.getElementById('selected_brand_tags');
-        var hiddenInput = document.getElementById('add_product_brand');
+    function renderSizeTags(ctx) {
+        ctx = ctx || 'add';
+        var ids = tagIds(ctx, 'size');
+        var container = document.getElementById(ids.container);
+        var hiddenInput = document.getElementById(ids.hidden);
         if (!container || !hiddenInput) return;
 
         container.innerHTML = '';
-        selectedBrands.forEach(function(b) {
-            var tag = document.createElement('span');
-            tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-white text-slate-800 border border-slate-200 rounded-lg shadow-xs animate-in fade-in zoom-in-95';
-            tag.innerHTML = `
-                ${getBrandIcon(b)}
-                <span>${b}</span>
-                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeBrandTag('${b}')">
-                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            `;
-            container.appendChild(tag);
-        });
-
-        hiddenInput.value = selectedBrands.join(', ');
-
-        // Update brand quick presets appearance
-        document.querySelectorAll('#brand_quick_presets .brand-chip').forEach(function(chip) {
-            var brandName = chip.textContent.trim();
-            if (selectedBrands.includes(brandName)) {
-                chip.className = 'brand-chip px-2 py-0.5 text-[11px] font-bold bg-slate-900 text-white border border-slate-900 rounded-lg shadow-xs transition-all';
-            } else {
-                chip.className = 'brand-chip px-2 py-0.5 text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg transition-all';
-            }
-        });
-    }
-
-    function toggleBrandTag(brandName) {
-        var idx = selectedBrands.indexOf(brandName);
-        if (idx > -1) {
-            selectedBrands.splice(idx, 1);
-        } else {
-            selectedBrands.push(brandName);
-        }
-        renderBrandTags();
-    }
-
-    function removeBrandTag(brandName) {
-        selectedBrands = selectedBrands.filter(b => b !== brandName);
-        renderBrandTags();
-    }
-
-    function renderSizeTags() {
-        var container = document.getElementById('selected_size_tags');
-        var hiddenInput = document.getElementById('add_sizes_text');
-        if (!container || !hiddenInput) return;
-
-        container.innerHTML = '';
-        selectedSizes.forEach(function(s) {
+        sizeState[ctx].forEach(function(s) {
             var tag = document.createElement('span');
             tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-white text-slate-900 border border-slate-200 rounded-lg shadow-xs animate-in fade-in zoom-in-95';
             tag.innerHTML = `
                 <span>${s}</span>
-                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeSizeTag('${s}')">
+                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeSizeTag('${s}', '${ctx}')">
                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             `;
             container.appendChild(tag);
         });
 
-        hiddenInput.value = selectedSizes.join(',');
+        hiddenInput.value = sizeState[ctx].join(',');
 
         // Update size quick chips
-        document.querySelectorAll('#size_quick_chips .size-chip').forEach(function(chip) {
-            var s = chip.getAttribute('data-size');
-            if (selectedSizes.includes(s)) {
-                chip.className = 'size-chip px-2.5 py-0.5 text-xs font-bold rounded-lg border bg-slate-900 text-white border-slate-900 shadow-xs transition-all';
-            } else {
-                chip.className = 'size-chip px-2.5 py-0.5 text-xs font-bold rounded-lg border bg-white hover:bg-slate-100 text-slate-700 border-slate-200 transition-all';
-            }
-        });
-    }
-
-    function toggleSizeTag(sizeName) {
-        var idx = selectedSizes.indexOf(sizeName);
-        if (idx > -1) {
-            selectedSizes.splice(idx, 1);
-        } else {
-            selectedSizes.push(sizeName);
+        var chipsWrap = document.getElementById(ids.chips);
+        if (chipsWrap) {
+            chipsWrap.querySelectorAll('.size-chip').forEach(function(chip) {
+                var s = chip.getAttribute('data-size');
+                if (sizeState[ctx].includes(s)) {
+                    chip.className = 'size-chip px-2.5 py-0.5 text-xs font-bold rounded-lg border bg-slate-900 text-white border-slate-900 shadow-xs transition-all';
+                } else {
+                    chip.className = 'size-chip px-2.5 py-0.5 text-xs font-bold rounded-lg border bg-white hover:bg-slate-100 text-slate-700 border-slate-200 transition-all';
+                }
+            });
         }
-        renderSizeTags();
     }
 
-    function removeSizeTag(sizeName) {
-        selectedSizes = selectedSizes.filter(s => s !== sizeName);
-        renderSizeTags();
+    function toggleSizeTag(sizeName, ctx) {
+        ctx = ctx || 'add';
+        var idx = sizeState[ctx].indexOf(sizeName);
+        if (idx > -1) {
+            sizeState[ctx].splice(idx, 1);
+        } else {
+            sizeState[ctx].push(sizeName);
+        }
+        renderSizeTags(ctx);
     }
 
-    function renderColorTags() {
-        var container = document.getElementById('selected_color_tags');
-        var hiddenInput = document.getElementById('add_colors_text');
+    function removeSizeTag(sizeName, ctx) {
+        ctx = ctx || 'add';
+        sizeState[ctx] = sizeState[ctx].filter(s => s !== sizeName);
+        renderSizeTags(ctx);
+    }
+
+    function renderColorTags(ctx) {
+        ctx = ctx || 'add';
+        var ids = tagIds(ctx, 'color');
+        var container = document.getElementById(ids.container);
+        var hiddenInput = document.getElementById(ids.hidden);
         if (!container || !hiddenInput) return;
 
         container.innerHTML = '';
-        selectedColors.forEach(function(c) {
+        colorState[ctx].forEach(function(c) {
             var tag = document.createElement('span');
             tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold bg-white text-slate-800 border border-slate-200 rounded-lg shadow-xs animate-in fade-in zoom-in-95';
             tag.innerHTML = `
                 <span class="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" style="background-color: ${c.hex}"></span>
                 <span>${c.name}</span>
-                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeColorTag('${c.name}')">
+                <button type="button" class="text-slate-400 hover:text-rose-500 ml-0.5" onclick="removeColorTag('${c.name}', '${ctx}')">
                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             `;
             container.appendChild(tag);
         });
 
-        hiddenInput.value = selectedColors.map(c => c.name).join(',');
+        hiddenInput.value = colorState[ctx].map(c => c.name).join(',');
 
         // Update swatch visual state
-        document.querySelectorAll('#color_quick_swatches .color-swatch-btn').forEach(function(btn) {
-            var colorName = btn.getAttribute('data-color');
-            var isSelected = selectedColors.some(c => c.name.toLowerCase() === colorName.toLowerCase());
-            var checkSpan = btn.querySelector('.swatch-check');
+        var swatchWrap = document.getElementById(ids.swatches);
+        if (swatchWrap) {
+            swatchWrap.querySelectorAll('.color-swatch-btn').forEach(function(btn) {
+                var colorName = btn.getAttribute('data-color');
+                var isSelected = colorState[ctx].some(c => c.name.toLowerCase() === colorName.toLowerCase());
+                var checkSpan = btn.querySelector('.swatch-check');
 
-            if (isSelected) {
-                btn.classList.add('ring-2', 'ring-slate-900', 'ring-offset-2', 'scale-110');
-                if (checkSpan) checkSpan.classList.remove('hidden');
-            } else {
-                btn.classList.remove('ring-2', 'ring-slate-900', 'ring-offset-2', 'scale-110');
-                if (checkSpan) checkSpan.classList.add('hidden');
+                if (isSelected) {
+                    btn.classList.add('ring-2', 'ring-slate-900', 'ring-offset-2', 'scale-110');
+                    if (checkSpan) checkSpan.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-slate-900', 'ring-offset-2', 'scale-110');
+                    if (checkSpan) checkSpan.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    function toggleColorTag(colorName, colorHex, ctx) {
+        ctx = ctx || 'add';
+        var idx = colorState[ctx].findIndex(c => c.name.toLowerCase() === colorName.toLowerCase());
+        if (idx > -1) {
+            colorState[ctx].splice(idx, 1);
+        } else {
+            var hex = colorHex || knownColorMap[colorName.toLowerCase()] || '#64748b';
+            colorState[ctx].push({ name: colorName, hex: hex });
+        }
+        renderColorTags(ctx);
+    }
+
+    function removeColorTag(colorName, ctx) {
+        ctx = ctx || 'add';
+        colorState[ctx] = colorState[ctx].filter(c => c.name !== colorName);
+        renderColorTags(ctx);
+    }
+
+    // Initialize custom inputs and tags on load
+    function bindCustomSizeInput(inputId, ctx) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                var val = this.value.trim().toUpperCase().replace(/^,+|,+$/g, '');
+                if (val && !sizeState[ctx].includes(val)) {
+                    sizeState[ctx].push(val);
+                    renderSizeTags(ctx);
+                }
+                this.value = '';
             }
         });
     }
 
-    function toggleColorTag(colorName, colorHex) {
-        var idx = selectedColors.findIndex(c => c.name.toLowerCase() === colorName.toLowerCase());
-        if (idx > -1) {
-            selectedColors.splice(idx, 1);
-        } else {
-            var hex = colorHex || knownColorMap[colorName.toLowerCase()] || '#64748b';
-            selectedColors.push({ name: colorName, hex: hex });
-        }
-        renderColorTags();
+    function bindCustomColorInput(inputId, ctx) {
+        var input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                var val = this.value.trim().replace(/^,+|,+$/g, '');
+                if (val) {
+                    var capitalVal = val.charAt(0).toUpperCase() + val.slice(1);
+                    var hex = knownColorMap[val.toLowerCase()] || '#64748b';
+                    if (!colorState[ctx].some(c => c.name.toLowerCase() === val.toLowerCase())) {
+                        colorState[ctx].push({ name: capitalVal, hex: hex });
+                        renderColorTags(ctx);
+                    }
+                }
+                this.value = '';
+            }
+        });
     }
 
-    function removeColorTag(colorName) {
-        selectedColors = selectedColors.filter(c => c.name !== colorName);
-        renderColorTags();
-    }
-
-    // Initialize custom inputs and tags on load
     document.addEventListener('DOMContentLoaded', function() {
-        renderBrandTags();
-        renderSizeTags();
-        renderColorTags();
+        renderSizeTags('add');
+        renderColorTags('add');
+        renderSizeTags('edit');
+        renderColorTags('edit');
 
-        // Custom Brand Input
-        var brandInput = document.getElementById('brand_custom_input');
-        if (brandInput) {
-            brandInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    var val = this.value.trim().replace(/^,+|,+$/g, '');
-                    if (val && !selectedBrands.includes(val)) {
-                        selectedBrands.push(val);
-                        renderBrandTags();
-                    }
-                    this.value = '';
-                }
-            });
-        }
-
-        // Custom Size Input
-        var sizeInput = document.getElementById('size_custom_input');
-        if (sizeInput) {
-            sizeInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    var val = this.value.trim().toUpperCase().replace(/^,+|,+$/g, '');
-                    if (val && !selectedSizes.includes(val)) {
-                        selectedSizes.push(val);
-                        renderSizeTags();
-                    }
-                    this.value = '';
-                }
-            });
-        }
-
-        // Custom Color Input
-        var colorInput = document.getElementById('color_custom_input');
-        if (colorInput) {
-            colorInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    var val = this.value.trim().replace(/^,+|,+$/g, '');
-                    if (val) {
-                        var capitalVal = val.charAt(0).toUpperCase() + val.slice(1);
-                        var hex = knownColorMap[val.toLowerCase()] || '#64748b';
-                        if (!selectedColors.some(c => c.name.toLowerCase() === val.toLowerCase())) {
-                            selectedColors.push({ name: capitalVal, hex: hex });
-                            renderColorTags();
-                        }
-                    }
-                    this.value = '';
-                }
-            });
-        }
+        bindCustomSizeInput('size_custom_input', 'add');
+        bindCustomColorInput('color_custom_input', 'add');
+        bindCustomSizeInput('edit_size_custom_input', 'edit');
+        bindCustomColorInput('edit_color_custom_input', 'edit');
     });
 
-    // ── Barcode type toggle for EDIT PRODUCT modal ─────────────────────
+    // ── Barcode type toggle for EDIT PRODUCT modal (mirrors Add's style) ──
     function onEditBarcodeTypeChange(type) {
         var wrapper = document.getElementById('edit_barcode_input_wrapper');
         var notice  = document.getElementById('edit_barcode_auto_notice');
@@ -1726,10 +2071,8 @@
             // Restore name on visible input, remove from hidden
             visibleInput.name = 'barcode';
             if (hiddenInput) hiddenInput.removeAttribute('name');
-            btnScanned.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
-            btnScanned.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
-            btnInternal.classList.remove('border-violet-500', 'bg-violet-50', 'text-violet-700');
-            btnInternal.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            btnScanned.className = 'flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs';
+            btnInternal.className = 'flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800';
         } else {
             wrapper.classList.add('hidden');
             notice.classList.remove('hidden');
@@ -1739,11 +2082,98 @@
                 hiddenInput.value = visibleInput.value;
             }
             visibleInput.removeAttribute('name');
-            btnInternal.classList.add('border-violet-500', 'bg-violet-50', 'text-violet-700');
-            btnInternal.classList.remove('border-slate-200', 'bg-slate-50', 'text-slate-500');
-            btnScanned.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
-            btnScanned.classList.add('border-slate-200', 'bg-slate-50', 'text-slate-500');
+            btnInternal.className = 'flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs';
+            btnScanned.className = 'flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800';
         }
+    }
+
+    // ── Product image: upload / URL toggle + live preview ──────────────
+    // ctx is 'add' or 'edit'. Purely a view-state toggle — nothing here is
+    // submitted; the backend decides what to do with whichever of
+    // image_file / image_url actually arrives with data.
+    function onImageTypeChange(ctx, type) {
+        var p = ctx === 'edit' ? 'edit_' : '';
+        var btnUpload = document.getElementById(p + 'image_btn_upload');
+        var btnUrl = document.getElementById(p + 'image_btn_url');
+        var uploadWrap = document.getElementById(p + 'image_upload_wrapper');
+        var urlWrap = document.getElementById(p + 'image_url_wrapper');
+        var activeClass = 'flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-slate-900 bg-white text-slate-900 shadow-xs';
+        var inactiveClass = 'flex items-center justify-center gap-2 cursor-pointer py-2 px-3 rounded-lg text-xs font-bold transition-all border-2 border-transparent bg-transparent text-slate-500 hover:text-slate-800';
+
+        if (type === 'upload') {
+            if (uploadWrap) uploadWrap.classList.remove('hidden');
+            if (urlWrap) urlWrap.classList.add('hidden');
+            if (btnUpload) btnUpload.className = activeClass;
+            if (btnUrl) btnUrl.className = inactiveClass;
+            var urlInput = document.getElementById(p + 'image_url');
+            if (urlInput) urlInput.value = '';
+        } else {
+            if (uploadWrap) uploadWrap.classList.add('hidden');
+            if (urlWrap) urlWrap.classList.remove('hidden');
+            if (btnUrl) btnUrl.className = activeClass;
+            if (btnUpload) btnUpload.className = inactiveClass;
+            var fileInput = document.getElementById(p + 'image_file');
+            if (fileInput) fileInput.value = '';
+        }
+    }
+
+    function showImagePreview(ctx, src) {
+        var p = ctx === 'edit' ? 'edit_' : '';
+        var img = document.getElementById(p + 'image_preview');
+        var placeholder = document.getElementById(p + 'image_placeholder_icon');
+        if (!img) return;
+
+        img.onerror = function () {
+            img.classList.add('hidden');
+            if (placeholder) placeholder.classList.remove('hidden');
+        };
+        img.onload = function () {
+            img.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+        };
+        img.src = src;
+    }
+
+    function hideImagePreview(ctx) {
+        var p = ctx === 'edit' ? 'edit_' : '';
+        var img = document.getElementById(p + 'image_preview');
+        var placeholder = document.getElementById(p + 'image_placeholder_icon');
+        if (img) { img.classList.add('hidden'); img.removeAttribute('src'); }
+        if (placeholder) placeholder.classList.remove('hidden');
+    }
+
+    function previewImageFile(ctx, inputEl) {
+        var file = inputEl.files && inputEl.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function (e) { showImagePreview(ctx, e.target.result); };
+        reader.readAsDataURL(file);
+
+        if (ctx === 'edit') {
+            document.getElementById('edit_remove_image').value = '0';
+            var removeBtn = document.getElementById('edit_image_remove_btn');
+            if (removeBtn) removeBtn.classList.remove('hidden');
+        }
+    }
+
+    function previewImageUrl(ctx, url) {
+        if (!url) { hideImagePreview(ctx); return; }
+        showImagePreview(ctx, url);
+
+        if (ctx === 'edit') {
+            document.getElementById('edit_remove_image').value = '0';
+            var removeBtn = document.getElementById('edit_image_remove_btn');
+            if (removeBtn) removeBtn.classList.remove('hidden');
+        }
+    }
+
+    function removeProductImage() {
+        document.getElementById('edit_remove_image').value = '1';
+        document.getElementById('edit_image_file').value = '';
+        document.getElementById('edit_image_url').value = '';
+        hideImagePreview('edit');
+        document.getElementById('edit_image_remove_btn').classList.add('hidden');
     }
 
     var currentDetailProduct = null;

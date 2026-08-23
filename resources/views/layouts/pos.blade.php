@@ -56,7 +56,7 @@
                     </svg>
                 </div>
                 <div class="logo-text font-['Montserrat'] text-xl font-black leading-tight tracking-tight text-white sidebar-text">
-                    <span class="text-orange-400">Tick</span>Droguerie
+                    <span class="text-orange-400">Tech</span>Shope
                 </div>
             </a>
         </div>
@@ -158,6 +158,7 @@
     
 })();
 </script>
+    @stack('modals')
     @stack('scripts')
 </body>
 </html>

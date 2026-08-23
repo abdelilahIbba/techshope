@@ -81,50 +81,50 @@
 </style>
 @endpush
 @section('content')
-    <div class="pointer-events-none fixed inset-0 -z-10">
-        <div class="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-gradient-to-br from-blue-100/70 via-white/40 to-transparent blur-3xl"></div>
-        <div class="absolute top-32 -left-20 h-72 w-72 rounded-full bg-gradient-to-tr from-slate-100/80 via-white/40 to-transparent blur-3xl"></div>
-    </div>
+    <div class="flex-1 overflow-y-auto h-full w-full relative">
+        <div class="pointer-events-none fixed inset-0 -z-10">
+            <div class="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-gradient-to-br from-blue-100/70 via-white/40 to-transparent blur-3xl"></div>
+            <div class="absolute top-32 -left-20 h-72 w-72 rounded-full bg-gradient-to-tr from-slate-100/80 via-white/40 to-transparent blur-3xl"></div>
+        </div>
 
-    
-
-    <div class="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-        <div class="flex flex-col lg:flex-row gap-6">
-            <aside class="lg:w-72 w-full">
-                <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-4">
-                    <div class="relative">
-                        <input type="text" placeholder="Search settings" class="w-full rounded-xl bg-slate-100/80 border border-transparent focus:border-slate-300 focus:ring-2 focus:ring-blue-500/20 px-4 py-2.5 text-sm" />
-                        <svg class="absolute right-3 top-2.5 h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="7"></circle>
-                            <path d="M20 20l-3.5-3.5"></path>
-                        </svg>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+            <div class="flex flex-col lg:flex-row gap-6 items-start">
+                <aside class="lg:w-72 w-full shrink-0 lg:sticky lg:top-6">
+                    <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-2xl p-4">
+                        <div class="relative">
+                            <input type="text" id="settings-search" placeholder="Rechercher paramètre..." class="w-full rounded-xl bg-slate-100/80 border border-transparent focus:border-slate-300 focus:ring-2 focus:ring-blue-500/20 px-4 py-2.5 text-sm outline-none transition-all" />
+                            <svg class="absolute right-3 top-2.5 h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <path d="M20 20l-3.5-3.5"></path>
+                            </svg>
+                        </div>
+                        <div class="mt-4 space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1" id="settings-nav-list">
+                            @foreach($navItems as $item)
+                                <a href="{{ $item['route'] }}" class="settings-nav-item group flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 {{ $active === $item['key'] ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+                                    <div class="min-w-0">
+                                        <div class="font-semibold truncate">{{ $item['label'] }}</div>
+                                        <div class="text-xs truncate {{ $active === $item['key'] ? 'text-slate-200' : 'text-slate-400' }}">{{ $item['description'] }}</div>
+                                    </div>
+                                    <svg class="h-4 w-4 shrink-0 {{ $active === $item['key'] ? 'text-slate-200' : 'text-slate-400 group-hover:text-slate-700' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
-                    <div class="mt-4 space-y-1">
-                        @foreach($navItems as $item)
-                            <a href="{{ $item['route'] }}" class="group flex items-center justify-between gap-3 rounded-xl px-3 py-3 text-sm transition-all duration-200 {{ $active === $item['key'] ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
-                                <div>
-                                    <div class="font-semibold">{{ $item['label'] }}</div>
-                                    <div class="text-xs {{ $active === $item['key'] ? 'text-slate-200' : 'text-slate-400' }}">{{ $item['description'] }}</div>
-                                </div>
-                                <svg class="h-4 w-4 {{ $active === $item['key'] ? 'text-slate-200' : 'text-slate-400 group-hover:text-slate-700' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 18l6-6-6-6" />
-                                </svg>
-                            </a>
-                        @endforeach
+                </aside>
+
+                <main class="flex-1 min-w-0 w-full pb-16">
+                    <div class="mb-6">
+                        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{{ $title }}</h1>
+                        @if($subtitle)
+                            <p class="text-slate-500 mt-1 text-sm sm:text-base">{{ $subtitle }}</p>
+                        @endif
                     </div>
-                </div>
-            </aside>
 
-            <main class="flex-1">
-                <div class="mb-6">
-                    <h1 class="text-3xl font-semibold tracking-tight text-slate-900">{{ $title }}</h1>
-                    @if($subtitle)
-                        <p class="text-slate-500 mt-1">{{ $subtitle }}</p>
-                    @endif
-                </div>
-
-                {{ $slot }}
-            </main>
+                    {{ $slot }}
+                </main>
+            </div>
         </div>
     </div>
 
@@ -148,7 +148,6 @@
 
     <script>
 (function() {
-
         var successToast = document.getElementById('toast-success');
         var errorToast = document.getElementById('toast-error');
         [successToast, errorToast].forEach((toast) => {
@@ -158,7 +157,23 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3200);
         });
-    
+
+        // Instant search for settings sidebar
+        var searchInput = document.getElementById('settings-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                var query = e.target.value.toLowerCase().trim();
+                var items = document.querySelectorAll('.settings-nav-item');
+                items.forEach(function(el) {
+                    var text = el.textContent.toLowerCase();
+                    if (!query || text.includes(query)) {
+                        el.style.display = 'flex';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            });
+        }
 })();
 </script>
 @endsection

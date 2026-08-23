@@ -6,8 +6,142 @@
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+.products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)) !important;
+    gap: 0.75rem;
+    align-content: start;
+}
 </style>
 @endpush
+
+@push('modals')
+    <!-- ===== Product Details Modal (Modern Horizontal 2-Column) ===== -->
+    <div id="product-details-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-3 sm:p-5">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full overflow-hidden flex flex-col md:flex-row relative" style="max-width: 880px; max-height: 88vh;">
+            
+            <!-- Close Button -->
+            <button type="button" id="pdm-close"
+                class="absolute top-4 right-4 z-20 w-9 h-9 bg-white/95 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-xl shadow-md border border-slate-200/80 flex items-center justify-center transition-all duration-150 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <!-- LEFT COLUMN: Product Information & Variant Selector & Cart Action (58%) -->
+            <div class="p-6 md:p-7 flex flex-col justify-between overflow-y-auto space-y-4" style="flex: 1 1 58%; min-width: 0; max-height: 560px;">
+                
+                <!-- Category Badge & Product Title & Barcode -->
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                        <span id="pdm-category-badge" class="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Catégorie</span>
+                        <span id="pdm-unit-badge" class="bg-slate-100 text-slate-600 text-[11px] font-bold px-2 py-0.5 rounded-full"></span>
+                    </div>
+                    <h3 id="pdm-name" class="text-xl md:text-2xl font-black text-slate-900 leading-snug tracking-tight" dir="auto"></h3>
+                    <div class="flex items-center gap-2 mt-1 text-xs text-slate-400 font-mono">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                        </svg>
+                        <span id="pdm-barcode" class="font-bold"></span>
+                    </div>
+                </div>
+
+                <!-- Prices & Stock Cards -->
+                <div class="grid grid-cols-3 gap-2.5">
+                    <!-- Prix de vente -->
+                    <div class="bg-gradient-to-br from-indigo-50/90 to-blue-50/50 rounded-2xl p-3 border border-indigo-100/80 text-center flex flex-col justify-center shadow-xs">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-500/80 mb-0.5">Prix de vente</span>
+                        <div class="flex items-baseline justify-center gap-0.5">
+                            <span id="pdm-price" class="text-xl md:text-2xl font-black text-indigo-700 tracking-tight leading-none">0.00</span>
+                            <span id="pdm-currency" class="text-xs font-bold text-indigo-500">{{ $currencySymbol }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Prix d'achat -->
+                    <div class="bg-slate-50/80 rounded-2xl p-3 border border-slate-200/80 text-center flex flex-col justify-center shadow-xs">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">Prix d'achat</span>
+                        <div class="flex items-baseline justify-center gap-0.5">
+                            <span id="pdm-purchase-price" class="text-lg md:text-xl font-extrabold text-slate-600 tracking-tight leading-none">0.00</span>
+                            <span id="pdm-currency2" class="text-xs font-bold text-slate-400">{{ $currencySymbol }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Stock -->
+                    <div id="pdm-stock-box" class="bg-emerald-50/80 rounded-2xl p-3 border border-emerald-100/80 text-center flex flex-col justify-center shadow-xs">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600/80 mb-0.5">Stock dispo</span>
+                        <span id="pdm-stock" class="text-lg md:text-xl font-black text-emerald-700 leading-none">0</span>
+                    </div>
+                </div>
+
+                <!-- Variants Choice Section (Sizes & Colors) -->
+                <div id="pdm-variants-section" class="hidden flex-col space-y-2 pt-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                            Sélectionnez Taille & Couleur :
+                        </span>
+                        <span id="pdm-variant-count" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full"></span>
+                    </div>
+                    <div id="pdm-variants-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        <!-- Variant cards injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Action Footer: Quantity Stepper & Add to Cart Button -->
+                <div class="pt-3 border-t border-slate-100 flex items-center gap-3">
+                    <!-- Quantity Stepper -->
+                    <div class="flex items-center bg-slate-100/90 rounded-2xl p-1 shrink-0 border border-slate-200/60 shadow-inner">
+                        <button type="button" id="pdm-qty-minus"
+                            class="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm hover:bg-slate-50 text-slate-700 active:scale-90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <input type="number" id="pdm-qty" value="1" min="0.001" step="1"
+                            class="w-14 text-center font-black text-slate-800 bg-transparent outline-none text-base">
+                        <button type="button" id="pdm-qty-plus"
+                            class="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm hover:bg-slate-50 text-slate-700 active:scale-90 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Add to Cart CTA -->
+                    <button type="button" id="pdm-add-btn"
+                        class="flex-1 bg-gradient-to-r from-slate-900 to-indigo-950 hover:from-slate-800 hover:to-indigo-900 text-white font-black text-sm md:text-base py-3.5 px-4 rounded-2xl shadow-xl shadow-indigo-950/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span id="pdm-add-btn-text">Ajouter au panier</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Product Image with Badges (42%) -->
+            <div class="bg-gradient-to-br from-slate-50 via-indigo-50/20 to-slate-100/60 p-6 flex flex-col items-center justify-center relative border-t md:border-t-0 md:border-l border-slate-200/80" style="flex: 0 0 42%; width: 42%; min-width: 0; max-height: 560px;">
+                <!-- Floating Top Badges -->
+                <div class="absolute top-4 left-4 flex items-center gap-2 z-10">
+                    <span class="bg-slate-900 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-sm">SALE</span>
+                </div>
+
+                <!-- Main Image Preview Container -->
+                <div id="pdm-image-area" class="w-full h-full flex items-center justify-center relative rounded-2xl overflow-hidden" style="max-height: 420px;">
+                    <img id="pdm-image" src="" alt="" class="w-auto h-auto max-w-full max-h-[420px] object-contain drop-shadow-md rounded-2xl transition-transform duration-300 hover:scale-105" />
+                    <div id="pdm-image-placeholder" class="hidden flex-col items-center justify-center text-slate-300">
+                        <svg class="w-20 h-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span class="text-xs font-bold text-slate-400 mt-2">Aucune image</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- ===== End Product Details Modal ===== -->
+@endpush
+
 @section('content')
 
     @php
@@ -83,83 +217,84 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
     </div>
 
     <div
-        class="flex-1 p-4 grid grid-cols-1 lg:grid-cols-[240px_1fr_400px] gap-4 h-full min-h-0 container mx-auto max-w-[1920px]">
+        class="flex-1 p-3 flex flex-row gap-3 h-full min-h-0 w-full overflow-hidden">
 
         <!-- Left Sidebar: Categories -->
-        <aside class="glass-panel rounded-3xl p-1 shadow-sm border border-white/50 flex flex-col overflow-hidden">
-            <div class="px-5 py-4 shrink-0">
-                <h2 class="text-xs font-bold text-muted-foreground/70 uppercase tracking-widest mb-1">Navigation</h2>
-                <p class="text-xl font-extrabold text-card-foreground">Catégories</p>
+        <aside class="glass-panel rounded-3xl p-1 shadow-sm border border-white/50 w-44 xl:w-52 shrink-0 flex flex-col overflow-hidden">
+            <div class="px-4 py-3 shrink-0">
+                <h2 class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-0.5">Navigation</h2>
+                <p class="text-lg font-extrabold text-card-foreground">Catégories</p>
             </div>
-            <div class="category-list flex-1 overflow-y-auto px-2 pb-2 space-y-1" id="category-list">
+            <div class="category-list flex-1 overflow-y-auto px-1.5 pb-2 space-y-1" id="category-list">
                 <!-- Categories injected by JS -->
             </div>
         </aside>
 
         <!-- Main Content: Products & Search -->
-        <main class="flex flex-col gap-3 min-h-0">
-            <div class="glass-panel rounded-3xl px-5 py-4 shadow-sm border border-white/50 flex items-center justify-between gap-4">
+        <main class="flex-1 min-w-0 flex flex-col gap-2.5 min-h-0 overflow-hidden">
+            <div class="glass-panel rounded-3xl px-4 py-3 shadow-sm border border-white/50 flex items-center justify-between gap-3 shrink-0">
                 <div class="min-w-0">
-                    <p class="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground/60">Catalogue instantané</p>
-                    <h3 class="text-2xl font-black text-card-foreground leading-tight">Choisissez un produit et encaissez vite</h3>
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Catalogue instantané</p>
+                    <h3 class="text-lg sm:text-xl font-black text-card-foreground leading-tight truncate">Choisissez un produit et encaissez vite</h3>
                 </div>
-                <div class="hidden xl:flex items-center gap-2 rounded-full bg-indigo-50 text-indigo-700 px-4 py-2 text-xs font-bold whitespace-nowrap">
+                <div class="hidden 2xl:flex items-center gap-2 rounded-full bg-indigo-50 text-indigo-700 px-3.5 py-1.5 text-xs font-bold whitespace-nowrap">
                     <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
                     Recherche, scan et panier en un seul écran
                 </div>
             </div>
 
             <!-- Search & Scanner Bar -->
-            <div class="glass-panel rounded-3xl p-3 shadow-sm border border-white/50 shrink-0">
-                <div class="flex gap-3">
+            <div class="glass-panel rounded-3xl p-2.5 shadow-sm border border-white/50 shrink-0">
+                <div class="flex gap-2">
                     <div class="relative flex-1 group">
                         <div
-                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground/70 group-focus-within:text-indigo-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground/70 group-focus-within:text-indigo-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                             </svg>
                         </div>
                         <input id="barcode-input" type="text"
-                            class="pl-11 w-full h-12 bg-muted/20/50 border border-border text-foreground text-sm font-semibold rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-card block transition-all placeholder:text-muted-foreground/70"
+                            class="pl-10 w-full h-11 bg-muted/20/50 border border-border text-foreground text-sm font-semibold rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-card block transition-all placeholder:text-muted-foreground/70"
                             placeholder="Scanner ou rechercher..." autofocus>
                     </div>
 
-                    <div class="flex items-center relative w-28 group">
+                    <div class="flex items-center relative w-24 group">
                         <div
-                            class="absolute left-3 text-xs font-bold text-muted-foreground/70 group-focus-within:text-indigo-600 pointer-events-none z-10 transition-colors">
+                            class="absolute left-2.5 text-[10px] font-bold text-muted-foreground/70 group-focus-within:text-indigo-600 pointer-events-none z-10 transition-colors">
                             QTÉ</div>
                         <input id="scan-quantity" type="number" min="0.001" step="0.001" value="1"
-                            class="w-full h-12 pl-10 pr-2 bg-muted/20/50 border border-border rounded-2xl text-center font-bold text-card-foreground focus:ring-2 focus:ring-indigo-500 focus:bg-card focus:border-transparent outline-none transition-all">
+                            class="w-full h-11 pl-8 pr-2 bg-muted/20/50 border border-border rounded-2xl text-center font-bold text-card-foreground focus:ring-2 focus:ring-indigo-500 focus:bg-card focus:border-transparent outline-none transition-all text-sm">
                     </div>
 
                     <button type="button" id="scan-btn"
-                        class="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
-                        <span class="hidden xl:inline">Ajouter</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        class="h-11 px-4 sm:px-5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-1.5 text-sm shrink-0">
+                        <span>Ajouter</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
                                 d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
                                 clip-rule="evenodd" />
                         </svg>
                     </button>
                 </div>
-                <div class="flex justify-between items-center mt-3 px-2">
+                <div class="flex justify-between items-center mt-2 px-1.5">
                     <div id="active-category-name"
-                        class="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        class="text-xs font-bold text-muted-foreground flex items-center gap-1.5 truncate">
+                        <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
                         Sélectionnez une catégorie
                     </div>
-                    <div class="text-xs font-medium text-muted-foreground/70 bg-muted/30 px-3 py-1 rounded-full">Astuce:
-                        Appuyez sur Entrée pour ajouter</div>
+                    <div class="text-[11px] font-medium text-muted-foreground/70 bg-muted/30 px-2.5 py-0.5 rounded-full shrink-0">
+                        Entrée pour ajouter
+                    </div>
                 </div>
             </div>
 
             <!-- Products Grid -->
             <div
-                class="glass-panel rounded-3xl p-4 shadow-sm border border-white/50 flex-1 overflow-hidden flex flex-col">
+                class="glass-panel rounded-3xl p-3 shadow-sm border border-white/50 flex-1 overflow-hidden flex flex-col min-h-0">
                 <div id="products-grid"
-                    class="products-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 overflow-y-auto pr-1 pb-2 content-start h-full">
+                    class="products-grid overflow-y-auto pr-1 pb-1 content-start h-full">
                     <!-- Products injected by JS -->
                 </div>
             </div>
@@ -167,11 +302,11 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
         <!-- Right Panel: Cart -->
         <section
-            class="glass-panel rounded-3xl shadow-lg border border-white/50 flex flex-col min-h-0 relative overflow-hidden ring-1 ring-black/5">
-            <div class="p-6 pb-4 border-b border-border/60 bg-card/50 backdrop-blur-md z-10">
-                <h2 class="text-xl font-extrabold text-foreground flex items-center gap-3">
-                    <div class="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+            class="glass-panel rounded-3xl shadow-lg border border-white/50 w-72 lg:w-80 xl:w-[360px] shrink-0 flex flex-col min-h-0 relative overflow-hidden ring-1 ring-black/5">
+            <div class="p-4 pb-3 border-b border-border/60 bg-card/50 backdrop-blur-md z-10">
+                <h2 class="text-lg font-extrabold text-foreground flex items-center gap-2.5">
+                    <div class="p-1.5 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -198,11 +333,9 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
                 @csrf
 
                 <div class="flex-1 overflow-y-auto p-2 scroll-smooth">
-                    <table class="w-full text-left border-collapse">
-                        <tbody id="cart-body" class="space-y-2 block">
-                            <!-- Cart items injected by JS -->
-                        </tbody>
-                    </table>
+                    <div id="cart-body" class="space-y-2">
+                        <!-- Cart items injected by JS -->
+                    </div>
                     <div id="empty-cart-msg"
                         class="hidden flex-col items-center justify-center h-full text-center p-8 opacity-50">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-300 mb-4" fill="none"
@@ -271,7 +404,10 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
         </section>
     </div>
 
-    <script>
+@endsection
+
+@push('scripts')
+<script>
 (function() {
 var categories = @json($preparedCategories);
         var currencySymbol = @json($currencySymbol);
@@ -387,80 +523,77 @@ var categories = @json($preparedCategories);
                 }
 
                 // Modern Product Card
-                card.className = 'group bg-card border border-border/60 rounded-2xl p-3 flex flex-col gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100/30 hover:-translate-y-0.5 hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none min-h-[13rem]';
+                card.className = 'group bg-white border border-slate-200/90 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 relative cursor-pointer active:scale-[0.98] select-none h-[225px] overflow-hidden';
 
                 var isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
                 var stockFormatted = isLengthProduct ? parseFloat(Number(product.stock_quantity).toFixed(3)) : Math.floor(product.stock_quantity);
-                var stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
-                var stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
+                var stockColor = product.stock_quantity > 5 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200 animate-pulse';
+                var stockText = product.stock_quantity > 5 ? `Stock: ${stockFormatted}` : `Faible: ${stockFormatted}`;
                 var unitBadge = '';
-                if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📏 m</span>';
-                if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📐 cm</span>';
+                if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100/90 text-amber-800 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-xs">📏 m</span>';
+                if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100/90 text-cyan-800 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-xs">📐 cm</span>';
                 var variantBadge = hasMultipleVariants
-                    ? `<span class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-bold">${product.variants.length} variantes</span>`
+                    ? `<span class="bg-indigo-100/90 text-indigo-800 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-xs">${product.variants.length} var</span>`
                     : '';
 
                 card.innerHTML = `
-                <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 opacity-80"></div>
+                <!-- Top Image Area (Height 95px) -->
+                <div class="relative w-full h-[95px] rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                    ${product.image_url
+                        ? `<img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                           <div class="w-full h-full items-center justify-center text-slate-300 hidden">
+                               <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                           </div>`
+                        : `<div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                               <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                           </div>`
+                    }
 
-                <!-- Hover Add Icon (Top Left for LTR, Top Right for RTL visual balance) -->
-                <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 transform translate-y-1 group-hover:translate-y-0">
-                    <div class="bg-indigo-600 text-white w-8 h-8 flex items-center justify-center rounded-full shadow-lg shadow-indigo-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                    <!-- Badges on Image -->
+                    <span class="absolute top-1.5 right-1.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider">Sale</span>
+                    
+                    <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1">
+                        ${unitBadge}
+                        ${variantBadge}
                     </div>
+
+                    <!-- Hover Add Overlay Icon -->
+                    <div class="absolute inset-0 bg-indigo-600/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[0.5px]">
+                        <span class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Cart Quantity Badge -->
+                    ${cartQty > 0 ? `<div class="absolute top-1.5 left-1.5 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[11px] font-black shadow-md border-2 border-white">${isLengthProduct ? parseFloat(cartQty.toFixed(3)) : cartQty}</div>` : ''}
                 </div>
 
-                <!-- Product Content -->
-                <div class="flex-1 flex flex-col relative z-0 pt-1">
-                    <div class="flex items-start gap-3">
-                        <div class="w-10 h-10 rounded-xl border border-border/60 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
-                            ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                   <span class="w-full h-full items-center justify-center text-slate-300 hidden"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>`
-                                : `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`
-                            }
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="product-name font-black text-card-foreground text-[15px] leading-[1.25] line-clamp-2 h-[2.5em]" dir="auto">${product.name}</div>
-                            <div class="mt-2 flex items-center gap-2 flex-wrap">
-                                <div class="text-[10px] font-mono text-slate-500 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100 truncate max-w-[128px]">${product.barcode}</div>
-                                ${unitBadge}
-                                ${variantBadge}
-                            </div>
-                        </div>
-                        <div class="shrink-0 rounded-2xl bg-slate-50 border border-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                            Sale
-                        </div>
-                    </div>
+                <!-- Product Name & Barcode -->
+                <div class="pt-1.5 px-0.5 min-w-0 flex-1 flex flex-col justify-start">
+                    <h4 class="product-name font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2" dir="auto" title="${product.name}">${product.name}</h4>
+                    <p class="text-[10px] font-mono text-slate-400 truncate mt-0.5">${product.barcode}</p>
                 </div>
                 
-                <!-- Footer -->
-                <div class="mt-auto pt-3 border-t border-border/40 flex items-center justify-between gap-2">
-                    <div class="flex flex-col">
-                         <div class="font-black text-indigo-600 text-2xl tracking-tight leading-none flex items-baseline gap-0.5">
+                <!-- Footer: Price & Stock -->
+                <div class="pt-1.5 mt-auto border-t border-slate-100 flex items-end justify-between gap-1.5">
+                    <div class="flex flex-col min-w-0">
+                         <div class="font-extrabold text-indigo-600 text-sm sm:text-base tracking-tight leading-none flex items-baseline gap-0.5">
                             ${Number(product.price).toFixed(2)}
-                            <span class="text-[10px] font-bold text-slate-400 self-start mt-1.5">${currencySymbol}</span>
+                            <span class="text-[10px] font-bold text-slate-400 self-start mt-0.5">${currencySymbol}</span>
                          </div>
-                         <div class="text-[11px] font-semibold text-slate-400 mt-1">
+                         <div class="text-[9px] font-medium text-slate-400 mt-1 truncate">
                              A: ${Number(product.purchase_price).toFixed(2)} ${currencySymbol}
                          </div>
                     </div>
                     
-                    <div class="${stockColor} px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm border border-transparent text-center leading-tight min-w-[92px]">
+                    <div class="${stockColor} px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border text-center leading-tight shrink-0 whitespace-nowrap shadow-xs">
                         ${stockText}
                     </div>
                 </div>
-
-                <!-- Cart Quantity Badge -->
-                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${isLengthProduct ? parseFloat(cartQty.toFixed(3)) : cartQty}</div>` : ''}
             `;
 
                 card.addEventListener('click', () => {
-                    if (hasMultipleVariants) {
-                        openVariantPicker(product, 1);
-                    } else {
-                        addProductToCart(product, 1);
-                    }
+                    openProductDetailsModal(product);
                 });
 
                 productsGrid.appendChild(card);
@@ -497,6 +630,235 @@ var categories = @json($preparedCategories);
             variantPickerModal.classList.add('hidden');
             variantPickerList.innerHTML = '';
         }
+
+        // ===== Product Details Modal Logic =====
+        var pdmCurrentProduct = null;
+        var pdmSelectedVariant = null;
+        var pdmModal = document.getElementById('product-details-modal');
+
+        function updatePdmStockDisplay(stockQty, unit) {
+            var isLength = unit === 'metre' || unit === 'cm';
+            var formatted = isLength ? parseFloat(Number(stockQty).toFixed(3)) : Math.floor(stockQty);
+            var stockBox = document.getElementById('pdm-stock-box');
+            var stockEl = document.getElementById('pdm-stock');
+            stockEl.textContent = formatted + (isLength ? (unit === 'metre' ? ' m' : ' cm') : '');
+
+            if (stockQty <= 0) {
+                stockBox.className = 'bg-red-50/80 rounded-2xl p-3 border border-red-100/80 text-center flex flex-col justify-center shadow-xs';
+                stockEl.className = 'text-lg md:text-xl font-black text-red-600 leading-none';
+            } else if (stockQty <= 5) {
+                stockBox.className = 'bg-amber-50/80 rounded-2xl p-3 border border-amber-100/80 text-center flex flex-col justify-center shadow-xs';
+                stockEl.className = 'text-lg md:text-xl font-black text-amber-600 leading-none';
+            } else {
+                stockBox.className = 'bg-emerald-50/80 rounded-2xl p-3 border border-emerald-100/80 text-center flex flex-col justify-center shadow-xs';
+                stockEl.className = 'text-lg md:text-xl font-black text-emerald-700 leading-none';
+            }
+        }
+
+        function openProductDetailsModal(product) {
+            pdmCurrentProduct = product;
+            pdmSelectedVariant = null;
+            var hasMultipleVariants = product.variants && product.variants.length > 1;
+            var isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
+
+            // Image
+            var imgEl = document.getElementById('pdm-image');
+            var placeholder = document.getElementById('pdm-image-placeholder');
+            if (product.image_url) {
+                imgEl.src = product.image_url;
+                imgEl.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                placeholder.classList.remove('flex');
+                imgEl.onerror = function() {
+                    imgEl.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                    placeholder.classList.add('flex');
+                };
+            } else {
+                imgEl.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.classList.add('flex');
+            }
+
+            // Category & Unit badge
+            var cat = getCategoryById(product.category_id);
+            var catBadge = document.getElementById('pdm-category-badge');
+            if (catBadge) catBadge.textContent = cat ? cat.name : 'Catalogue';
+            var unitBadge = document.getElementById('pdm-unit-badge');
+            if (unitBadge) {
+                if (product.unit === 'metre') unitBadge.textContent = '📏 Vente au mètre';
+                else if (product.unit === 'cm') unitBadge.textContent = '📐 Vente au cm';
+                else unitBadge.textContent = '📦 Vente à l\'unité';
+            }
+
+            // Name & Barcode
+            document.getElementById('pdm-name').textContent = product.name;
+            document.getElementById('pdm-barcode').textContent = product.barcode;
+
+            // Prices
+            document.getElementById('pdm-price').textContent = Number(product.price).toFixed(2);
+            document.getElementById('pdm-purchase-price').textContent = Number(product.purchase_price).toFixed(2);
+            document.getElementById('pdm-currency').textContent = currencySymbol;
+            document.getElementById('pdm-currency2').textContent = currencySymbol;
+
+            // Stock
+            updatePdmStockDisplay(product.stock_quantity, product.unit);
+
+            // Reset Quantity Input
+            var qtyInput = document.getElementById('pdm-qty');
+            qtyInput.value = '1';
+            qtyInput.step = isLengthProduct ? '0.1' : '1';
+            qtyInput.min = isLengthProduct ? '0.1' : '1';
+
+            // Variants or simple
+            var variantsSection = document.getElementById('pdm-variants-section');
+            var variantsList = document.getElementById('pdm-variants-list');
+            var addBtnText = document.getElementById('pdm-add-btn-text');
+
+            if (hasMultipleVariants) {
+                variantsSection.classList.remove('hidden');
+                variantsSection.classList.add('flex');
+                variantsList.innerHTML = '';
+                var variantCountBadge = document.getElementById('pdm-variant-count');
+                if (variantCountBadge) variantCountBadge.textContent = product.variants.length + ' variantes';
+
+                // Auto-select first in-stock variant or first variant
+                var initialVariant = product.variants.find(v => Number(v.stock_quantity) > 0) || product.variants[0];
+                pdmSelectedVariant = initialVariant;
+
+                if (initialVariant) {
+                    document.getElementById('pdm-barcode').textContent = initialVariant.barcode || product.barcode;
+                    updatePdmStockDisplay(initialVariant.stock_quantity, product.unit);
+                    addBtnText.textContent = `Ajouter (${initialVariant.size ? 'Taille ' + initialVariant.size : ''}${initialVariant.size && initialVariant.color ? ' · ' : ''}${initialVariant.color ? initialVariant.color : ''})`;
+                }
+
+                product.variants.forEach(function(variant) {
+                    var sizeLabel = variant.size ? `Taille ${variant.size}` : '';
+                    var colorLabel = variant.color ? `${variant.color}` : '';
+                    var combinedLabel = [sizeLabel, colorLabel].filter(Boolean).join(' · ') || 'Standard';
+
+                    var isOut = Number(variant.stock_quantity) <= 0;
+                    var isSelected = pdmSelectedVariant && pdmSelectedVariant.id === variant.id;
+
+                    var sizeBadge = variant.size ? `<span class="bg-indigo-100 text-indigo-800 text-[11px] font-black px-2 py-0.5 rounded-lg uppercase shrink-0">Taille ${variant.size}</span>` : '';
+                    var colorBadge = variant.color ? `<span class="font-bold text-sm text-slate-800">${variant.color}</span>` : `<span class="text-xs font-semibold text-slate-400">Standard</span>`;
+                    var barcodeTag = variant.barcode ? `<span class="text-[10px] font-mono text-slate-400 shrink-0">(${variant.barcode})</span>` : '';
+
+                    var vBtn = document.createElement('button');
+                    vBtn.type = 'button';
+                    vBtn.disabled = isOut;
+                    vBtn.className = 'variant-card w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-2xl border-2 transition-all text-left ' +
+                        (isOut
+                            ? 'border-slate-100 bg-slate-50/50 opacity-40 cursor-not-allowed text-slate-400'
+                            : (isSelected
+                                ? 'border-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500/20 text-indigo-950 shadow-sm'
+                                : 'border-slate-200/80 hover:border-indigo-300 hover:bg-slate-50 text-slate-700 bg-white shadow-2xs'));
+
+                    vBtn.innerHTML = `
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-indigo-600' : 'bg-slate-300'} shrink-0"></span>
+                            ${sizeBadge}
+                            ${colorBadge}
+                            ${barcodeTag}
+                        </div>
+                        <span class="text-[11px] font-black ${isOut ? 'text-red-500 bg-red-50' : 'text-emerald-700 bg-emerald-50'} px-2.5 py-1 rounded-xl border border-slate-200/60 shrink-0">
+                            ${isOut ? 'Rupture' : 'Stock: ' + Number(variant.stock_quantity)}
+                        </span>
+                    `;
+
+                    if (!isOut) {
+                        vBtn.addEventListener('click', function() {
+                            pdmSelectedVariant = variant;
+                            document.getElementById('pdm-barcode').textContent = variant.barcode || product.barcode;
+                            updatePdmStockDisplay(variant.stock_quantity, product.unit);
+                            addBtnText.textContent = `Ajouter (${combinedLabel})`;
+
+                            // Update active styles on all variant cards
+                            variantsList.querySelectorAll('.variant-card').forEach(c => {
+                                c.className = 'variant-card w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-2xl border-2 transition-all text-left border-slate-200/80 hover:border-indigo-300 hover:bg-slate-50 text-slate-700 bg-white shadow-2xs';
+                                var dot = c.querySelector('span.rounded-full');
+                                if (dot) dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0';
+                            });
+                            vBtn.className = 'variant-card w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-2xl border-2 transition-all text-left border-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500/20 text-indigo-950 shadow-sm';
+                            var activeDot = vBtn.querySelector('span.rounded-full');
+                            if (activeDot) activeDot.className = 'w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0';
+                        });
+                    }
+
+                    variantsList.appendChild(vBtn);
+                });
+            } else {
+                variantsSection.classList.add('hidden');
+                variantsSection.classList.remove('flex');
+                addBtnText.textContent = 'Ajouter au panier';
+            }
+
+            pdmModal.classList.remove('hidden');
+        }
+
+        function closeProductDetailsModal() {
+            pdmModal.classList.add('hidden');
+            pdmCurrentProduct = null;
+            pdmSelectedVariant = null;
+        }
+
+        document.getElementById('pdm-close').addEventListener('click', closeProductDetailsModal);
+        pdmModal.addEventListener('click', function(e) {
+            if (e.target === pdmModal) closeProductDetailsModal();
+        });
+
+        document.getElementById('pdm-qty-minus').addEventListener('click', function() {
+            var input = document.getElementById('pdm-qty');
+            var isLength = pdmCurrentProduct && (pdmCurrentProduct.unit === 'metre' || pdmCurrentProduct.unit === 'cm');
+            var delta = isLength ? 0.1 : 1;
+            var val = parseFloat(input.value) || 1;
+            input.value = Math.max(isLength ? 0.1 : 1, parseFloat((val - delta).toFixed(3)));
+        });
+
+        document.getElementById('pdm-qty-plus').addEventListener('click', function() {
+            var input = document.getElementById('pdm-qty');
+            var isLength = pdmCurrentProduct && (pdmCurrentProduct.unit === 'metre' || pdmCurrentProduct.unit === 'cm');
+            var delta = isLength ? 0.1 : 1;
+            var val = parseFloat(input.value) || 1;
+            var maxStock = 9999;
+            if (pdmSelectedVariant) maxStock = pdmSelectedVariant.stock_quantity;
+            else if (pdmCurrentProduct) maxStock = pdmCurrentProduct.stock_quantity;
+            input.value = Math.min(maxStock, parseFloat((val + delta).toFixed(3)));
+        });
+
+        document.getElementById('pdm-add-btn').addEventListener('click', function() {
+            if (!pdmCurrentProduct) return;
+            var qty = parseFloat(document.getElementById('pdm-qty').value) || 1;
+            var hasMultipleVariants = pdmCurrentProduct.variants && pdmCurrentProduct.variants.length > 1;
+
+            if (hasMultipleVariants) {
+                if (!pdmSelectedVariant) {
+                    alert('Veuillez sélectionner une variante (Taille / Couleur) !');
+                    return;
+                }
+                var label = [
+                    pdmSelectedVariant.size ? `Taille ${pdmSelectedVariant.size}` : null,
+                    pdmSelectedVariant.color ? `Couleur ${pdmSelectedVariant.color}` : null,
+                ].filter(Boolean).join(' · ') || 'Standard';
+
+                addProductToCart({
+                    barcode: pdmSelectedVariant.barcode,
+                    name: `${pdmCurrentProduct.name} (${label})`,
+                    price: pdmCurrentProduct.price,
+                    purchase_price: pdmCurrentProduct.purchase_price,
+                    stock_quantity: pdmSelectedVariant.stock_quantity,
+                    category_id: pdmCurrentProduct.category_id,
+                    unit: pdmCurrentProduct.unit,
+                }, qty);
+            } else {
+                addProductToCart(pdmCurrentProduct, qty);
+            }
+
+            closeProductDetailsModal();
+            renderCategories();
+            renderProducts();
+        });
+        // ===== End Product Details Modal Logic =====
 
         // A product's aggregate stock_quantity is the SUM across all its
         // variants — it is NOT what a single barcode scan/click can sell.
@@ -631,55 +993,79 @@ var categories = @json($preparedCategories);
             var total = 0;
 
             items.forEach((item, index) => {
-                var row = document.createElement('tr');
+                var card = document.createElement('div');
                 var lineTotal = item.unit_price * item.quantity;
                 total += lineTotal;
 
-                // Updated Cart Item Design
-                row.className = 'flex items-center gap-3 p-3 bg-card border border-border/60 rounded-2xl mb-2 hover:border-primary/30 hover:shadow-md transition-all group';
-                row.style.display = 'flex'; // Ensure flex behavior for the TR replacement
+                // Compact 2-Row Cart Item Card (No Horizontal Scroll)
+                card.className = 'cart-item-card p-3 bg-white border border-slate-200/90 rounded-2xl shadow-xs hover:border-indigo-400/80 hover:shadow-md transition-all flex flex-col gap-2 relative';
 
-                row.innerHTML = `
-                <div class="flex-1 min-w-0">
-                    <div class="font-bold text-sm text-card-foreground truncate">${item.name}</div>
-                     <div class="flex items-center gap-2 mt-1">
-                          <input type="number" class="price-input w-20 bg-gray-50 border border-gray-200 text-center font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500 rounded-lg text-[11px] py-1" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
-                          <div class="text-[10px] text-muted-foreground/70 font-mono tracking-wider">${item.barcode}</div>
-                          <div class="text-[10px] font-bold text-slate-400 bg-slate-100 px-1 rounded">A: ${item.purchase_price.toFixed(2)}</div>
-                          ${item.unit === 'metre' ? '<span class="text-[9px] bg-amber-50 text-amber-600 font-bold px-1 rounded border border-amber-100/50">📏 m</span>' : (item.unit === 'cm' ? '<span class="text-[9px] bg-cyan-50 text-cyan-600 font-bold px-1 rounded border border-cyan-100/50">📐 cm</span>' : '')}
-                     </div>
-                </div>
-                
-                <div class="flex flex-col items-end gap-1">
-                    <div class="font-extrabold text-card-foreground text-base line-total">${lineTotal.toFixed(2)}</div>
+                card.innerHTML = `
+                <!-- Top Row: Product Name & Line Total & Delete Button -->
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-xs text-slate-800 leading-snug line-clamp-2" dir="auto" title="${item.name}">${item.name}</h4>
+                        <div class="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-mono">
+                            <span>${item.barcode}</span>
+                            ${item.unit === 'metre' ? '<span class="bg-amber-50 text-amber-600 font-bold px-1 rounded border border-amber-100">📏 m</span>' : (item.unit === 'cm' ? '<span class="bg-cyan-50 text-cyan-600 font-bold px-1 rounded border border-cyan-100">📐 cm</span>' : '')}
+                        </div>
+                    </div>
                     
-                    <div class="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
-                        <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-red-500 transition-colors qty-minus">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                        </button>
-                        <input type="number" class="qty-direct-input text-[11px] font-bold w-14 text-center text-indigo-700 bg-indigo-50/50 border border-indigo-100 rounded-md outline-none focus:ring-1 focus:ring-indigo-400 py-0.5" 
-                                  step="0.001" min="0.001" 
-                                  max="${item.stock_quantity}" 
-                                  value="${item.quantity}">
-                        <button type="button" class="w-6 h-6 flex items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm hover:text-green-600 transition-colors qty-plus">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <div class="text-right">
+                            <span class="line-total font-black text-sm text-indigo-700 leading-tight block">${lineTotal.toFixed(2)}</span>
+                            <span class="text-[9px] font-bold text-slate-400">${currencySymbol}</span>
+                        </div>
+                        <button type="button" class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all qty-remove ml-1" title="Supprimer">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                         </button>
                     </div>
                 </div>
-                
-                <button type="button" class="ml-1 w-8 h-8 flex items-center justify-center rounded-xl bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 qty-remove">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
-            `;
+
+                <!-- Bottom Row: Price Input & Purchase Price & Quantity Stepper -->
+                <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                    
+                    <!-- Editable Unit Price & Purchase Price Badge -->
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <div class="flex items-center bg-slate-50 border border-slate-200/90 rounded-lg px-1.5 py-0.5">
+                            <span class="text-[9px] font-bold text-slate-400 mr-1">PU:</span>
+                            <input type="number" class="price-input w-14 text-center font-bold text-xs text-indigo-700 bg-transparent outline-none" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
+                        </div>
+                        <span class="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">A: ${item.purchase_price.toFixed(2)}</span>
+                    </div>
+
+                    <!-- Quantity Stepper -->
+                    <div class="flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200/70 shrink-0">
+                        <button type="button" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-90 transition-all qty-minus">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <input type="number" class="qty-direct-input text-xs font-black w-10 text-center text-slate-800 bg-transparent outline-none" 
+                               step="${item.unit === 'metre' || item.unit === 'cm' ? '0.1' : '1'}" 
+                               min="${item.unit === 'metre' || item.unit === 'cm' ? '0.1' : '1'}" 
+                               max="${item.stock_quantity}" 
+                               value="${item.quantity}">
+                        <button type="button" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-90 transition-all qty-plus">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                </div>
+                `;
 
                 // Handle price input changes
-                var priceInput = row.querySelector('.price-input');
+                var priceInput = card.querySelector('.price-input');
                 priceInput.addEventListener('input', (event) => {
                     var newPrice = parseFloat(event.target.value);
                     if (!isNaN(newPrice) && newPrice >= 0) {
                         item.unit_price = newPrice;
                         var newLineTotal = item.unit_price * item.quantity;
-                        row.querySelector('.line-total').textContent = newLineTotal.toFixed(2);
+                        card.querySelector('.line-total').textContent = newLineTotal.toFixed(2);
                         
                         // Update hidden field immediately
                         var hiddenPriceField = hiddenItems.querySelector(`input[name="items[${index}][price]"]`);
@@ -696,17 +1082,17 @@ var categories = @json($preparedCategories);
                     barcodeInput.blur();
                 });
 
-                row.querySelector('.qty-minus').addEventListener('click', () => {
+                card.querySelector('.qty-minus').addEventListener('click', () => {
                     var delta = (item.unit === 'metre' || item.unit === 'cm') ? -0.1 : -1;
                     changeQuantity(item.barcode, delta);
                 });
-                row.querySelector('.qty-plus').addEventListener('click', () => {
+                card.querySelector('.qty-plus').addEventListener('click', () => {
                     var delta = (item.unit === 'metre' || item.unit === 'cm') ? 0.1 : 1;
                     changeQuantity(item.barcode, delta);
                 });
 
                 // Handle direct quantity input
-                var directInput = row.querySelector('.qty-direct-input');
+                var directInput = card.querySelector('.qty-direct-input');
                 if (directInput) {
                     directInput.addEventListener('change', () => {
                         var newQty = parseFloat(parseFloat(directInput.value).toFixed(3));
@@ -749,13 +1135,13 @@ var categories = @json($preparedCategories);
                         }
                     });
                 }
-                row.querySelector('.qty-remove').addEventListener('click', () => {
+                card.querySelector('.qty-remove').addEventListener('click', () => {
                     delete cart[item.barcode];
                     renderCart();
                     renderProducts();
                 });
 
-                cartBody.appendChild(row);
+                cartBody.appendChild(card);
 
                 // Form Fields
                 var barcodeField = document.createElement('input');
@@ -907,7 +1293,7 @@ var categories = @json($preparedCategories);
         });
 })();
 </script>
-@endsection
+@endpush
 
 
 

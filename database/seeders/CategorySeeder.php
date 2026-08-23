@@ -8,24 +8,24 @@ use Illuminate\Database\Seeder;
 class CategorySeeder extends Seeder
 {
     /**
-     * The 4 shopping categories for the tech shop concept.
+     * Categories for Women's Clothing & Pajamas Store.
      */
     public const CATEGORIES = [
         [
-            'name' => 'Smartphones & Téléphonie',
-            'description' => 'Téléphones intelligents et accessoires mobiles',
+            'name' => 'بيجامات شتوية',
+            'description' => 'بيجامات نسائية شتوية قطيفة وصوف دافئة ومريحة',
         ],
         [
-            'name' => 'Ordinateurs & Informatique',
-            'description' => 'Laptops, ordinateurs et accessoires informatiques',
+            'name' => 'بيجامات صيفية',
+            'description' => 'بيجامات صيفية قطنية وساتان خفيفة وعصرية',
         ],
         [
-            'name' => 'Audio & Casques',
-            'description' => 'Écouteurs, casques et enceintes',
+            'name' => 'ملابس منزلية',
+            'description' => 'أرواب، كيمونو، فساتين منزلية وجلابيات مريحة',
         ],
         [
-            'name' => 'Gaming & Consoles',
-            'description' => 'Consoles, périphériques et accessoires gaming',
+            'name' => 'ملابس داخلية',
+            'description' => 'ملابس داخلية نسائية راقية، أطقم دانتيل وساتان',
         ],
     ];
 

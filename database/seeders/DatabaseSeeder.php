@@ -2,12 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\User;
 use App\Models\Customer;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -16,87 +12,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $permissionCatalog = [
-            ['key' => 'dashboard.view', 'label' => 'Voir Dashboard', 'page' => 'Dashboard', 'action' => 'View'],
-            ['key' => 'pos.view', 'label' => 'Voir POS', 'page' => 'POS', 'action' => 'View'],
-            ['key' => 'stock.view', 'label' => 'Voir stock', 'page' => 'Stock', 'action' => 'View'],
-            ['key' => 'stock.create', 'label' => 'Créer produit', 'page' => 'Stock', 'action' => 'Create'],
-            ['key' => 'stock.edit', 'label' => 'Modifier produit', 'page' => 'Stock', 'action' => 'Edit'],
-            ['key' => 'stock.delete', 'label' => 'Supprimer produit', 'page' => 'Stock', 'action' => 'Delete'],
-            ['key' => 'stock.adjust', 'label' => 'Ajuster stock', 'page' => 'Stock', 'action' => 'Edit'],
-            ['key' => 'supplier.manage', 'label' => 'Gérer fournisseurs', 'page' => 'Stock', 'action' => 'Edit'],
-            ['key' => 'category.manage', 'label' => 'Gérer catégories', 'page' => 'Stock', 'action' => 'Edit'],
-            ['key' => 'brand.manage', 'label' => 'Gérer marques', 'page' => 'Stock', 'action' => 'Edit'],
-            ['key' => 'notifications.view', 'label' => 'Voir notifications', 'page' => 'Notifications', 'action' => 'View'],
-            ['key' => 'settings.view', 'label' => 'Voir settings', 'page' => 'Settings', 'action' => 'View'],
-            ['key' => 'settings.update', 'label' => 'Modifier settings', 'page' => 'Settings', 'action' => 'Edit'],
-            ['key' => 'users.manage', 'label' => 'Gérer utilisateurs', 'page' => 'Settings', 'action' => 'Edit'],
-            ['key' => 'roles.manage', 'label' => 'Gérer rôles', 'page' => 'Settings', 'action' => 'Edit'],
-            ['key' => 'checkout.create', 'label' => 'Valider vente', 'page' => 'POS', 'action' => 'Create'],
-            ['key' => 'receipt.export', 'label' => 'Exporter ticket', 'page' => 'POS', 'action' => 'Export'],
-            ['key' => 'barcode.print', 'label' => 'Imprimer code-barres', 'page' => 'Stock', 'action' => 'Export'],
-            ['key' => 'reports.view', 'label' => 'Voir rapports', 'page' => 'Reports', 'action' => 'View'],
-            ['key' => 'reports.export', 'label' => 'Exporter rapports', 'page' => 'Reports', 'action' => 'Export'],
-        ];
+        // 1. Users, Roles and RBAC Permissions
+        $this->call(UserSeeder::class);
 
-        foreach ($permissionCatalog as $permission) {
-            Permission::query()->updateOrCreate(['key' => $permission['key']], $permission);
-        }
-
-        $adminRole = Role::query()->firstOrCreate(['name' => 'Admin'], ['description' => 'Accès complet']);
-        $superUserRole = Role::query()->firstOrCreate(['name' => 'SuperUser'], ['description' => 'Gestion RBAC — ne peut pas modifier le rôle Admin ni générer des licences']);
-        $editorRole = Role::query()->firstOrCreate(['name' => 'Editor'], ['description' => 'Gestion opérationnelle']);
-        $viewerRole = Role::query()->firstOrCreate(['name' => 'Viewer'], ['description' => 'Lecture seule']);
-
-        $adminRole->permissions()->sync(Permission::query()->pluck('id'));
-        $superUserRole->permissions()->sync(Permission::query()->pluck('id'));
-        $editorRole->permissions()->sync(Permission::query()->whereIn('key', [
-            'dashboard.view', 'pos.view', 'stock.view', 'stock.create', 'stock.edit', 'stock.adjust',
-            'supplier.manage', 'category.manage', 'brand.manage', 'notifications.view', 'checkout.create',
-            'receipt.export', 'barcode.print',
-        ])->pluck('id'));
-        $viewerRole->permissions()->sync(Permission::query()->whereIn('key', [
-            'dashboard.view', 'stock.view', 'notifications.view',
-        ])->pluck('id'));
-
-        // 1. إضافة حساب مدير النظام
-        $adminUser = User::updateOrCreate(
-            ['email' => 'admin@local.pos'],
-            [
-                'name' => 'Abdelilah',
-                'role' => 'Admin',
-                'password' => Hash::make('18082001'), 
-            ]
-        );
-
-        $cashierUser = User::updateOrCreate(
-            ['email' => 'cashier@local.pos'],
-            [
-                'name' => 'Caissier',
-                'role' => 'Editor',
-                'password' => Hash::make('1234'), 
-            ]
-        );
-
-        $commercialUser = User::updateOrCreate(
-            ['email' => 'commercial@local.pos'],
-            [
-                'name' => 'Commercial',
-                'role' => 'Editor',
-                'password' => Hash::make('5678'), 
-            ]
-        );
-
-        $superUserUser = User::updateOrCreate(
-            ['email' => 'superuser@local.pos'],
-            [
-                'name' => 'superUser',
-                'role' => 'SuperUser',
-                'password' => Hash::make('0099'),
-            ]
-        );
-
-        // 2. Shopping catalog: categories, suppliers and products for the tech shop concept
+        // 2. Women's Clothing & Pajamas catalog: categories, suppliers, brands and products
         $this->call([
             CategorySeeder::class,
             SupplierSeeder::class,
@@ -104,7 +23,10 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
         ]);
 
-        // 3. Addition of default Customer
-        Customer::firstOrCreate(['phone' => '0000000000'], ['name' => 'Client Comptoir (Passager)', 'loyalty_points' => 0]);
+        // 3. Default Walk-in Customer
+        Customer::firstOrCreate(
+            ['phone' => '0000000000'],
+            ['name' => 'Client Comptoir (Passager)', 'loyalty_points' => 0]
+        );
     }
 }

@@ -44,9 +44,9 @@
 
 <nav class="top-nav flex items-center gap-2 p-4 bg-white border-b border-slate-200 shadow-sm shrink-0 z-20">
     <a href="{{ route('pos.dashboard') }}" style="display: flex; align-items: center; gap: 0px; text-decoration: none; margin-right: 15px;">
-        <img src="{{ asset('images/logo.png') }}" onerror="this.src='{{ asset('logo.svg') }}'" alt="TickDroguerie" style="width: 150px; height: auto; margin-right: -10px;">
+        <img src="{{ asset('images/logo.png') }}" onerror="this.src='{{ asset('logo.svg') }}'" alt="TechShope" style="width: 150px; height: auto; margin-right: -10px;">
         <div style="font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 900; line-height: 1;">
-            <span style="color: #F27036;">Tick</span><span style="color: #1A476F;">Droguerie</span>
+            <span style="color: #F27036;">Tech</span><span style="color: #1A476F;">Shope</span>
         </div>
     </a>
 

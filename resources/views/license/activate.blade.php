@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activation Licence – Droguerie POS</title>
+    <title>Activation Licence – TechShope POS</title>
     @vite(['resources/css/app.css'])
     <style>
         body { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
@@ -20,7 +20,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
             </div>
-            <span class="text-2xl font-extrabold tracking-tight text-white">Droguerie <span class="text-blue-400">POS</span></span>
+            <span class="text-2xl font-extrabold tracking-tight text-white">TechShope <span class="text-blue-400">POS</span></span>
         </div>
 
         <div class="bg-white rounded-2xl shadow-2xl">

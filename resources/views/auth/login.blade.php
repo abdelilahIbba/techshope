@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Droguerie POS</title>
+    <title>Connexion - TechShope POS</title>
     @vite(['resources/css/app.css'])
     <style>
         body {
@@ -77,7 +77,7 @@
                             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                 </div>
-                <h1 class="text-2xl font-extrabold tracking-tight">Droguerie <span class="text-blue-400">POS</span></h1>
+                <h1 class="text-2xl font-extrabold tracking-tight">TechShope <span class="text-blue-400">POS</span></h1>
             </div>
 
             <div class="mb-6 relative z-10">

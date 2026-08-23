@@ -6,6 +6,12 @@
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+.products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)) !important;
+    gap: 0.75rem;
+    align-content: start;
+}
 </style>
 @endpush
 @section('content')
@@ -83,83 +89,84 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
     </div>
 
     <div
-        class="flex-1 p-4 grid grid-cols-1 lg:grid-cols-[240px_1fr_400px] gap-4 h-full min-h-0 container mx-auto max-w-[1920px]">
+        class="flex-1 p-3 flex flex-row gap-3 h-full min-h-0 w-full overflow-hidden">
 
         <!-- Left Sidebar: Categories -->
-        <aside class="glass-panel rounded-3xl p-1 shadow-sm border border-white/50 flex flex-col overflow-hidden">
-            <div class="px-5 py-4 shrink-0">
-                <h2 class="text-xs font-bold text-muted-foreground/70 uppercase tracking-widest mb-1">Navigation</h2>
-                <p class="text-xl font-extrabold text-card-foreground">Catégories</p>
+        <aside class="glass-panel rounded-3xl p-1 shadow-sm border border-white/50 w-44 xl:w-52 shrink-0 flex flex-col overflow-hidden">
+            <div class="px-4 py-3 shrink-0">
+                <h2 class="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-0.5">Navigation</h2>
+                <p class="text-lg font-extrabold text-card-foreground">Catégories</p>
             </div>
-            <div class="category-list flex-1 overflow-y-auto px-2 pb-2 space-y-1" id="category-list">
+            <div class="category-list flex-1 overflow-y-auto px-1.5 pb-2 space-y-1" id="category-list">
                 <!-- Categories injected by JS -->
             </div>
         </aside>
 
         <!-- Main Content: Products & Search -->
-        <main class="flex flex-col gap-3 min-h-0">
-            <div class="glass-panel rounded-3xl px-5 py-4 shadow-sm border border-white/50 flex items-center justify-between gap-4">
+        <main class="flex-1 min-w-0 flex flex-col gap-2.5 min-h-0 overflow-hidden">
+            <div class="glass-panel rounded-3xl px-4 py-3 shadow-sm border border-white/50 flex items-center justify-between gap-3 shrink-0">
                 <div class="min-w-0">
-                    <p class="text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground/60">Catalogue instantané</p>
-                    <h3 class="text-2xl font-black text-card-foreground leading-tight">Choisissez un produit et encaissez vite</h3>
+                    <p class="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">Catalogue instantané</p>
+                    <h3 class="text-lg sm:text-xl font-black text-card-foreground leading-tight truncate">Choisissez un produit et encaissez vite</h3>
                 </div>
-                <div class="hidden xl:flex items-center gap-2 rounded-full bg-indigo-50 text-indigo-700 px-4 py-2 text-xs font-bold whitespace-nowrap">
+                <div class="hidden 2xl:flex items-center gap-2 rounded-full bg-indigo-50 text-indigo-700 px-3.5 py-1.5 text-xs font-bold whitespace-nowrap">
                     <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
                     Recherche, scan et panier en un seul écran
                 </div>
             </div>
 
             <!-- Search & Scanner Bar -->
-            <div class="glass-panel rounded-3xl p-3 shadow-sm border border-white/50 shrink-0">
-                <div class="flex gap-3">
+            <div class="glass-panel rounded-3xl p-2.5 shadow-sm border border-white/50 shrink-0">
+                <div class="flex gap-2">
                     <div class="relative flex-1 group">
                         <div
-                            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground/70 group-focus-within:text-indigo-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground/70 group-focus-within:text-indigo-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                             </svg>
                         </div>
                         <input id="barcode-input" type="text"
-                            class="pl-11 w-full h-12 bg-muted/20/50 border border-border text-foreground text-sm font-semibold rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-card block transition-all placeholder:text-muted-foreground/70"
+                            class="pl-10 w-full h-11 bg-muted/20/50 border border-border text-foreground text-sm font-semibold rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-card block transition-all placeholder:text-muted-foreground/70"
                             placeholder="Scanner ou rechercher..." autofocus>
                     </div>
 
-                    <div class="flex items-center relative w-28 group">
+                    <div class="flex items-center relative w-24 group">
                         <div
-                            class="absolute left-3 text-xs font-bold text-muted-foreground/70 group-focus-within:text-indigo-600 pointer-events-none z-10 transition-colors">
+                            class="absolute left-2.5 text-[10px] font-bold text-muted-foreground/70 group-focus-within:text-indigo-600 pointer-events-none z-10 transition-colors">
                             QTÉ</div>
                         <input id="scan-quantity" type="number" min="0.001" step="0.001" value="1"
-                            class="w-full h-12 pl-10 pr-2 bg-muted/20/50 border border-border rounded-2xl text-center font-bold text-card-foreground focus:ring-2 focus:ring-indigo-500 focus:bg-card focus:border-transparent outline-none transition-all">
+                            class="w-full h-11 pl-8 pr-2 bg-muted/20/50 border border-border rounded-2xl text-center font-bold text-card-foreground focus:ring-2 focus:ring-indigo-500 focus:bg-card focus:border-transparent outline-none transition-all text-sm">
                     </div>
 
                     <button type="button" id="scan-btn"
-                        class="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
-                        <span class="hidden xl:inline">Ajouter</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        class="h-11 px-4 sm:px-5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-1.5 text-sm shrink-0">
+                        <span>Ajouter</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
                                 d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
                                 clip-rule="evenodd" />
                         </svg>
                     </button>
                 </div>
-                <div class="flex justify-between items-center mt-3 px-2">
+                <div class="flex justify-between items-center mt-2 px-1.5">
                     <div id="active-category-name"
-                        class="text-sm font-bold text-muted-foreground flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        class="text-xs font-bold text-muted-foreground flex items-center gap-1.5 truncate">
+                        <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
                         Sélectionnez une catégorie
                     </div>
-                    <div class="text-xs font-medium text-muted-foreground/70 bg-muted/30 px-3 py-1 rounded-full">Astuce:
-                        Appuyez sur Entrée pour ajouter</div>
+                    <div class="text-[11px] font-medium text-muted-foreground/70 bg-muted/30 px-2.5 py-0.5 rounded-full shrink-0">
+                        Entrée pour ajouter
+                    </div>
                 </div>
             </div>
 
             <!-- Products Grid -->
             <div
-                class="glass-panel rounded-3xl p-4 shadow-sm border border-white/50 flex-1 overflow-hidden flex flex-col">
+                class="glass-panel rounded-3xl p-3 shadow-sm border border-white/50 flex-1 overflow-hidden flex flex-col min-h-0">
                 <div id="products-grid"
-                    class="products-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 overflow-y-auto pr-1 pb-2 content-start h-full">
+                    class="products-grid overflow-y-auto pr-1 pb-1 content-start h-full">
                     <!-- Products injected by JS -->
                 </div>
             </div>
@@ -167,11 +174,11 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 
         <!-- Right Panel: Cart -->
         <section
-            class="glass-panel rounded-3xl shadow-lg border border-white/50 flex flex-col min-h-0 relative overflow-hidden ring-1 ring-black/5">
-            <div class="p-6 pb-4 border-b border-border/60 bg-card/50 backdrop-blur-md z-10">
-                <h2 class="text-xl font-extrabold text-foreground flex items-center gap-3">
-                    <div class="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+            class="glass-panel rounded-3xl shadow-lg border border-white/50 w-72 lg:w-80 xl:w-[360px] shrink-0 flex flex-col min-h-0 relative overflow-hidden ring-1 ring-black/5">
+            <div class="p-4 pb-3 border-b border-border/60 bg-card/50 backdrop-blur-md z-10">
+                <h2 class="text-lg font-extrabold text-foreground flex items-center gap-2.5">
+                    <div class="p-1.5 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -387,72 +394,73 @@ var categories = @json($preparedCategories);
                 }
 
                 // Modern Product Card
-                card.className = 'group bg-card border border-border/60 rounded-2xl p-3 flex flex-col gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100/30 hover:-translate-y-0.5 hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none min-h-[13rem]';
+                card.className = 'group bg-white border border-slate-200/90 hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 relative cursor-pointer active:scale-[0.98] select-none h-[225px] overflow-hidden';
 
                 var isLengthProduct = product.unit === 'metre' || product.unit === 'cm';
                 var stockFormatted = isLengthProduct ? parseFloat(Number(product.stock_quantity).toFixed(3)) : Math.floor(product.stock_quantity);
-                var stockColor = product.stock_quantity > 5 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse';
-                var stockText = product.stock_quantity > 5 ? `En stock: ${stockFormatted}` : `Stock Faible: ${stockFormatted}`;
+                var stockColor = product.stock_quantity > 5 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200 animate-pulse';
+                var stockText = product.stock_quantity > 5 ? `Stock: ${stockFormatted}` : `Faible: ${stockFormatted}`;
                 var unitBadge = '';
-                if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📏 m</span>';
-                if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📐 cm</span>';
+                if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100/90 text-amber-800 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-xs">📏 m</span>';
+                if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100/90 text-cyan-800 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-xs">📐 cm</span>';
                 var variantBadge = hasMultipleVariants
-                    ? `<span class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-bold">${product.variants.length} variantes</span>`
+                    ? `<span class="bg-indigo-100/90 text-indigo-800 px-1.5 py-0.5 rounded text-[9px] font-bold shadow-xs">${product.variants.length} var</span>`
                     : '';
 
                 card.innerHTML = `
-                <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 opacity-80"></div>
+                <!-- Top Image Area (Height 95px) -->
+                <div class="relative w-full h-[95px] rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                    ${product.image_url
+                        ? `<img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                           <div class="w-full h-full items-center justify-center text-slate-300 hidden">
+                               <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                           </div>`
+                        : `<div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                               <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                           </div>`
+                    }
 
-                <!-- Hover Add Icon (Top Left for LTR, Top Right for RTL visual balance) -->
-                <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 transform translate-y-1 group-hover:translate-y-0">
-                    <div class="bg-indigo-600 text-white w-8 h-8 flex items-center justify-center rounded-full shadow-lg shadow-indigo-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                    <!-- Badges on Image -->
+                    <span class="absolute top-1.5 right-1.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider">Sale</span>
+                    
+                    <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1">
+                        ${unitBadge}
+                        ${variantBadge}
                     </div>
+
+                    <!-- Hover Add Overlay Icon -->
+                    <div class="absolute inset-0 bg-indigo-600/15 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[0.5px]">
+                        <span class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        </span>
+                    </div>
+
+                    <!-- Cart Quantity Badge -->
+                    ${cartQty > 0 ? `<div class="absolute top-1.5 left-1.5 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[11px] font-black shadow-md border-2 border-white">${isLengthProduct ? parseFloat(cartQty.toFixed(3)) : cartQty}</div>` : ''}
                 </div>
 
-                <!-- Product Content -->
-                <div class="flex-1 flex flex-col relative z-0 pt-1">
-                    <div class="flex items-start gap-3">
-                        <div class="w-10 h-10 rounded-xl border border-border/60 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
-                            ${product.image_url
-                                ? `<img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                   <span class="w-full h-full items-center justify-center text-slate-300 hidden"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>`
-                                : `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`
-                            }
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="product-name font-black text-card-foreground text-[15px] leading-[1.25] line-clamp-2 h-[2.5em]" dir="auto">${product.name}</div>
-                            <div class="mt-2 flex items-center gap-2 flex-wrap">
-                                <div class="text-[10px] font-mono text-slate-500 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100 truncate max-w-[128px]">${product.barcode}</div>
-                                ${unitBadge}
-                                ${variantBadge}
-                            </div>
-                        </div>
-                        <div class="shrink-0 rounded-2xl bg-slate-50 border border-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                            Sale
-                        </div>
-                    </div>
+                <!-- Product Name & Barcode -->
+                <div class="pt-1.5 px-0.5 min-w-0 flex-1 flex flex-col justify-start">
+                    <h4 class="product-name font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2" dir="auto" title="${product.name}">${product.name}</h4>
+                    <p class="text-[10px] font-mono text-slate-400 truncate mt-0.5">${product.barcode}</p>
                 </div>
                 
-                <!-- Footer -->
-                <div class="mt-auto pt-3 border-t border-border/40 flex items-center justify-between gap-2">
-                    <div class="flex flex-col">
-                         <div class="font-black text-indigo-600 text-2xl tracking-tight leading-none flex items-baseline gap-0.5">
+                <!-- Footer: Price & Stock -->
+                <div class="pt-1.5 mt-auto border-t border-slate-100 flex items-end justify-between gap-1.5">
+                    <div class="flex flex-col min-w-0">
+                         <div class="font-extrabold text-indigo-600 text-sm sm:text-base tracking-tight leading-none flex items-baseline gap-0.5">
                             ${Number(product.price).toFixed(2)}
-                            <span class="text-[10px] font-bold text-slate-400 self-start mt-1.5">${currencySymbol}</span>
+                            <span class="text-[10px] font-bold text-slate-400 self-start mt-0.5">${currencySymbol}</span>
                          </div>
-                         <div class="text-[11px] font-semibold text-slate-400 mt-1">
+                         <div class="text-[9px] font-medium text-slate-400 mt-1 truncate">
                              A: ${Number(product.purchase_price).toFixed(2)} ${currencySymbol}
                          </div>
                     </div>
                     
-                    <div class="${stockColor} px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm border border-transparent text-center leading-tight min-w-[92px]">
+                    <div class="${stockColor} px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border text-center leading-tight shrink-0 whitespace-nowrap shadow-xs">
                         ${stockText}
                     </div>
                 </div>
-
-                <!-- Cart Quantity Badge -->
-                ${cartQty > 0 ? `<div class="absolute top-3 left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg shadow-indigo-200 z-20 animate-in zoom-in duration-200 border-2 border-white">${isLengthProduct ? parseFloat(cartQty.toFixed(3)) : cartQty}</div>` : ''}
             `;
 
                 card.addEventListener('click', () => {

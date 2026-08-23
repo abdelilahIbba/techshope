@@ -71,7 +71,7 @@ class User extends Authenticatable
             return false;
         }
 
-        if ($this->hasRole('Admin')) {
+        if ($this->hasRole('Admin') || $this->hasRole('Super Admin')) {
             return true;
         }
 

@@ -12,74 +12,273 @@ use Illuminate\Database\Seeder;
 class ProductSeeder extends Seeder
 {
     /**
-     * 10 products per category, each from a different brand.
-     * Keyed by category name -> ['supplier' => ..., 'products' => [...]]
+     * Women's Clothing & Pajamas Catalog
      */
     public const CATALOG = [
-        'Smartphones & Téléphonie' => [
-            'supplier' => 'TechImport Maroc',
+        'بيجامات شتوية' => [
+            'supplier' => 'Textile & Mode Casablanca',
             'products' => [
-                ['barcode' => 'SM1001', 'brand' => 'Apple', 'name' => 'iPhone 15', 'description' => 'Smartphone 128 Go, écran 6.1"', 'purchase_price' => 9500, 'sale_price' => 11500, 'stock_quantity' => 20],
-                ['barcode' => 'SM1002', 'brand' => 'Samsung', 'name' => 'Galaxy S24', 'description' => 'Smartphone 256 Go, écran AMOLED 6.2"', 'purchase_price' => 8800, 'sale_price' => 10800, 'stock_quantity' => 25],
-                ['barcode' => 'SM1003', 'brand' => 'Xiaomi', 'name' => 'Redmi Note 13', 'description' => 'Smartphone 128 Go, triple caméra', 'purchase_price' => 2200, 'sale_price' => 2800, 'stock_quantity' => 40],
-                ['barcode' => 'SM1004', 'brand' => 'Huawei', 'name' => 'P60', 'description' => 'Smartphone 256 Go, photo pro', 'purchase_price' => 7200, 'sale_price' => 8900, 'stock_quantity' => 15],
-                ['barcode' => 'SM1005', 'brand' => 'OnePlus', 'name' => '12', 'description' => 'Smartphone 256 Go, charge rapide 100W', 'purchase_price' => 7800, 'sale_price' => 9600, 'stock_quantity' => 18],
-                ['barcode' => 'SM1006', 'brand' => 'Google', 'name' => 'Pixel 8', 'description' => 'Smartphone 128 Go, IA intégrée', 'purchase_price' => 7000, 'sale_price' => 8700, 'stock_quantity' => 12],
-                ['barcode' => 'SM1007', 'brand' => 'Oppo', 'name' => 'Reno 11', 'description' => 'Smartphone 256 Go, écran incurvé', 'purchase_price' => 4200, 'sale_price' => 5300, 'stock_quantity' => 22],
-                ['barcode' => 'SM1008', 'brand' => 'Realme', 'name' => '12 Pro', 'description' => 'Smartphone 128 Go, zoom périscope', 'purchase_price' => 3600, 'sale_price' => 4600, 'stock_quantity' => 28],
-                ['barcode' => 'SM1009', 'brand' => 'Nokia', 'name' => 'G42', 'description' => 'Smartphone 128 Go, robuste', 'purchase_price' => 1800, 'sale_price' => 2400, 'stock_quantity' => 30],
-                ['barcode' => 'SM1010', 'brand' => 'Motorola', 'name' => 'Edge 40', 'description' => 'Smartphone 256 Go, design incurvé', 'purchase_price' => 3900, 'sale_price' => 4900, 'stock_quantity' => 20],
+                [
+                    'barcode' => 'PJ1001',
+                    'brand' => 'Oysho',
+                    'name' => 'بيجامة قطيفة شتوية 3 قطع',
+                    'description' => 'بيجامة نسائية فاخرة من المخمل الناعم (جاكيت + توب + بنطلون) دافئة ومريحة',
+                    'purchase_price' => 160.00,
+                    'sale_price' => 280.00,
+                    'stock_quantity' => 30,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Rose Poudré', 'Gris Perle', 'Bordeaux'],
+                    'image' => 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ1002',
+                    'brand' => 'Etam',
+                    'name' => 'بيجامة صوف دافئة مع قبوط',
+                    'description' => 'بيجامة شتوية بقماش البولار الصوفي فائق النعومة مع غطاء رأس مطرز',
+                    'purchase_price' => 190.00,
+                    'sale_price' => 320.00,
+                    'stock_quantity' => 24,
+                    'sizes' => ['M', 'L', 'XL'],
+                    'colors' => ['Blanc Cassé', 'Camel', 'Bleu Nuit'],
+                    'image' => 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ1003',
+                    'brand' => "Women'Secret",
+                    'name' => 'بيجامة قطيفة مضلعة مريحة',
+                    'description' => 'بيجامة مضلعة شتوية عصرية وأنيقة للمنزل مع حزام خصر مرن',
+                    'purchase_price' => 140.00,
+                    'sale_price' => 240.00,
+                    'stock_quantity' => 36,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Vert Sauge', 'Mauve', 'Noir'],
+                    'image' => 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ1004',
+                    'brand' => 'La Vie en Rose',
+                    'name' => 'طقم بيجامة تريكو شتوي',
+                    'description' => 'طقم تريكو ناعم ودافئ مثالي للأيام الباردة والاسترخاء المنزلي',
+                    'purchase_price' => 175.00,
+                    'sale_price' => 299.00,
+                    'stock_quantity' => 20,
+                    'sizes' => ['S', 'M', 'L'],
+                    'colors' => ['Beige', 'Terracotta'],
+                    'image' => 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ1005',
+                    'brand' => "Victoria's Secret",
+                    'name' => 'طقم بيجامة شتوية مخملية ملكية',
+                    'description' => 'طقم مخمل ملكي فاخر بأزرار أمامية ولمسات ستان براقة',
+                    'purchase_price' => 220.00,
+                    'sale_price' => 380.00,
+                    'stock_quantity' => 18,
+                    'sizes' => ['M', 'L', 'XL'],
+                    'colors' => ['Bleu Marine', 'Bordeaux'],
+                    'image' => 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500&auto=format&fit=crop&q=80',
+                ],
             ],
         ],
-        'Ordinateurs & Informatique' => [
-            'supplier' => 'Global Computers Distribution',
+        'بيجامات صيفية' => [
+            'supplier' => 'Lingerie & Pyjama Import Fès',
             'products' => [
-                ['barcode' => 'LP2001', 'brand' => 'Apple', 'name' => 'MacBook Air M2', 'description' => 'Laptop 13.6", 8 Go RAM, 256 Go SSD', 'purchase_price' => 13500, 'sale_price' => 16000, 'stock_quantity' => 10],
-                ['barcode' => 'LP2002', 'brand' => 'Dell', 'name' => 'XPS 13', 'description' => 'Laptop 13.4", Intel Core i7, 512 Go SSD', 'purchase_price' => 12000, 'sale_price' => 14500, 'stock_quantity' => 12],
-                ['barcode' => 'LP2003', 'brand' => 'HP', 'name' => 'Pavilion 15', 'description' => 'Laptop 15.6", Intel Core i5, 512 Go SSD', 'purchase_price' => 6500, 'sale_price' => 8200, 'stock_quantity' => 18],
-                ['barcode' => 'LP2004', 'brand' => 'Lenovo', 'name' => 'ThinkPad E14', 'description' => 'Laptop 14", Intel Core i5, 256 Go SSD', 'purchase_price' => 7200, 'sale_price' => 8900, 'stock_quantity' => 15],
-                ['barcode' => 'LP2005', 'brand' => 'Asus', 'name' => 'VivoBook 15', 'description' => 'Laptop 15.6", AMD Ryzen 5, 512 Go SSD', 'purchase_price' => 5800, 'sale_price' => 7200, 'stock_quantity' => 20],
-                ['barcode' => 'LP2006', 'brand' => 'Acer', 'name' => 'Aspire 5', 'description' => 'Laptop 15.6", Intel Core i3, 256 Go SSD', 'purchase_price' => 5200, 'sale_price' => 6600, 'stock_quantity' => 22],
-                ['barcode' => 'LP2007', 'brand' => 'MSI', 'name' => 'Modern 14', 'description' => 'Laptop 14", Intel Core i5, 512 Go SSD', 'purchase_price' => 6800, 'sale_price' => 8400, 'stock_quantity' => 14],
-                ['barcode' => 'LP2008', 'brand' => 'Microsoft', 'name' => 'Surface Laptop 5', 'description' => 'Laptop 13.5" tactile, 8 Go RAM, 256 Go SSD', 'purchase_price' => 11500, 'sale_price' => 14000, 'stock_quantity' => 8],
-                ['barcode' => 'LP2009', 'brand' => 'Samsung', 'name' => 'Galaxy Book3', 'description' => 'Laptop 15.6", Intel Core i7, 512 Go SSD', 'purchase_price' => 9800, 'sale_price' => 12000, 'stock_quantity' => 10],
-                ['barcode' => 'LP2010', 'brand' => 'LG', 'name' => 'Gram 14', 'description' => 'Laptop 14" ultraléger, 16 Go RAM', 'purchase_price' => 10500, 'sale_price' => 12800, 'stock_quantity' => 9],
+                [
+                    'barcode' => 'PJ2001',
+                    'brand' => "Victoria's Secret",
+                    'name' => 'بيجامة ساتان حريري أنيقة',
+                    'description' => 'بيجامة ساتان كلاسيكية ناعمة بأكمام قصيرة وشورت خفيف ومريح',
+                    'purchase_price' => 150.00,
+                    'sale_price' => 260.00,
+                    'stock_quantity' => 40,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Rose Satin', 'Noir Ébène', 'Émeraude', 'Champagne'],
+                    'image' => 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ2002',
+                    'brand' => 'Oysho',
+                    'name' => 'بيجامة قطن 100% شورت وتيشيرت',
+                    'description' => 'بيجامة صيفية مصنوعة من القطن الطبيعي 100% لتنفس مثالي ومقاومة للحرارة',
+                    'purchase_price' => 90.00,
+                    'sale_price' => 160.00,
+                    'stock_quantity' => 48,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Blanc Imprimé', 'Bleu Ciel', 'Lilas'],
+                    'image' => 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ2003',
+                    'brand' => 'Etam',
+                    'name' => 'بيجامة صيفية بنمط زهور منعش',
+                    'description' => 'بيجامة فيسكوز صيفية ناعمة ومنسدلة بنقشات أزهار ربيعية جذابة',
+                    'purchase_price' => 110.00,
+                    'sale_price' => 195.00,
+                    'stock_quantity' => 30,
+                    'sizes' => ['M', 'L', 'XL'],
+                    'colors' => ['Floral Rose', 'Floral Jaune'],
+                    'image' => 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ2004',
+                    'brand' => 'Intimissimi',
+                    'name' => 'قميص نوم ساتان ناعم مع دانتيل',
+                    'description' => 'قميص نوم (Nuisette) من الساتان الفاخر بحواف دانتيل فرنسي راقٍ',
+                    'purchase_price' => 120.00,
+                    'sale_price' => 220.00,
+                    'stock_quantity' => 24,
+                    'sizes' => ['S', 'M', 'L'],
+                    'colors' => ['Rouge Passion', 'Noir', 'Bleu Nuit'],
+                    'image' => 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'PJ2005',
+                    'brand' => "Women'Secret",
+                    'name' => 'طقم بيجامة قطن سترابلس خفيف',
+                    'description' => 'طقم توب بحمالات رفيعة وشورت مريح جداً لنوم هادئ في ليالي الصيف',
+                    'purchase_price' => 85.00,
+                    'sale_price' => 150.00,
+                    'stock_quantity' => 35,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Corail', 'Blanc', 'Gris'],
+                    'image' => 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=500&auto=format&fit=crop&q=80',
+                ],
             ],
         ],
-        'Audio & Casques' => [
-            'supplier' => 'AudioPro Wholesale',
+        'ملابس منزلية' => [
+            'supplier' => 'Confection Atlas Marrakech',
             'products' => [
-                ['barcode' => 'AU3001', 'brand' => 'Sony', 'name' => 'WH-1000XM5', 'description' => 'Casque sans fil à réduction de bruit', 'purchase_price' => 3200, 'sale_price' => 4200, 'stock_quantity' => 15],
-                ['barcode' => 'AU3002', 'brand' => 'Bose', 'name' => 'QuietComfort 45', 'description' => 'Casque sans fil confort premium', 'purchase_price' => 2900, 'sale_price' => 3800, 'stock_quantity' => 14],
-                ['barcode' => 'AU3003', 'brand' => 'JBL', 'name' => 'Tune 510BT', 'description' => 'Casque sans fil léger, autonomie 40h', 'purchase_price' => 350, 'sale_price' => 500, 'stock_quantity' => 50],
-                ['barcode' => 'AU3004', 'brand' => 'Beats', 'name' => 'Studio Buds', 'description' => 'Écouteurs sans fil, réduction de bruit active', 'purchase_price' => 900, 'sale_price' => 1300, 'stock_quantity' => 30],
-                ['barcode' => 'AU3005', 'brand' => 'Sennheiser', 'name' => 'HD 450BT', 'description' => 'Casque sans fil, son Hi-Fi', 'purchase_price' => 700, 'sale_price' => 1000, 'stock_quantity' => 25],
-                ['barcode' => 'AU3006', 'brand' => 'Apple', 'name' => 'AirPods Pro 2', 'description' => 'Écouteurs sans fil, réduction de bruit active', 'purchase_price' => 2300, 'sale_price' => 2900, 'stock_quantity' => 22],
-                ['barcode' => 'AU3007', 'brand' => 'Samsung', 'name' => 'Galaxy Buds2 Pro', 'description' => 'Écouteurs sans fil, son haute résolution', 'purchase_price' => 1800, 'sale_price' => 2400, 'stock_quantity' => 20],
-                ['barcode' => 'AU3008', 'brand' => 'Anker', 'name' => 'Soundcore Life Q35', 'description' => 'Casque sans fil, réduction de bruit adaptative', 'purchase_price' => 600, 'sale_price' => 850, 'stock_quantity' => 35],
-                ['barcode' => 'AU3009', 'brand' => 'Marshall', 'name' => 'Major IV', 'description' => 'Casque sans fil, charge sans fil intégrée', 'purchase_price' => 1100, 'sale_price' => 1500, 'stock_quantity' => 18],
-                ['barcode' => 'AU3010', 'brand' => 'Skullcandy', 'name' => 'Crusher Evo', 'description' => 'Casque sans fil, basses ajustables', 'purchase_price' => 800, 'sale_price' => 1150, 'stock_quantity' => 24],
+                [
+                    'barcode' => 'HW3001',
+                    'brand' => 'La Vie en Rose',
+                    'name' => 'روب دو شومبر قطيفة فاخر',
+                    'description' => 'روب حمام ومنزل طويل من المخمل السميك والناعم بجيوب وحزام خصر',
+                    'purchase_price' => 220.00,
+                    'sale_price' => 380.00,
+                    'stock_quantity' => 16,
+                    'sizes' => ['M', 'L', 'XL'],
+                    'colors' => ['Bleu Royal', 'Bordeaux', 'Gris Anthracite'],
+                    'image' => 'https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'HW3002',
+                    'brand' => "Victoria's Secret",
+                    'name' => 'كيمونو ساتان ياباني مطرز',
+                    'description' => 'كيمونو طويل من الساتان البراق مطرز بتفاصيل زهرية راقية على الأكمام والظهر',
+                    'purchase_price' => 180.00,
+                    'sale_price' => 310.00,
+                    'stock_quantity' => 20,
+                    'sizes' => ['S/M', 'L/XL'],
+                    'colors' => ['Blanc Soie', 'Noir Floral', 'Rose Gold'],
+                    'image' => 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'HW3003',
+                    'brand' => "Women'Secret",
+                    'name' => 'كسوة منزلية قطنية كاجوال',
+                    'description' => 'فستان منزلي قطني خفيف وعملي ومريح طوال اليوم بقصة مريحة',
+                    'purchase_price' => 100.00,
+                    'sale_price' => 175.00,
+                    'stock_quantity' => 40,
+                    'sizes' => ['M', 'L', 'XL', 'XXL'],
+                    'colors' => ['Gris Chiné', 'Kaki', 'Marine'],
+                    'image' => 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'HW3004',
+                    'brand' => 'Oysho',
+                    'name' => 'طقم منزلي هودي وبنطلون صوف',
+                    'description' => 'طقم مريح قطعتين هودي وبنطلون مناسب للبيت والطلعات الخفيفة',
+                    'purchase_price' => 195.00,
+                    'sale_price' => 340.00,
+                    'stock_quantity' => 24,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Nude', 'Gris', 'Marron Glacé'],
+                    'image' => 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'HW3005',
+                    'brand' => 'Etam',
+                    'name' => 'كارديجان منزلي طويل ودافئ',
+                    'description' => 'جاكيت منزلي مفتوح طويل من الصوف الناعم يوضع فوق البيجامات',
+                    'purchase_price' => 130.00,
+                    'sale_price' => 230.00,
+                    'stock_quantity' => 22,
+                    'sizes' => ['M', 'L', 'XL'],
+                    'colors' => ['Beige Clair', 'Gris Perle'],
+                    'image' => 'https://images.unsplash.com/photo-1508427953056-b00b8d78ebf5?w=500&auto=format&fit=crop&q=80',
+                ],
             ],
         ],
-        'Gaming & Consoles' => [
-            'supplier' => 'GameZone Distribution',
+        'ملابس داخلية' => [
+            'supplier' => 'Distribution Élégance Tanger',
             'products' => [
-                ['barcode' => 'GM4001', 'brand' => 'Sony', 'name' => 'PlayStation 5', 'description' => 'Console de jeu nouvelle génération', 'purchase_price' => 5800, 'sale_price' => 6900, 'stock_quantity' => 10],
-                ['barcode' => 'GM4002', 'brand' => 'Microsoft', 'name' => 'Xbox Series X', 'description' => 'Console de jeu 1 To, 4K natif', 'purchase_price' => 5600, 'sale_price' => 6700, 'stock_quantity' => 10],
-                ['barcode' => 'GM4003', 'brand' => 'Nintendo', 'name' => 'Switch OLED', 'description' => 'Console hybride, écran OLED 7"', 'purchase_price' => 3200, 'sale_price' => 3900, 'stock_quantity' => 16],
-                ['barcode' => 'GM4004', 'brand' => 'Logitech', 'name' => 'G502 Hero', 'description' => 'Souris gaming filaire, capteur 25K DPI', 'purchase_price' => 400, 'sale_price' => 580, 'stock_quantity' => 40],
-                ['barcode' => 'GM4005', 'brand' => 'Razer', 'name' => 'DeathAdder V3', 'description' => 'Souris gaming ergonomique, sans fil', 'purchase_price' => 450, 'sale_price' => 650, 'stock_quantity' => 35],
-                ['barcode' => 'GM4006', 'brand' => 'Corsair', 'name' => 'K70 RGB', 'description' => 'Clavier mécanique gaming, rétroéclairage RGB', 'purchase_price' => 900, 'sale_price' => 1250, 'stock_quantity' => 20],
-                ['barcode' => 'GM4007', 'brand' => 'SteelSeries', 'name' => 'Arctis 7', 'description' => 'Casque gaming sans fil, son surround', 'purchase_price' => 1200, 'sale_price' => 1600, 'stock_quantity' => 18],
-                ['barcode' => 'GM4008', 'brand' => 'HyperX', 'name' => 'Cloud II', 'description' => 'Casque gaming filaire, son 7.1 virtuel', 'purchase_price' => 500, 'sale_price' => 700, 'stock_quantity' => 30],
-                ['barcode' => 'GM4009', 'brand' => 'Asus', 'name' => 'ROG Strix G16', 'description' => 'Laptop gaming 16", RTX, 16 Go RAM', 'purchase_price' => 14500, 'sale_price' => 17500, 'stock_quantity' => 6],
-                ['barcode' => 'GM4010', 'brand' => 'MSI', 'name' => 'Katana 15', 'description' => 'Laptop gaming 15.6", RTX, 16 Go RAM', 'purchase_price' => 9800, 'sale_price' => 12000, 'stock_quantity' => 8],
+                [
+                    'barcode' => 'LG4001',
+                    'brand' => 'Etam',
+                    'name' => 'طقم لانجري دانتيل فرنسي 2 قطع',
+                    'description' => 'طقم دانتيل فرنسي راقٍ وأنيق بحمالات قابلة للتعديل وتصميم جذاب',
+                    'purchase_price' => 95.00,
+                    'sale_price' => 180.00,
+                    'stock_quantity' => 36,
+                    'sizes' => ['85B', '90B', '95B', '90C'],
+                    'colors' => ['Noir', 'Blanc', 'Rouge Bordeaux'],
+                    'image' => 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'LG4002',
+                    'brand' => 'Intimissimi',
+                    'name' => 'سوتين بدون حشوة كومفورت ناعم',
+                    'description' => 'حمالة صدر بدون أسلاك مريحة جداً للاستخدام اليومي بقماش ناعم وخفي تحت الملابس',
+                    'purchase_price' => 75.00,
+                    'sale_price' => 140.00,
+                    'stock_quantity' => 45,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Nude/Chair', 'Noir', 'Blanc'],
+                    'image' => 'https://images.unsplash.com/photo-1508427953056-b00b8d78ebf5?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'LG4003',
+                    'brand' => 'Calvin Klein Underwear',
+                    'name' => 'باك 3 كلوت قطن مريح أورجينال',
+                    'description' => 'علبة تحتوي على 3 قطع قطن مريح بحزام مطاطي مميز بجودة عالية',
+                    'purchase_price' => 60.00,
+                    'sale_price' => 110.00,
+                    'stock_quantity' => 60,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Trio Noir/Blanc/Gris', 'Pastel'],
+                    'image' => 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'LG4004',
+                    'brand' => 'Yamamay',
+                    'name' => 'بودي سوت دانتيل وساتان سهرة',
+                    'description' => 'بودي سوت فاخر من الدانتيل والساتان بظهر مفتوح وقصة أنثوية جذابة',
+                    'purchase_price' => 130.00,
+                    'sale_price' => 230.00,
+                    'stock_quantity' => 24,
+                    'sizes' => ['S', 'M', 'L'],
+                    'colors' => ['Noir Intense', 'Bordeaux'],
+                    'image' => 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=500&auto=format&fit=crop&q=80',
+                ],
+                [
+                    'barcode' => 'LG4005',
+                    'brand' => 'Calvin Klein Underwear',
+                    'name' => 'حمالة صدر رياضية داعمة',
+                    'description' => 'برا رياضي قطني مرن يوفر دعماً مثالياً وحرية كاملة للحركة',
+                    'purchase_price' => 80.00,
+                    'sale_price' => 150.00,
+                    'stock_quantity' => 40,
+                    'sizes' => ['S', 'M', 'L', 'XL'],
+                    'colors' => ['Noir', 'Gris', 'Rose'],
+                    'image' => 'https://images.unsplash.com/photo-1516762689617-e1cffcef479d?w=500&auto=format&fit=crop&q=80',
+                ],
             ],
         ],
     ];
 
     /**
-     * Seed the products for each shopping category.
+     * Seed the products for each women's fashion category.
      */
     public function run(): void
     {
@@ -100,18 +299,33 @@ class ProductSeeder extends Seeder
                         'brand_id' => $brand?->id,
                         'name' => $product['name'],
                         'description' => $product['description'],
+                        'barcode_type' => 'internal',
+                        'image' => $product['image'] ?? null,
                         'purchase_price' => $product['purchase_price'],
                         'sale_price' => $product['sale_price'],
                         'stock_quantity' => $product['stock_quantity'],
-                        'unit' => 'unité',
+                        'unit' => 'pièce',
                     ]
                 );
 
-                // Every product needs a product_variants row — scan, checkout
-                // and the POS grid all sell against variants, not the product
-                // row directly. ensureDefaultVariant() is a no-op if one
-                // already exists, so re-seeding stays idempotent.
-                $variantStock->ensureDefaultVariant($productModel, (float) $product['stock_quantity']);
+                // Sync sizes and colors as variants
+                $sizes = $product['sizes'] ?? [];
+                $colors = $product['colors'] ?? [];
+
+                $variantCount = max(1, count($sizes)) * max(1, count($colors));
+                $stockPerVariant = round($product['stock_quantity'] / $variantCount, 1);
+
+                if (! empty($sizes) || ! empty($colors)) {
+                    $variantStock->syncVariants(
+                        $productModel,
+                        $sizes,
+                        $colors,
+                        $stockPerVariant,
+                        $product['barcode']
+                    );
+                } else {
+                    $variantStock->ensureDefaultVariant($productModel, (float) $product['stock_quantity']);
+                }
             }
         }
     }

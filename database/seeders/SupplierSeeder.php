@@ -8,28 +8,28 @@ use Illuminate\Database\Seeder;
 class SupplierSeeder extends Seeder
 {
     /**
-     * Suppliers aligned with the tech shop categories.
+     * Moroccan suppliers for textile and fashion.
      */
     public const SUPPLIERS = [
         [
-            'name' => 'TechImport Maroc',
-            'contact_info' => '0522 11 22 33',
-            'notes' => 'Distributeur de smartphones et téléphonie',
+            'name' => 'Textile & Mode Casablanca',
+            'contact_info' => '+212 522 30 40 50',
+            'notes' => 'Fournisseur principal de pyjamas et homewear (Casablanca)',
         ],
         [
-            'name' => 'Global Computers Distribution',
-            'contact_info' => '0522 44 55 66',
-            'notes' => 'Distributeur d\'ordinateurs et informatique',
+            'name' => 'Lingerie & Pyjama Import Fès',
+            'contact_info' => '+212 535 60 70 80',
+            'notes' => 'Importateur de lingerie fine et satin de qualité (Fès)',
         ],
         [
-            'name' => 'AudioPro Wholesale',
-            'contact_info' => '0522 77 88 99',
-            'notes' => 'Distributeur audio et casques',
+            'name' => 'Confection Atlas Marrakech',
+            'contact_info' => '+212 524 40 50 60',
+            'notes' => 'Atelier de confection textile coton et velours (Marrakech)',
         ],
         [
-            'name' => 'GameZone Distribution',
-            'contact_info' => '0522 10 20 30',
-            'notes' => 'Distributeur gaming et consoles',
+            'name' => 'Distribution Élégance Tanger',
+            'contact_info' => '+212 539 90 10 20',
+            'notes' => 'Distributeur de marques internationales de lingerie (Tanger)',
         ],
     ];
 

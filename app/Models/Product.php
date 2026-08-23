@@ -5,17 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
     protected $fillable = [
         'category_id',
         'supplier_id',
+        'brand_id',
         'name',
-        'brand',
         'barcode',
         'barcode_type',
         'description',
+        'image',
         'purchase_price',
         'sale_price',
         'stock_quantity',
@@ -35,7 +37,26 @@ class Product extends Model
         'has_variants',
         'available_sizes',
         'available_colors',
+        'image_url',
     ];
+
+    /**
+     * The `image` column holds either a storage-relative path (uploaded
+     * file) or a full external URL (provided by URL) — resolve whichever it
+     * is into a browser-ready URL.
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! $this->image) {
+            return null;
+        }
+
+        if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
+            return $this->image;
+        }
+
+        return Storage::disk('public')->url($this->image);
+    }
 
     public function saleItems(): HasMany
     {
@@ -60,6 +81,11 @@ class Product extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
     }
 
     public function getHasVariantsAttribute(): bool

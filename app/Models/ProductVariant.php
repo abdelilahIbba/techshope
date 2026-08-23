@@ -50,7 +50,7 @@ class ProductVariant extends Model
     public function displayName(): string
     {
         $base = $this->product?->name ?? 'Produit';
-        $brand = $this->product?->brand;
+        $brand = $this->product?->brand?->name;
 
         return trim(($brand ? $brand.' — ' : '').$base.' ('.$this->label().')');
     }

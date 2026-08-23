@@ -7,10 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\Category;
-use App\Models\Product;
 use App\Models\Customer;
-use App\Models\Supplier;
 
 class DatabaseSeeder extends Seeder
 {
@@ -29,6 +26,7 @@ class DatabaseSeeder extends Seeder
             ['key' => 'stock.adjust', 'label' => 'Ajuster stock', 'page' => 'Stock', 'action' => 'Edit'],
             ['key' => 'supplier.manage', 'label' => 'Gérer fournisseurs', 'page' => 'Stock', 'action' => 'Edit'],
             ['key' => 'category.manage', 'label' => 'Gérer catégories', 'page' => 'Stock', 'action' => 'Edit'],
+            ['key' => 'brand.manage', 'label' => 'Gérer marques', 'page' => 'Stock', 'action' => 'Edit'],
             ['key' => 'notifications.view', 'label' => 'Voir notifications', 'page' => 'Notifications', 'action' => 'View'],
             ['key' => 'settings.view', 'label' => 'Voir settings', 'page' => 'Settings', 'action' => 'View'],
             ['key' => 'settings.update', 'label' => 'Modifier settings', 'page' => 'Settings', 'action' => 'Edit'],
@@ -54,8 +52,8 @@ class DatabaseSeeder extends Seeder
         $superUserRole->permissions()->sync(Permission::query()->pluck('id'));
         $editorRole->permissions()->sync(Permission::query()->whereIn('key', [
             'dashboard.view', 'pos.view', 'stock.view', 'stock.create', 'stock.edit', 'stock.adjust',
-            'supplier.manage', 'category.manage', 'notifications.view', 'checkout.create', 'receipt.export',
-            'barcode.print',
+            'supplier.manage', 'category.manage', 'brand.manage', 'notifications.view', 'checkout.create',
+            'receipt.export', 'barcode.print',
         ])->pluck('id'));
         $viewerRole->permissions()->sync(Permission::query()->whereIn('key', [
             'dashboard.view', 'stock.view', 'notifications.view',
@@ -98,102 +96,15 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 2. Addition of Categories (French)
-        $catPeinture = Category::firstOrCreate(['name' => 'Peinture & Revêtement'], ['description' => 'Peintures, vernis, enduits et accessoires']);
-        $catVisserie = Category::firstOrCreate(['name' => 'Visserie & Boulonnerie'], ['description' => 'Vis, clous, boulons et chevilles']);
-        $catOutils = Category::firstOrCreate(['name' => 'Outillage à main'], ['description' => 'Marteaux, tournevis, pinces et clés']);
-        $catElec = Category::firstOrCreate(['name' => 'Électricité'], ['description' => 'Câbles, prises, interrupteurs et ampoules']);
-        $catPlomberie = Category::firstOrCreate(['name' => 'Plomberie'], ['description' => 'Tuyaux, raccords, robinets et joints']);
-
-        // 3. Addition of Suppliers (Fournisseurs)
-        $supPeint = Supplier::firstOrCreate(['name' => 'Sarl Peintures Nationales'], ['contact_info' => '0550 11 22 33', 'notes' => 'Fournisseur principal de peinture']);
-        $supQuinc = Supplier::firstOrCreate(['name' => 'Quincaillerie Centrale'], ['contact_info' => '0560 44 55 66', 'notes' => 'Visserie et outillage']);
-        $supElec = Supplier::firstOrCreate(['name' => 'Distributeur Électro-Pro'], ['contact_info' => '0540 77 88 99', 'notes' => 'Tout pour l\'électricité']);
-
-        // 4. Addition of Products (Rich Data)
-        // Peinture
-        Product::firstOrCreate(['barcode' => '7700123'], [
-            'category_id' => $catPeinture->id,
-            'name' => 'Peinture Blanche Satiné 5L',
-            'description' => 'Peinture acrylique de haute qualité',
-            'purchase_price' => 2500.00,
-            'sale_price' => 3200.00,
-            'stock_quantity' => 25,
-            'unit' => 'Pot'
-        ]);
-        Product::firstOrCreate(['barcode' => '7700124'], [
-            'category_id' => $catPeinture->id,
-            'name' => 'Rouleau Peinture 200mm',
-            'description' => 'Rouleau anti-goutte professionnel',
-            'purchase_price' => 450.00,
-            'sale_price' => 650.00,
-            'stock_quantity' => 50,
-            'unit' => 'Pièce'
+        // 2. Shopping catalog: categories, suppliers and products for the tech shop concept
+        $this->call([
+            CategorySeeder::class,
+            SupplierSeeder::class,
+            BrandSeeder::class,
+            ProductSeeder::class,
         ]);
 
-        // Visserie
-        Product::firstOrCreate(['barcode' => '8800551'], [
-            'category_id' => $catVisserie->id,
-            'name' => 'Vis à Bois 4x40 (Boite de 100)',
-            'description' => 'Vis acier zingué',
-            'purchase_price' => 350.00,
-            'sale_price' => 550.00,
-            'stock_quantity' => 100,
-            'unit' => 'Boite'
-        ]);
-        Product::firstOrCreate(['barcode' => '8800552'], [
-            'category_id' => $catVisserie->id,
-            'name' => 'Chevilles Nylon 8mm (Sachet 50)',
-            'description' => 'Fixation universelle forte',
-            'purchase_price' => 180.00,
-            'sale_price' => 300.00,
-            'stock_quantity' => 80,
-            'unit' => 'Sachet'
-        ]);
-
-        // Outillage
-        Product::firstOrCreate(['barcode' => '9900991'], [
-            'category_id' => $catOutils->id,
-            'name' => 'Marteau de menuisier 500g',
-            'description' => 'Marteau manche ergonomique',
-            'purchase_price' => 850.00,
-            'sale_price' => 1200.00,
-            'stock_quantity' => 15,
-            'unit' => 'Pièce'
-        ]);
-        Product::firstOrCreate(['barcode' => '9900992'], [
-            'category_id' => $catOutils->id,
-            'name' => 'Jeu de 6 Tournevis',
-            'description' => 'Plats et Cruciformes isolés',
-            'purchase_price' => 1400.00,
-            'sale_price' => 1950.00,
-            'stock_quantity' => 10,
-            'unit' => 'Set'
-        ]);
-
-        // Électricité
-        Product::firstOrCreate(['barcode' => '2200221'], [
-            'category_id' => $catElec->id,
-            'name' => 'Prise de courant double blanche',
-            'description' => 'Prise encastrée Legrand',
-            'purchase_price' => 420.00,
-            'sale_price' => 600.00,
-            'stock_quantity' => 40,
-            'unit' => 'Pièce'
-        ]);
-
-        // Plomberie
-        Product::firstOrCreate(['barcode' => '3300331'], [
-            'category_id' => $catPlomberie->id,
-            'name' => 'Robinet mitigeur Evier',
-            'description' => 'Finition chromée, flexible inclus',
-            'purchase_price' => 3800.00,
-            'sale_price' => 4900.00,
-            'stock_quantity' => 8,
-            'unit' => 'Pièce'
-        ]);
-
-        // 5. Addition of default Customer
+        // 3. Addition of default Customer
         Customer::firstOrCreate(['phone' => '0000000000'], ['name' => 'Client Comptoir (Passager)', 'loyalty_points' => 0]);
     }
 }

@@ -238,7 +238,7 @@
                                                 'unit_price' => (float) $item->unit_price,
                                                 'subtotal' => (float) $item->subtotal,
                                                 'unit' => $item->product->unit ?? 'unité',
-                                                'brand' => $item->variant?->product?->brand ?? $item->product?->brand,
+                                                'brand' => $item->variant?->product?->brand?->name ?? $item->product?->brand?->name,
                                                 'size' => $item->variant?->size,
                                                 'color' => $item->variant?->color,
                                                 'barcode' => $item->variant?->barcode ?? $item->product?->barcode,
@@ -250,7 +250,7 @@
                                                 <div>
                                                     {{ $item->product->name ?? '#'.$item->product_id }}
                                                     @if($item->variant)
-                                                        <span class="text-slate-400">({{ $item->variant->label() }}{{ $item->variant->product?->brand ? ' · '.$item->variant->product?->brand : '' }})</span>
+                                                        <span class="text-slate-400">({{ $item->variant->label() }}{{ $item->variant->product?->brand?->name ? ' · '.$item->variant->product?->brand?->name : '' }})</span>
                                                     @endif
                                                     — {{ number_format($item->quantity, 2) }} × {{ number_format($item->unit_price, 2) }} {{ $currencySymbol }}
                                                 </div>
@@ -275,7 +275,7 @@
                         </td>
                         <td class="px-5 py-3.5 text-center">
                             <button
-                                onclick="openCancelModal({{ $sale->id }}, {{ $sale->total_amount }}, {{ $sale->items->map(fn($i)=>['id'=>$i->id,'product_id'=>$i->product_id,'variant_id'=>$i->product_variant_id,'name'=>$i->product->name??'Art.#'.$i->product_id,'qty'=>(float)$i->quantity,'unit_price'=>(float)$i->unit_price,'subtotal'=>(float)$i->subtotal,'unit'=>$i->product->unit??'unité','brand'=>$i->variant?->product?->brand ?? $i->product?->brand,'size'=>$i->variant?->size,'color'=>$i->variant?->color,'barcode'=>$i->variant?->barcode ?? $i->product?->barcode,'variant_label'=>$i->variant?->label()])->toJson() }})"
+                                onclick="openCancelModal({{ $sale->id }}, {{ $sale->total_amount }}, {{ $sale->items->map(fn($i)=>['id'=>$i->id,'product_id'=>$i->product_id,'variant_id'=>$i->product_variant_id,'name'=>$i->product->name??'Art.#'.$i->product_id,'qty'=>(float)$i->quantity,'unit_price'=>(float)$i->unit_price,'subtotal'=>(float)$i->subtotal,'unit'=>$i->product->unit??'unité','brand'=>$i->variant?->product?->brand?->name ?? $i->product?->brand?->name,'size'=>$i->variant?->size,'color'=>$i->variant?->color,'barcode'=>$i->variant?->barcode ?? $i->product?->barcode,'variant_label'=>$i->variant?->label()])->toJson() }})"
                                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 font-semibold text-xs hover:bg-red-100 transition">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                 Annuler
@@ -850,6 +850,19 @@
             closeExchangeModal();
         }
     });
+
+    // The functions above are called from inline onclick/onchange attributes
+    // in the markup, which resolve identifiers on window — expose them here
+    // since they're otherwise trapped inside this IIFE's closure.
+    window.openCancelModal = openCancelModal;
+    window.closeCancelModal = closeCancelModal;
+    window.openExchangeModal = openExchangeModal;
+    window.closeExchangeModal = closeExchangeModal;
+    window.loadExchangeVariants = loadExchangeVariants;
+    window.showStep = showStep;
+    window.selectItem = selectItem;
+    window.submitBarcodeSearch = submitBarcodeSearch;
+    window.clearBarcodeSearch = clearBarcodeSearch;
 
 })();
 </script>

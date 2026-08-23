@@ -37,7 +37,7 @@ class ShareNavData
         try {
             $currency  = Cache::remember('nav:currency', now()->addMinutes(5), fn () => Setting::get('currency', 'DHs') ?: 'DHs');
             $cashLabel = Cache::remember('nav:cash_label', now()->addMinutes(5), fn () => Setting::get('cash_label', 'DHs') ?: 'DHs');
-            $notificationCount = Cache::remember('nav:low_stock_count', now()->addSeconds(30), fn () => ProductVariant::where('stock_quantity', '<=', 10)->count());
+            $notificationCount = Cache::remember('nav:low_stock_count', now()->addSeconds(30), fn () => ProductVariant::where('stock_quantity', '<=', (int) Setting::get('low_stock_threshold', 10))->count());
 
             View::share('notificationCount', $notificationCount);
             View::share('navLicense',        License::current());

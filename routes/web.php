@@ -50,6 +50,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pos/stock/add-category', [PosController::class, 'addCategory'])->middleware('permission:category.manage')->name('pos.stock.add-category');
         Route::put('/pos/stock/edit-category/{category}', [PosController::class, 'editCategory'])->middleware('permission:category.manage')->name('pos.stock.edit-category');
         Route::delete('/pos/stock/delete-category/{category}', [PosController::class, 'deleteCategory'])->middleware('permission:category.manage')->name('pos.stock.delete-category');
+        Route::post('/pos/stock/add-brand', [PosController::class, 'addBrand'])->middleware('permission:brand.manage')->name('pos.stock.add-brand');
+        Route::put('/pos/stock/edit-brand/{brand}', [PosController::class, 'editBrand'])->middleware('permission:brand.manage')->name('pos.stock.edit-brand');
+        Route::delete('/pos/stock/delete-brand/{brand}', [PosController::class, 'deleteBrand'])->middleware('permission:brand.manage')->name('pos.stock.delete-brand');
         Route::get('/pos/notifications', [PosController::class, 'notifications'])->middleware('permission:notifications.view')->name('pos.notifications');
         Route::get('/pos/settings', [PosController::class, 'settings'])->middleware('permission:settings.view')->name('pos.settings');
         Route::get('/pos/settings/printer', [PosController::class, 'settingsPrinter'])->middleware('permission:settings.view')->name('pos.settings.printer');

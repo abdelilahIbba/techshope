@@ -45,6 +45,16 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+            // Uploads (e.g. product images) go through PHP-FPM (www-data),
+            // but directories under here can also get created by a root-run
+            // artisan command (migrations, tinker, seeders). Forcing 0777 on
+            // new dirs means whichever user creates one, the other can still
+            // read/write into it — otherwise a root-owned 0755 dir silently
+            // blocks www-data's uploads (store() returns false, no error).
+            'permissions' => [
+                'file' => ['public' => 0664, 'private' => 0600],
+                'dir' => ['public' => 0777, 'private' => 0700],
+            ],
         ],
 
         's3' => [

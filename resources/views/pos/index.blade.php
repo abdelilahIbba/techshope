@@ -25,6 +25,16 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
                         'purchase_price' => (float) ($product->purchase_price ?? 0),
                         'stock_quantity' => (float) $product->stock_quantity,
                         'unit' => $product->unit ?? 'unité',
+                        'image_url' => $product->image_url,
+                        'variants' => $product->variants->map(function ($variant) {
+                            return [
+                                'id' => $variant->id,
+                                'size' => $variant->size,
+                                'color' => $variant->color,
+                                'barcode' => $variant->barcode,
+                                'stock_quantity' => (float) $variant->stock_quantity,
+                            ];
+                        })->values(),
                     ];
                 })->values(),
             ];
@@ -45,6 +55,32 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
         </div>
         <script>setTimeout(() => { var el = document.getElementById('flash-success'); if (el) el.style.display = 'none'; }, 4000);</script>
     @endif
+
+    @if(session('error'))
+        <div id="flash-error"
+            class="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-rose-500 text-white px-6 py-3 rounded-2xl shadow-xl shadow-rose-200/50 flex items-center gap-3 font-semibold">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd" />
+            </svg>
+            {{ session('error') }}
+        </div>
+        <script>setTimeout(() => { var el = document.getElementById('flash-error'); if (el) el.style.display = 'none'; }, 6000);</script>
+    @endif
+
+    <div id="variant-picker-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-card rounded-3xl shadow-2xl border border-white/50 w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-border/60 flex items-center justify-between gap-3">
+                <h3 id="variant-picker-title" class="text-base font-black text-card-foreground leading-snug">Choisir une variante</h3>
+                <button type="button" id="variant-picker-close"
+                    class="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl hover:bg-muted/30 text-muted-foreground transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="variant-picker-list" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+        </div>
+    </div>
 
     <div
         class="flex-1 p-4 grid grid-cols-1 lg:grid-cols-[240px_1fr_400px] gap-4 h-full min-h-0 container mx-auto max-w-[1920px]">
@@ -251,6 +287,9 @@ var categories = @json($preparedCategories);
         var emptyCartMsg = document.getElementById('empty-cart-msg');
         var receivedAmountInput = document.getElementById('received-amount');
         var changeAmountDisplay = document.getElementById('change-amount');
+        var variantPickerModal = document.getElementById('variant-picker-modal');
+        var variantPickerTitle = document.getElementById('variant-picker-title');
+        var variantPickerList = document.getElementById('variant-picker-list');
 
         // AZERTY to QWERTY mapping for numbers (Dual support: FR/EN)
         var azertyMap = {
@@ -339,7 +378,13 @@ var categories = @json($preparedCategories);
 
             productsToDisplay.forEach((product) => {
                 var card = document.createElement('div');
-                var cartQty = cart[product.barcode]?.quantity || 0;
+                var hasMultipleVariants = product.variants && product.variants.length > 1;
+                var cartQty = 0;
+                if (hasMultipleVariants) {
+                    product.variants.forEach((v) => { cartQty += cart[v.barcode]?.quantity || 0; });
+                } else {
+                    cartQty = cart[product.barcode]?.quantity || 0;
+                }
 
                 // Modern Product Card
                 card.className = 'group bg-card border border-border/60 rounded-2xl p-3 flex flex-col gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100/30 hover:-translate-y-0.5 hover:border-indigo-100 transition-all duration-300 relative overflow-hidden cursor-pointer active:scale-95 select-none min-h-[13rem]';
@@ -351,6 +396,9 @@ var categories = @json($preparedCategories);
                 var unitBadge = '';
                 if (product.unit === 'metre') unitBadge = '<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📏 m</span>';
                 if (product.unit === 'cm') unitBadge = '<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded text-[9px] font-bold">📐 cm</span>';
+                var variantBadge = hasMultipleVariants
+                    ? `<span class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[9px] font-bold">${product.variants.length} variantes</span>`
+                    : '';
 
                 card.innerHTML = `
                 <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 opacity-80"></div>
@@ -365,11 +413,19 @@ var categories = @json($preparedCategories);
                 <!-- Product Content -->
                 <div class="flex-1 flex flex-col relative z-0 pt-1">
                     <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl border border-border/60 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                            ${product.image_url
+                                ? `<img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                   <span class="w-full h-full items-center justify-center text-slate-300 hidden"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>`
+                                : `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>`
+                            }
+                        </div>
                         <div class="min-w-0 flex-1">
                             <div class="product-name font-black text-card-foreground text-[15px] leading-[1.25] line-clamp-2 h-[2.5em]" dir="auto">${product.name}</div>
                             <div class="mt-2 flex items-center gap-2 flex-wrap">
                                 <div class="text-[10px] font-mono text-slate-500 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100 truncate max-w-[128px]">${product.barcode}</div>
                                 ${unitBadge}
+                                ${variantBadge}
                             </div>
                         </div>
                         <div class="shrink-0 rounded-2xl bg-slate-50 border border-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
@@ -400,7 +456,11 @@ var categories = @json($preparedCategories);
             `;
 
                 card.addEventListener('click', () => {
-                    addProductToCart(product, 1);
+                    if (hasMultipleVariants) {
+                        openVariantPicker(product, 1);
+                    } else {
+                        addProductToCart(product, 1);
+                    }
                 });
 
                 productsGrid.appendChild(card);
@@ -432,6 +492,73 @@ var categories = @json($preparedCategories);
             renderCart();
             renderProducts(); // To update badges
         }
+
+        function closeVariantPicker() {
+            variantPickerModal.classList.add('hidden');
+            variantPickerList.innerHTML = '';
+        }
+
+        // A product's aggregate stock_quantity is the SUM across all its
+        // variants — it is NOT what a single barcode scan/click can sell.
+        // Selling against the wrong (ambiguous) variant is exactly the
+        // "stock insuffisant" mismatch this picker exists to prevent: make
+        // the cashier pick the specific size/color, then add/validate using
+        // THAT variant's own barcode and stock, matching what checkout()
+        // actually decrements server-side.
+        function openVariantPicker(product, quantityToAdd) {
+            quantityToAdd = quantityToAdd || 1;
+            variantPickerTitle.textContent = product.name;
+            variantPickerList.innerHTML = '';
+
+            product.variants.forEach((variant) => {
+                var label = variant.label || [
+                    variant.size ? `Taille ${variant.size}` : null,
+                    variant.color ? `Couleur ${variant.color}` : null,
+                ].filter(Boolean).join(' · ') || 'Standard';
+
+                var outOfStock = Number(variant.stock_quantity) <= 0;
+
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.disabled = outOfStock;
+                btn.className = 'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ' +
+                    (outOfStock
+                        ? 'border-border/40 bg-muted/10 opacity-50 cursor-not-allowed'
+                        : 'border-border/60 hover:border-indigo-400 hover:bg-indigo-50/50');
+                btn.innerHTML = `
+                    <span class="font-bold text-sm text-card-foreground">${label}</span>
+                    <span class="text-xs font-bold ${outOfStock ? 'text-red-500' : 'text-emerald-600'} bg-card px-2 py-1 rounded-lg border border-border/40 shrink-0">
+                        ${outOfStock ? 'Rupture' : 'Stock: ' + Number(variant.stock_quantity)}
+                    </span>
+                `;
+
+                if (!outOfStock) {
+                    btn.addEventListener('click', () => {
+                        addProductToCart({
+                            barcode: variant.barcode,
+                            name: `${product.name} (${label})`,
+                            price: product.price,
+                            purchase_price: product.purchase_price,
+                            stock_quantity: variant.stock_quantity,
+                            category_id: product.category_id,
+                            unit: product.unit,
+                        }, quantityToAdd);
+                        closeVariantPicker();
+                        renderCategories();
+                        renderProducts();
+                    });
+                }
+
+                variantPickerList.appendChild(btn);
+            });
+
+            variantPickerModal.classList.remove('hidden');
+        }
+
+        document.getElementById('variant-picker-close').addEventListener('click', closeVariantPicker);
+        variantPickerModal.addEventListener('click', (event) => {
+            if (event.target === variantPickerModal) closeVariantPicker();
+        });
 
         function changeQuantity(barcode, delta) {
             var item = cart[barcode];
@@ -682,6 +809,15 @@ var categories = @json($preparedCategories);
                 }
 
                 var product = await response.json();
+
+                if (product.needs_variant) {
+                    openVariantPicker(product.product, quantity);
+                    barcodeInput.value = '';
+                    scanQuantityInput.value = '1';
+                    barcodeInput.focus();
+                    return;
+                }
+
                 activeCategoryId = product.category_id;
                 addProductToCart(product, quantity);
 

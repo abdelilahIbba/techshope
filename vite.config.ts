@@ -25,6 +25,19 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    server: {
+        host: '0.0.0.0',
+        port: 15173,
+        strictPort: true,
+        // Vite binds 0.0.0.0 inside the container so the port mapping works,
+        // but that address isn't reachable from the browser — pin the origin
+        // the browser should actually use so asset/HMR URLs stay correct.
+        origin: 'http://localhost:15173',
+        // The app is served from nginx on :18080, a different origin than
+        // this dev server on :15173, so the browser needs Vite's explicit
+        // go-ahead to fetch @vite/client and HMR updates cross-origin.
+        cors: true,
+    },
     resolve: {
         alias: [
             { find: /^@\/routes$/, replacement: path.resolve(__dirname, 'resources/js/routes-stubs/root.ts') },

@@ -3,8 +3,18 @@ set -e
 
 cd /var/www/html
 
-if [ ! -f .env ] && [ -f .env.example ]; then
-    cp .env.example .env
+# This entrypoint only ever runs inside the PHP container, so we're always in
+# the Docker/Postgres context here — prefer the Docker-specific env template
+# (correct APP_URL port, pgsql connection) over the generic SQLite-oriented
+# .env.example, so a fresh clone works without a manual `cp` step first.
+if [ ! -f .env ]; then
+    if [ -f .env.docker.example ]; then
+        cp .env.docker.example .env
+        echo "Created .env from .env.docker.example"
+    elif [ -f .env.example ]; then
+        cp .env.example .env
+        echo "Created .env from .env.example (no .env.docker.example found)"
+    fi
 fi
 
 if [ ! -d vendor ]; then
@@ -24,10 +34,24 @@ fi
 
 if [ "${RUN_MIGRATIONS}" = "true" ]; then
     timeout 120 php artisan migrate --force || echo "Migration timeout or error - continuing anyway"
+
+    if [ "${RUN_SEEDERS:-true}" = "true" ]; then
+        # DatabaseSeeder is fully idempotent (updateOrCreate/firstOrCreate
+        # throughout), so re-running it on every container start is safe —
+        # it applies newly-added seed data after a pull without a manual step.
+        timeout 120 php artisan db:seed --force || echo "Seeding timeout or error - continuing anyway"
+    fi
 fi
 
-mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs storage/app/public bootstrap/cache
 chmod -R 777 storage bootstrap/cache 2>/dev/null || true
+
+# public/storage must point at storage/app/public or every uploaded/served
+# file (product images, etc.) 404s. Only (re)create it when missing so we
+# don't spam "link already exists" on every restart.
+if [ ! -L public/storage ]; then
+    php artisan storage:link >/dev/null 2>&1 || true
+fi
 
 # Cache Laravel bootstrap artefacts so they are read from bootstrap/cache/
 # (one file, warmed by OPcache) instead of parsing every config / route / view

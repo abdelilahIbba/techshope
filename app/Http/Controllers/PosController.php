@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Expense;
+use App\Models\ExternalOrder;
 use App\Models\License;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -76,6 +77,13 @@ class PosController extends Controller
             ['key' => 'expenses.edit', 'label' => 'Modifier dépense', 'page' => 'Expenses', 'action' => 'Edit'],
             ['key' => 'expenses.delete', 'label' => 'Supprimer dépense', 'page' => 'Expenses', 'action' => 'Delete'],
             ['key' => 'expenses.approve', 'label' => 'Approuver dépense', 'page' => 'Expenses', 'action' => 'Approve'],
+            // Promotions
+            ['key' => 'promos.manage', 'label' => 'Gérer les promotions', 'page' => 'Promotions', 'action' => 'Edit'],
+            // Commandes Externes
+            ['key' => 'external_orders.view',   'label' => 'Voir commandes externes',     'page' => 'ExternalOrders', 'action' => 'View'],
+            ['key' => 'external_orders.create', 'label' => 'Créer commande externe',       'page' => 'ExternalOrders', 'action' => 'Create'],
+            ['key' => 'external_orders.edit',   'label' => 'Modifier commande externe',    'page' => 'ExternalOrders', 'action' => 'Edit'],
+            ['key' => 'external_orders.delete', 'label' => 'Supprimer commande externe',   'page' => 'ExternalOrders', 'action' => 'Delete'],
         ];
     }
 
@@ -123,6 +131,7 @@ class PosController extends Controller
             'checkout.create',
             'receipt.export',
             'barcode.print',
+            'promos.manage',
         ];
         $editorPermissionIds = Permission::query()->whereIn('key', $editorKeys)->pluck('id');
         $editor->permissions()->sync($editorPermissionIds);
@@ -336,7 +345,7 @@ class PosController extends Controller
             ->with([
                 'products' => function ($query) {
                     $query
-                        ->select('id', 'name', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id', 'unit', 'image')
+                        ->select('id', 'name', 'barcode', 'sale_price', 'purchase_price', 'stock_quantity', 'category_id', 'unit', 'image', 'is_promo', 'promo_price', 'promo_start_date', 'promo_end_date', 'promo_title')
                         ->with(['variants' => function ($q) {
                             $q->select('id', 'product_id', 'size', 'color', 'barcode', 'stock_quantity', 'is_default')
                                 ->orderBy('size')
@@ -2224,5 +2233,352 @@ PS;
             : 'Dépense rejetée.';
 
         return back()->with('success', $message);
+    }
+
+    // ── PROMOTIONS & SOLDES ──────────────────────────────────────────────────
+
+    /**
+     * Display the Promotions & Soldes management page
+     */
+    public function promos(Request $request): View
+    {
+        $allProducts = Product::query()
+            ->with(['category:id,name', 'brand:id,name'])
+            ->orderBy('name')
+            ->get();
+
+        $promoProducts = Product::query()
+            ->with(['category:id,name', 'brand:id,name'])
+            ->where('is_promo', true)
+            ->orderBy('name')
+            ->get();
+
+        $categories = Category::query()->orderBy('name')->get();
+        $brands = Brand::query()->orderBy('name')->get();
+
+        $totalPromosCount = $promoProducts->count();
+        $avgDiscount = $promoProducts->count() > 0 ? (float) $promoProducts->avg('discount_percentage') : 0.0;
+        $totalPromoStock = (float) $promoProducts->sum('stock_quantity');
+
+        return view('pos.promos', [
+            'promoProducts' => $promoProducts,
+            'allProducts' => $allProducts,
+            'categories' => $categories,
+            'brands' => $brands,
+            'totalPromosCount' => $totalPromosCount,
+            'avgDiscount' => round($avgDiscount, 1),
+            'totalPromoStock' => $totalPromoStock,
+        ]);
+    }
+
+    /**
+     * Store a brand new product directly with original price & promo price
+     */
+    public function storePromoProduct(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'brand_id' => ['nullable', 'exists:brands,id'],
+            'barcode' => ['nullable', 'string', 'unique:products,barcode', 'unique:product_variants,barcode'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'supplier_id' => ['nullable', 'exists:suppliers,id'],
+            'stock_quantity' => ['required', 'numeric', 'min:0'],
+            'unit' => ['nullable', 'string', 'in:unité,metre,cm,m'],
+            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'sale_price' => ['required', 'numeric', 'min:0'],
+            'promo_price' => ['required', 'numeric', 'min:0'],
+            'promo_start_date' => ['nullable', 'date'],
+            'promo_end_date' => ['nullable', 'date', 'after_or_equal:promo_start_date'],
+            'promo_title' => ['nullable', 'string', 'max:255'],
+            'image_file' => ['nullable', 'image', 'max:4096'],
+            'image_url' => ['nullable', 'url', 'max:2048', 'regex:'.self::IMAGE_URL_REGEX],
+        ]);
+
+        if ((float) $validated['promo_price'] >= (float) $validated['sale_price']) {
+            return back()->withInput()->withErrors([
+                'promo_price' => 'Le prix de promotion ('.$validated['promo_price'].' DH) doit être strictement inférieur au prix d\'origine ('.$validated['sale_price'].' DH).'
+            ]);
+        }
+
+        if (empty($validated['barcode'])) {
+            $validated['barcode'] = $this->variantStock->generateUniqueBarcode();
+        }
+
+        $imagePath = null;
+        if ($request->hasFile('image_file')) {
+            $imagePath = $request->file('image_file')->store('products', 'public');
+        } elseif (! empty($validated['image_url'])) {
+            $imagePath = $validated['image_url'];
+        }
+
+        $product = Product::create([
+            'name' => $validated['name'],
+            'brand_id' => $validated['brand_id'] ?? null,
+            'barcode' => $validated['barcode'],
+            'category_id' => $validated['category_id'],
+            'supplier_id' => $validated['supplier_id'] ?? null,
+            'stock_quantity' => $validated['stock_quantity'],
+            'unit' => $validated['unit'] ?? 'unité',
+            'purchase_price' => $validated['purchase_price'],
+            'sale_price' => $validated['sale_price'],
+            'is_promo' => true,
+            'promo_price' => $validated['promo_price'],
+            'promo_start_date' => $validated['promo_start_date'] ?? null,
+            'promo_end_date' => $validated['promo_end_date'] ?? null,
+            'promo_title' => $validated['promo_title'] ?? 'Solde',
+            'image' => $imagePath,
+        ]);
+
+        ProductVariant::create([
+            'product_id' => $product->id,
+            'size' => null,
+            'color' => null,
+            'barcode' => $product->barcode,
+            'stock_quantity' => $product->stock_quantity,
+            'is_default' => true,
+        ]);
+
+        $this->writeAudit('product.created_promo', Product::class, $product->id, [
+            'name' => $product->name,
+            'sale_price' => $product->sale_price,
+            'promo_price' => $product->promo_price,
+        ]);
+
+        return back()->with('success', 'Nouveau produit en promotion créé avec succès!');
+    }
+
+    /**
+     * Apply promo to an existing product in DB
+     */
+    public function applyPromo(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'product_id' => ['required', 'exists:products,id'],
+            'promo_price' => ['required', 'numeric', 'min:0'],
+            'promo_start_date' => ['nullable', 'date'],
+            'promo_end_date' => ['nullable', 'date', 'after_or_equal:promo_start_date'],
+            'promo_title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $product = Product::findOrFail($validated['product_id']);
+
+        if ((float) $validated['promo_price'] >= (float) $product->sale_price) {
+            return back()->withInput()->withErrors(['promo_price' => 'Le prix de promotion ('.$validated['promo_price'].' DH) doit être strictly inférieur au prix d\'origine ('.$product->sale_price.' DH).']);
+        }
+
+        $product->update([
+            'is_promo' => true,
+            'promo_price' => $validated['promo_price'],
+            'promo_start_date' => $validated['promo_start_date'] ?? null,
+            'promo_end_date' => $validated['promo_end_date'] ?? null,
+            'promo_title' => $validated['promo_title'] ?? 'Promotion',
+        ]);
+
+        $this->writeAudit('product.promo_applied', Product::class, $product->id, [
+            'name' => $product->name,
+            'sale_price' => $product->sale_price,
+            'promo_price' => $product->promo_price,
+        ]);
+
+        return back()->with('success', 'Promotion appliquée sur "'.$product->name.'" avec succès!');
+    }
+
+    /**
+     * Update promo details for a product
+     */
+    public function updatePromo(Request $request, Product $product): RedirectResponse
+    {
+        $validated = $request->validate([
+            'sale_price' => ['required', 'numeric', 'min:0'],
+            'promo_price' => ['required', 'numeric', 'min:0'],
+            'promo_start_date' => ['nullable', 'date'],
+            'promo_end_date' => ['nullable', 'date', 'after_or_equal:promo_start_date'],
+            'promo_title' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ((float) $validated['promo_price'] >= (float) $validated['sale_price']) {
+            return back()->withInput()->withErrors([
+                'promo_price' => 'Le prix de promotion ('.$validated['promo_price'].' DH) doit être strictement inférieur au prix d\'origine ('.$validated['sale_price'].' DH).'
+            ]);
+        }
+
+        $product->update([
+            'sale_price' => $validated['sale_price'],
+            'is_promo' => true,
+            'promo_price' => $validated['promo_price'],
+            'promo_start_date' => $validated['promo_start_date'] ?? null,
+            'promo_end_date' => $validated['promo_end_date'] ?? null,
+            'promo_title' => $validated['promo_title'] ?? 'Promotion',
+        ]);
+
+        $this->writeAudit('product.promo_updated', Product::class, $product->id, [
+            'name' => $product->name,
+            'promo_price' => $product->promo_price,
+        ]);
+
+        return back()->with('success', 'Promotion mise à jour avec succès pour "'.$product->name.'".');
+    }
+
+    /**
+     * Toggle active promo status for a product
+     */
+    public function togglePromo(Request $request, Product $product): RedirectResponse
+    {
+        $product->is_promo = ! $product->is_promo;
+        $product->save();
+
+        $statusStr = $product->is_promo ? 'activée' : 'désactivée';
+        return back()->with('success', 'Promotion '.$statusStr.' pour le produit "'.$product->name.'".');
+    }
+
+    /**
+     * Remove promo from product
+     */
+    public function removePromo(Product $product): RedirectResponse
+    {
+        $product->update([
+            'is_promo' => false,
+            'promo_price' => null,
+            'promo_start_date' => null,
+            'promo_end_date' => null,
+            'promo_title' => null,
+        ]);
+
+        $this->writeAudit('product.promo_removed', Product::class, $product->id, ['name' => $product->name]);
+
+        return back()->with('success', 'Promotion retirée avec succès.');
+    }
+
+    // ── COMMANDES EXTERNES ───────────────────────────────────────────────────
+
+    /**
+     * Display the External Orders management page
+     */
+    public function externalOrders(Request $request): View
+    {
+        $query = ExternalOrder::query()
+            ->with('createdBy:id,name')
+            ->latest();
+
+        if ($request->filled('status')) {
+            $query->byStatus($request->status);
+        }
+        if ($request->filled('platform')) {
+            $query->byPlatform($request->platform);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('client_name', 'ILIKE', "%{$s}%")
+                  ->orWhere('client_phone', 'ILIKE', "%{$s}%");
+            });
+        }
+
+        $orders = $query->paginate(20)->withQueryString();
+
+        $stats = [
+            'total'       => ExternalOrder::count(),
+            'en_attente'  => ExternalOrder::byStatus('En attente')->count(),
+            'expedie'     => ExternalOrder::byStatus('Expédié')->count(),
+            'livre'       => ExternalOrder::byStatus('Livré')->count(),
+            'annule'      => ExternalOrder::byStatus('Annulé')->count(),
+            'ca_total'    => ExternalOrder::byStatus('Livré')->sum('total_amount'),
+        ];
+
+        return view('pos.external-orders', [
+            'orders'    => $orders,
+            'stats'     => $stats,
+            'platforms' => ExternalOrder::PLATFORMS,
+            'statuses'  => ExternalOrder::STATUSES,
+            'statusColors'   => ExternalOrder::STATUS_COLORS,
+            'platformColors' => ExternalOrder::PLATFORM_COLORS,
+        ]);
+    }
+
+    /**
+     * Store a new external order
+     */
+    public function storeExternalOrder(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'client_name'     => ['required', 'string', 'max:255'],
+            'client_phone'    => ['required', 'string', 'max:50'],
+            'client_address'  => ['required', 'string', 'max:1000'],
+            'platform_source' => ['required', 'in:Instagram,WhatsApp,Autre'],
+            'status'          => ['required', 'in:En attente,Expédié,Livré,Annulé'],
+            'total_amount'    => ['required', 'numeric', 'min:0'],
+            'notes'           => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $order = ExternalOrder::create(array_merge($validated, [
+            'created_by_user_id' => Auth::id(),
+        ]));
+
+        $this->writeAudit('external_order.created', ExternalOrder::class, $order->id, [
+            'client' => $order->client_name,
+            'platform' => $order->platform_source,
+            'amount' => $order->total_amount,
+        ]);
+
+        return back()->with('success', 'Commande de "'.$order->client_name.'" ajoutée avec succès.');
+    }
+
+    /**
+     * Update an existing external order
+     */
+    public function updateExternalOrder(Request $request, ExternalOrder $externalOrder): RedirectResponse
+    {
+        $validated = $request->validate([
+            'client_name'     => ['required', 'string', 'max:255'],
+            'client_phone'    => ['required', 'string', 'max:50'],
+            'client_address'  => ['required', 'string', 'max:1000'],
+            'platform_source' => ['required', 'in:Instagram,WhatsApp,Autre'],
+            'status'          => ['required', 'in:En attente,Expédié,Livré,Annulé'],
+            'total_amount'    => ['required', 'numeric', 'min:0'],
+            'notes'           => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $externalOrder->update($validated);
+
+        $this->writeAudit('external_order.updated', ExternalOrder::class, $externalOrder->id, [
+            'client' => $externalOrder->client_name,
+            'status' => $externalOrder->status,
+        ]);
+
+        return back()->with('success', 'Commande de "'.$externalOrder->client_name.'" mise à jour.');
+    }
+
+    /**
+     * Update only the status of an external order (quick action)
+     */
+    public function updateExternalOrderStatus(Request $request, ExternalOrder $externalOrder): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:En attente,Expédié,Livré,Annulé'],
+        ]);
+
+        $externalOrder->update(['status' => $validated['status']]);
+
+        $this->writeAudit('external_order.status_changed', ExternalOrder::class, $externalOrder->id, [
+            'status' => $validated['status'],
+        ]);
+
+        return back()->with('success', 'Statut mis à jour en "'.$validated['status'].'".');
+    }
+
+    /**
+     * Delete an external order
+     */
+    public function deleteExternalOrder(ExternalOrder $externalOrder): RedirectResponse
+    {
+        $clientName = $externalOrder->client_name;
+
+        $this->writeAudit('external_order.deleted', ExternalOrder::class, $externalOrder->id, [
+            'client' => $clientName,
+        ]);
+
+        $externalOrder->delete();
+
+        return back()->with('success', 'Commande de "'.$clientName.'" supprimée.');
     }
 }

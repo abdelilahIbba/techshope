@@ -24,6 +24,11 @@ class Product extends Model
         'unit',
         'sell_by_length',
         'length_unit',
+        'is_promo',
+        'promo_price',
+        'promo_start_date',
+        'promo_end_date',
+        'promo_title',
     ];
 
     protected $casts = [
@@ -31,6 +36,10 @@ class Product extends Model
         'stock_quantity' => 'decimal:3',
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'is_promo' => 'boolean',
+        'promo_price' => 'decimal:2',
+        'promo_start_date' => 'date',
+        'promo_end_date' => 'date',
     ];
 
     protected $appends = [
@@ -38,7 +47,48 @@ class Product extends Model
         'available_sizes',
         'available_colors',
         'image_url',
+        'has_active_promo',
+        'effective_price',
+        'discount_percentage',
     ];
+
+    public function getHasActivePromoAttribute(): bool
+    {
+        if (! $this->is_promo || ! $this->promo_price || $this->promo_price <= 0) {
+            return false;
+        }
+
+        $today = now()->format('Y-m-d');
+
+        if ($this->promo_start_date && $this->promo_start_date->format('Y-m-d') > $today) {
+            return false;
+        }
+
+        if ($this->promo_end_date && $this->promo_end_date->format('Y-m-d') < $today) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getEffectivePriceAttribute(): float
+    {
+        if ($this->getHasActivePromoAttribute()) {
+            return (float) $this->promo_price;
+        }
+
+        return (float) ($this->sale_price ?? 0);
+    }
+
+    public function getDiscountPercentageAttribute(): int
+    {
+        if (! $this->getHasActivePromoAttribute() || $this->sale_price <= 0) {
+            return 0;
+        }
+
+        $discount = (($this->sale_price - $this->promo_price) / $this->sale_price) * 100;
+        return max(0, (int) round($discount));
+    }
 
     /**
      * The `image` column holds either a storage-relative path (uploaded

@@ -77,8 +77,21 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->middleware('permission:checkout.create')->name('pos.checkout');
         Route::get('/pos/receipt/{receipt}/print', [PosController::class, 'receiptPrint'])->middleware('permission:receipt.export')->name('pos.receipt.print');
         Route::get('/pos/barcode-print', [PosController::class, 'barcodePrintPage'])->middleware('permission:barcode.print')->name('pos.barcode.print');
-        Route::get('/pos/product/{product}/barcode.png', [PosController::class, 'productBarcodeImage'])->middleware('permission:barcode.print')->name('pos.product.barcode.png');
-        
+        // ── Promotions & Soldes ──
+        Route::get('/pos/promos', [PosController::class, 'promos'])->middleware('permission:stock.view')->name('pos.promos');
+        Route::post('/pos/promos/store', [PosController::class, 'storePromoProduct'])->middleware('permission:stock.create')->name('pos.promos.store');
+        Route::post('/pos/promos/apply', [PosController::class, 'applyPromo'])->middleware('permission:stock.edit')->name('pos.promos.apply');
+        Route::put('/pos/promos/{product}/update', [PosController::class, 'updatePromo'])->middleware('permission:stock.edit')->name('pos.promos.update');
+        Route::post('/pos/promos/{product}/toggle', [PosController::class, 'togglePromo'])->middleware('permission:stock.edit')->name('pos.promos.toggle');
+        Route::delete('/pos/promos/{product}/remove', [PosController::class, 'removePromo'])->middleware('permission:stock.edit')->name('pos.promos.remove');
+
+        // ── Commandes Externes ──
+        Route::get('/pos/external-orders', [PosController::class, 'externalOrders'])->middleware('permission:external_orders.view')->name('pos.external-orders');
+        Route::post('/pos/external-orders', [PosController::class, 'storeExternalOrder'])->middleware('permission:external_orders.create')->name('pos.external-orders.store');
+        Route::put('/pos/external-orders/{externalOrder}', [PosController::class, 'updateExternalOrder'])->middleware('permission:external_orders.edit')->name('pos.external-orders.update');
+        Route::patch('/pos/external-orders/{externalOrder}/status', [PosController::class, 'updateExternalOrderStatus'])->middleware('permission:external_orders.edit')->name('pos.external-orders.status');
+        Route::delete('/pos/external-orders/{externalOrder}', [PosController::class, 'deleteExternalOrder'])->middleware('permission:external_orders.delete')->name('pos.external-orders.delete');
+
         // ── Rapports & Historique ──
         Route::get('/pos/reports', [PosController::class, 'reports'])->middleware('permission:reports.view')->name('pos.reports');
         Route::get('/pos/reports/sales-by-product', [PosController::class, 'salesByProduct'])->middleware('permission:reports.view')->name('pos.reports.sales-by-product');

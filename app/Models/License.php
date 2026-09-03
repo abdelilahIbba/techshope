@@ -32,7 +32,39 @@ class License extends Model
     private static ?self $sharedInstance = null;
 
     /**
+     * Reset the static in-process cache.
+     * Called automatically on save (via boot) so tests and sequential
+     * activations always see fresh data.
+     */
+    public static function flushCache(): void
+    {
+        self::$fetched = false;
+        self::$sharedInstance = null;
+    }
+
+    /**
+     * Register model event hooks.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Flush the in-process cache whenever a license record is written,
+        // so that the next call to current() or isActive() re-reads from DB.
+        static::saved(function () {
+            static::flushCache();
+        });
+
+        static::deleted(function () {
+            static::flushCache();
+        });
+    }
+
+
+    /**
      * Retrieve the single active license record (always id = 1).
+     * Both LicenseService::activate() and the test helper activeLicense()
+     * guarantee the license is stored at id = 1 via DB::table::updateOrInsert.
      * Result is cached for the duration of the current PHP process (one request).
      */
     public static function current(): ?self

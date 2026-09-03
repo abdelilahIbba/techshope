@@ -122,13 +122,22 @@ class LicenseService
             return $result;
         }
 
-        License::updateOrCreate(['id' => 1], [
-            'key'          => trim($key),
-            'period'       => $result['period'],
-            'activated_at' => now(),
-            'last_seen_at' => now(),
-            'expires_at'   => $result['expires_at'],
-        ]);
+        // Use DB::table to bypass Eloquent's mass-assignment protection and
+        // guarantee the license is always stored with id = 1 (single-license system).
+        \DB::table('licenses')->updateOrInsert(
+            ['id' => 1],
+            [
+                'key'          => trim($key),
+                'period'       => $result['period'],
+                'activated_at' => now(),
+                'last_seen_at' => now(),
+                'expires_at'   => $result['expires_at'],
+                'created_at'   => now(),
+                'updated_at'   => now(),
+            ]
+        );
+
+        License::flushCache();
 
         return $result;
     }

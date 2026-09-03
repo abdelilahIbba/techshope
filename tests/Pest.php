@@ -56,15 +56,24 @@ use App\Models\User;
 
 /**
  * Insert/update a valid active license so CheckLicense middleware passes.
+ * Uses DB::table to bypass Eloquent mass-assignment and guarantee id = 1.
  */
 function activeLicense(): void
 {
-    License::updateOrCreate(['id' => 1], [
-        'key'          => 'DRG-TEST',
-        'period'       => '1_year',
-        'activated_at' => now(),
-        'expires_at'   => now()->addYear(),
-    ]);
+    License::flushCache();
+    \DB::table('licenses')->updateOrInsert(
+        ['id' => 1],
+        [
+            'key'          => 'DRG-TEST',
+            'period'       => '1_year',
+            'activated_at' => now(),
+            'last_seen_at' => now(),
+            'expires_at'   => now()->addYear(),
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]
+    );
+    License::flushCache();
 }
 
 /**

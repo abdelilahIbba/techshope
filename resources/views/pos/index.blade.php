@@ -155,7 +155,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
                         'name' => $product->name,
                         'barcode' => $product->barcode,
                         'category_id' => $product->category_id,
-                        'price' => (float) ($product->sale_price ?? $product->price ?? 0),
+                        'is_promo' => (bool) $product->has_active_promo,
+                        'original_price' => (float) ($product->sale_price ?? 0),
+                        'promo_price' => (float) ($product->promo_price ?? 0),
+                        'price' => (float) $product->effective_price,
+                        'discount_percentage' => (int) $product->discount_percentage,
+                        'promo_title' => $product->promo_title ?? 'Solde',
                         'purchase_price' => (float) ($product->purchase_price ?? 0),
                         'stock_quantity' => (float) $product->stock_quantity,
                         'unit' => $product->unit ?? 'unité',
@@ -550,7 +555,10 @@ var categories = @json($preparedCategories);
                     }
 
                     <!-- Badges on Image -->
-                    <span class="absolute top-1.5 right-1.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider">Sale</span>
+                    ${product.is_promo
+                        ? `<span class="absolute top-1.5 right-1.5 bg-gradient-to-r from-rose-600 to-amber-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-wider animate-pulse">🔥 SOLDE -${product.discount_percentage}%</span>`
+                        : `<span class="absolute top-1.5 right-1.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider">Sale</span>`
+                    }
                     
                     <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1">
                         ${unitBadge}
@@ -577,10 +585,16 @@ var categories = @json($preparedCategories);
                 <!-- Footer: Price & Stock -->
                 <div class="pt-1.5 mt-auto border-t border-slate-100 flex items-end justify-between gap-1.5">
                     <div class="flex flex-col min-w-0">
-                         <div class="font-extrabold text-indigo-600 text-sm sm:text-base tracking-tight leading-none flex items-baseline gap-0.5">
-                            ${Number(product.price).toFixed(2)}
-                            <span class="text-[10px] font-bold text-slate-400 self-start mt-0.5">${currencySymbol}</span>
-                         </div>
+                         ${product.is_promo
+                             ? `<div class="flex items-baseline gap-1">
+                                    <span class="line-through text-slate-400 text-[10px] font-bold">${Number(product.original_price).toFixed(2)}</span>
+                                    <span class="font-black text-rose-600 text-sm sm:text-base tracking-tight leading-none">${Number(product.price).toFixed(2)} <span class="text-[10px] font-bold text-rose-500">${currencySymbol}</span></span>
+                                </div>`
+                             : `<div class="font-extrabold text-indigo-600 text-sm sm:text-base tracking-tight leading-none flex items-baseline gap-0.5">
+                                    ${Number(product.price).toFixed(2)}
+                                    <span class="text-[10px] font-bold text-slate-400 self-start mt-0.5">${currencySymbol}</span>
+                                </div>`
+                         }
                          <div class="text-[9px] font-medium text-slate-400 mt-1 truncate">
                              A: ${Number(product.purchase_price).toFixed(2)} ${currencySymbol}
                          </div>
@@ -600,20 +614,49 @@ var categories = @json($preparedCategories);
             });
         }
 
+        function showPromoToast(name, originalPrice, promoPrice, discount) {
+            var toast = document.createElement('div');
+            toast.className = 'fixed top-5 right-5 z-[9999] bg-gradient-to-r from-rose-600 to-amber-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/20 animate-bounce';
+            toast.innerHTML = `
+                <div class="p-2 bg-white/20 rounded-xl shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-extrabold text-xs flex items-center gap-1.5">
+                        🔥 PRODUIT EN PROMOTION !
+                        <span class="bg-white text-rose-700 text-[10px] font-black px-1.5 py-0.2 rounded-full uppercase">- ${discount}%</span>
+                    </div>
+                    <div class="text-xs text-rose-100 font-medium mt-0.5">
+                        ${name} : <span class="line-through opacity-80">${Number(originalPrice).toFixed(2)} DH</span> → <span class="font-black text-white text-sm">${Number(promoPrice).toFixed(2)} DH</span>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3500);
+        }
+
         function addProductToCart(product, quantityToAdd) {
             var currentQuantity = cart[product.barcode]?.quantity || 0;
             var nextQuantity = currentQuantity + quantityToAdd;
 
             if (nextQuantity > product.stock_quantity) {
-                // Toast notification instead of alert could be better, but sticking to alert for simplicity unless upgrade desired
                 alert('Stock insuffisant !');
                 return;
+            }
+
+            if (product.is_promo && !cart[product.barcode]) {
+                showPromoToast(product.name, product.original_price || product.price, product.price, product.discount_percentage || 0);
             }
 
             cart[product.barcode] = {
                 barcode: product.barcode,
                 name: product.name,
                 price: Number(product.price),
+                original_price: Number(product.original_price || product.price),
+                is_promo: Boolean(product.is_promo),
+                discount_percentage: Number(product.discount_percentage || 0),
                 purchase_price: Number(product.purchase_price),
                 unit_price: Number(product.price), // Custom price (editable)
                 quantity: nextQuantity,
@@ -1005,15 +1048,16 @@ var categories = @json($preparedCategories);
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-xs text-slate-800 leading-snug line-clamp-2" dir="auto" title="${item.name}">${item.name}</h4>
-                        <div class="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-mono">
+                        <div class="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-mono flex-wrap">
                             <span>${item.barcode}</span>
+                            ${item.is_promo ? `<span class="bg-rose-100 text-rose-700 font-black px-1.5 py-0.2 rounded border border-rose-200 text-[9px]">🔥 SOLDE -${item.discount_percentage}%</span>` : ''}
                             ${item.unit === 'metre' ? '<span class="bg-amber-50 text-amber-600 font-bold px-1 rounded border border-amber-100">📏 m</span>' : (item.unit === 'cm' ? '<span class="bg-cyan-50 text-cyan-600 font-bold px-1 rounded border border-cyan-100">📐 cm</span>' : '')}
                         </div>
                     </div>
                     
                     <div class="flex items-center gap-1 shrink-0">
                         <div class="text-right">
-                            <span class="line-total font-black text-sm text-indigo-700 leading-tight block">${lineTotal.toFixed(2)}</span>
+                            <span class="line-total font-black text-sm ${item.is_promo ? 'text-rose-600' : 'text-indigo-700'} leading-tight block">${lineTotal.toFixed(2)}</span>
                             <span class="text-[9px] font-bold text-slate-400">${currencySymbol}</span>
                         </div>
                         <button type="button" class="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all qty-remove ml-1" title="Supprimer">
@@ -1029,9 +1073,10 @@ var categories = @json($preparedCategories);
                     
                     <!-- Editable Unit Price & Purchase Price Badge -->
                     <div class="flex items-center gap-1.5 min-w-0">
-                        <div class="flex items-center bg-slate-50 border border-slate-200/90 rounded-lg px-1.5 py-0.5">
-                            <span class="text-[9px] font-bold text-slate-400 mr-1">PU:</span>
-                            <input type="number" class="price-input w-14 text-center font-bold text-xs text-indigo-700 bg-transparent outline-none" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
+                        <div class="flex items-center ${item.is_promo ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200/90'} border rounded-lg px-1.5 py-0.5">
+                            ${item.is_promo ? `<span class="line-through text-slate-400 text-[9px] font-bold mr-1">${item.original_price.toFixed(2)}</span>` : ''}
+                            <span class="text-[9px] font-bold ${item.is_promo ? 'text-rose-600' : 'text-slate-400'} mr-1">PU:</span>
+                            <input type="number" class="price-input w-14 text-center font-bold text-xs ${item.is_promo ? 'text-rose-700 font-black' : 'text-indigo-700'} bg-transparent outline-none" data-barcode="${item.barcode}" value="${item.unit_price.toFixed(2)}" min="0" step="0.01">
                         </div>
                         <span class="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">A: ${item.purchase_price.toFixed(2)}</span>
                     </div>

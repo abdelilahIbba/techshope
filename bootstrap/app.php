@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // Exempt the mobile scanner push endpoint from CSRF verification.
+        // The 32-char session token in the request body serves as the shared secret.
+        $middleware->validateCsrfTokens(except: [
+            'pos/scanner/push',
+        ]);
+
         $middleware->alias([
             'permission'    => CheckPermission::class,
             'check.license' => CheckLicense::class,

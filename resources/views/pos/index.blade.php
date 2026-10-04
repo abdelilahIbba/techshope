@@ -16,6 +16,109 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 @endpush
 
 @push('modals')
+    {{-- ===== Camera Scanner Modal ===== --}}
+    <div id="camera-scanner-modal"
+         class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-black text-slate-900">Scanner par caméra</h2>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Caméra PC ou téléphone via QR code</p>
+                    </div>
+                </div>
+                <button type="button" id="camera-scanner-modal-close"
+                    class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            {{-- Tabs --}}
+            <div class="flex border-b border-slate-100">
+                <button type="button" id="cs-tab-phone" data-tab="phone"
+                    class="cs-tab flex-1 py-2.5 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600 transition-all">
+                    📱 Téléphone (QR)
+                </button>
+                <button type="button" id="cs-tab-desktop" data-tab="desktop"
+                    class="cs-tab flex-1 py-2.5 text-xs font-bold text-slate-400 hover:text-slate-700 border-b-2 border-transparent transition-all">
+                    💻 Caméra PC
+                </button>
+            </div>
+
+            {{-- Tab: Phone --}}
+            <div id="cs-panel-phone" class="p-6 text-center">
+                <p class="text-sm text-slate-600 mb-4">Scannez ce QR code avec votre téléphone pour ouvrir le scanner mobile&nbsp;:</p>
+
+                {{-- QR Code display --}}
+                <div class="flex justify-center mb-4">
+                    <div id="cs-qr-wrap"
+                        class="w-44 h-44 bg-slate-50 border-2 border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <p class="text-xs text-slate-400">Génération…</p>
+                    </div>
+                </div>
+
+                {{-- URL display --}}
+                <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2 mb-4">
+                    <span class="text-xs font-mono text-slate-700 flex-1 truncate" id="cs-mobile-url">—</span>
+                    <button type="button" id="cs-copy-url"
+                        class="text-xs font-bold text-indigo-600 hover:text-indigo-800 shrink-0">Copier</button>
+                </div>
+
+                {{-- Status --}}
+                <div id="cs-phone-status" class="flex items-center justify-center gap-2 text-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400" id="cs-phone-dot"
+                        style="box-shadow:0 0 6px #fbbf24;"></span>
+                    <span id="cs-phone-status-text" class="font-semibold text-slate-600">En attente de scan…</span>
+                </div>
+            </div>
+
+            {{-- Tab: Desktop --}}
+            <div id="cs-panel-desktop" class="p-6 hidden">
+                <p class="text-sm text-slate-600 mb-4">Placez un code-barres devant la caméra de votre ordinateur&nbsp;:</p>
+
+                <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden mb-4 border border-slate-200">
+                    <video id="cs-desktop-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                    <div id="cs-desktop-overlay" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div class="w-1/2 h-1/2 relative">
+                            <span class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-indigo-500 rounded-tl-lg"></span>
+                            <span class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-indigo-500 rounded-tr-lg"></span>
+                            <span class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-indigo-500 rounded-bl-lg"></span>
+                            <span class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-indigo-500 rounded-br-lg"></span>
+                        </div>
+                    </div>
+                    <div id="cs-desktop-idle"
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 gap-2 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <p class="text-xs opacity-60">Caméra désactivée</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button" id="cs-start-desktop"
+                        class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all active:scale-95">
+                        ▶ Démarrer
+                    </button>
+                    <button type="button" id="cs-stop-desktop"
+                        class="flex-1 py-2.5 bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600 text-sm font-bold rounded-xl transition-all active:scale-95 hidden">
+                        ■ Arrêter
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-400 text-center mt-3" id="cs-desktop-status">Prêt</p>
+            </div>
+
+        </div>
+    </div>
+    {{-- ===== / Camera Scanner Modal ===== --}}
+
     <!-- ===== Product Details Modal (Modern Horizontal 2-Column) ===== -->
     <div id="product-details-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-3 sm:p-5">
         <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full overflow-hidden flex flex-col md:flex-row relative" style="max-width: 880px; max-height: 88vh;">
@@ -281,6 +384,20 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
                                 d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
                                 clip-rule="evenodd" />
                         </svg>
+                    </button>
+
+                    {{-- ── Camera Scanner Button ── --}}
+                    <button type="button" id="camera-scanner-btn"
+                        title="Scanner avec la caméra ou le téléphone"
+                        class="h-11 w-11 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200/60 transition-all active:scale-95 flex items-center justify-center shrink-0 relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {{-- Blinking dot when active --}}
+                        <span id="camera-scanner-dot"
+                            class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 hidden"
+                            style="box-shadow:0 0 6px #4ade80;"></span>
                     </button>
                 </div>
                 <div class="flex justify-between items-center mt-2 px-1.5">
@@ -1336,6 +1453,335 @@ var categories = @json($preparedCategories);
                 barcodeInput.focus();
             }
         });
+})();
+</script>
+
+{{-- ===== Camera Scanner Script ===== --}}
+<script>
+/**
+ * Camera Scanner Module
+ * Handles the 📷 camera scanner modal:
+ *   - Tab 1 (Phone): generates a QR code → phone scans it → SSE receives barcode
+ *   - Tab 2 (Desktop): opens webcam, decodes barcodes with BarcodeDetector or ZXing
+ *
+ * All decoded barcodes are injected into #barcode-input and trigger scanAndAdd()
+ * without touching the existing IIFE logic.
+ */
+(function CameraScanner() {
+    'use strict';
+
+    // ── Route URLs (injected by Blade) ──────────────────────────────────────
+    const URL_TOKEN  = '{{ route("pos.scanner.token") }}';
+    const URL_STREAM = '{{ route("pos.scanner.stream") }}';
+
+    // ── DOM references ───────────────────────────────────────────────────────
+    const modal        = document.getElementById('camera-scanner-modal');
+    const btnOpen      = document.getElementById('camera-scanner-btn');
+    const btnClose     = document.getElementById('camera-scanner-modal-close');
+    const activeDot    = document.getElementById('camera-scanner-dot');
+    const tabBtns      = document.querySelectorAll('.cs-tab');
+    const panelPhone   = document.getElementById('cs-panel-phone');
+    const panelDesktop = document.getElementById('cs-panel-desktop');
+
+    // Phone tab
+    const qrWrap         = document.getElementById('cs-qr-wrap');
+    const mobileUrlEl    = document.getElementById('cs-mobile-url');
+    const copyUrlBtn     = document.getElementById('cs-copy-url');
+    const phoneDot       = document.getElementById('cs-phone-dot');
+    const phoneStatusTxt = document.getElementById('cs-phone-status-text');
+
+    // Desktop tab
+    const desktopVideo   = document.getElementById('cs-desktop-video');
+    const desktopIdle    = document.getElementById('cs-desktop-idle');
+    const desktopOverlay = document.getElementById('cs-desktop-overlay');
+    const btnStartDesk   = document.getElementById('cs-start-desktop');
+    const btnStopDesk    = document.getElementById('cs-stop-desktop');
+    const desktopStatus  = document.getElementById('cs-desktop-status');
+
+    // Existing POS elements (from parent IIFE — accessible via DOM)
+    const barcodeInput = document.getElementById('barcode-input');
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let sseSource       = null;   // EventSource for phone tab
+    let desktopStream   = null;   // MediaStream for desktop tab
+    let desktopInterval = null;   // scan interval ID
+    let mobileUrl       = null;   // full mobile scanner URL
+    let activeTab       = 'phone';
+    let lastScannedAt   = 0;
+    const DEBOUNCE_MS   = 1800;
+
+    // ── Inject barcode into POS flow ─────────────────────────────────────────
+    function injectBarcode(barcode) {
+        const now = Date.now();
+        if (!barcode || (barcode === barcodeInput.value && (now - lastScannedAt) < DEBOUNCE_MS)) return;
+        lastScannedAt = now;
+
+        barcodeInput.value = barcode;
+        // Trigger the existing renderProducts filter
+        barcodeInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // Trigger scanAndAdd after a tiny delay so the product list renders
+        setTimeout(() => {
+            // Call scanAndAdd by dispatching Enter keypress on the input
+            barcodeInput.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', bubbles: true }));
+        }, 80);
+
+        showScanFeedback(barcode);
+    }
+
+    function showScanFeedback(barcode) {
+        // Flash the camera button green briefly
+        if (btnOpen) {
+            btnOpen.classList.add('bg-emerald-500');
+            setTimeout(() => btnOpen.classList.remove('bg-emerald-500'), 800);
+        }
+        // Close modal after successful scan
+        closeModal();
+    }
+
+    // ── Modal open / close ───────────────────────────────────────────────────
+    function openModal() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        if (activeTab === 'phone') initPhoneTab();
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        stopSSE();
+        stopDesktopCamera();
+        activeDot.classList.add('hidden');
+    }
+
+    btnOpen.addEventListener('click', openModal);
+    btnClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
+
+    // ── Tab switching ────────────────────────────────────────────────────────
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            if (tab === activeTab) return;
+            activeTab = tab;
+
+            tabBtns.forEach(b => {
+                const isActive = b.dataset.tab === tab;
+                b.classList.toggle('text-indigo-600', isActive);
+                b.classList.toggle('border-indigo-600', isActive);
+                b.classList.toggle('text-slate-400', !isActive);
+                b.classList.toggle('border-transparent', !isActive);
+            });
+
+            panelPhone.classList.toggle('hidden', tab !== 'phone');
+            panelDesktop.classList.toggle('hidden', tab !== 'desktop');
+
+            if (tab === 'phone') {
+                stopDesktopCamera();
+                initPhoneTab();
+            } else {
+                stopSSE();
+            }
+        });
+    });
+
+    // ── Phone Tab: Token + QR + SSE ─────────────────────────────────────────
+    async function initPhoneTab() {
+        if (mobileUrl) {
+            // Already initialised — just restart SSE
+            startSSE();
+            return;
+        }
+
+        setPhoneStatus('Chargement…', '#fbbf24');
+        try {
+            const resp = await fetch(URL_TOKEN, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            mobileUrl = data.mobile_url;
+
+            // Show URL
+            mobileUrlEl.textContent = mobileUrl;
+
+            // Generate QR code using free public API (no JS lib needed)
+            const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=176x176&data=' + encodeURIComponent(mobileUrl);
+            const img = new Image();
+            img.className = 'w-full h-full object-contain';
+            img.alt = 'QR Code';
+            img.onload  = () => { qrWrap.innerHTML = ''; qrWrap.appendChild(img); };
+            img.onerror = () => { qrWrap.innerHTML = '<p class="text-xs text-red-400">Erreur QR</p>'; };
+            img.src = qrSrc;
+
+            startSSE();
+        } catch (err) {
+            setPhoneStatus('Erreur de connexion', '#ef4444');
+        }
+    }
+
+    function setPhoneStatus(text, dotColor) {
+        phoneDot.style.background = dotColor;
+        phoneDot.style.boxShadow  = '0 0 6px ' + dotColor;
+        phoneStatusTxt.textContent = text;
+    }
+
+    function startSSE() {
+        stopSSE();
+        setPhoneStatus('En attente de scan…', '#fbbf24');
+        activeDot.classList.remove('hidden');
+
+        sseSource = new EventSource(URL_STREAM);
+
+        sseSource.addEventListener('connected', () => {
+            setPhoneStatus('Connecté — scannez avec le téléphone', '#22c55e');
+        });
+
+        sseSource.addEventListener('barcode', (e) => {
+            try {
+                const payload = JSON.parse(e.data);
+                if (payload.barcode) {
+                    setPhoneStatus('✅ Code reçu : ' + payload.barcode, '#22c55e');
+                    injectBarcode(payload.barcode);
+                }
+            } catch (_) {}
+        });
+
+        sseSource.addEventListener('timeout', () => {
+            // Server closed the stream — reconnect automatically
+            startSSE();
+        });
+
+        sseSource.addEventListener('error', () => {
+            setPhoneStatus('Reconnexion…', '#f59e0b');
+            stopSSE();
+            setTimeout(startSSE, 3000);
+        });
+    }
+
+    function stopSSE() {
+        if (sseSource) { sseSource.close(); sseSource = null; }
+    }
+
+    // Copy URL
+    copyUrlBtn.addEventListener('click', () => {
+        if (!mobileUrl) return;
+        navigator.clipboard.writeText(mobileUrl).then(() => {
+            copyUrlBtn.textContent = 'Copié !';
+            setTimeout(() => { copyUrlBtn.textContent = 'Copier'; }, 2000);
+        });
+    });
+
+    // ── Desktop Tab: Camera + Barcode Detection ──────────────────────────────
+    btnStartDesk.addEventListener('click', startDesktopCamera);
+    btnStopDesk.addEventListener('click', stopDesktopCamera);
+
+    async function startDesktopCamera() {
+        try {
+            desktopStatus.textContent = 'Accès caméra…';
+            desktopStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+            });
+            desktopVideo.srcObject = desktopStream;
+            await desktopVideo.play();
+
+            desktopIdle.style.display    = 'none';
+            desktopOverlay.style.display = 'flex';
+            btnStartDesk.classList.add('hidden');
+            btnStopDesk.classList.remove('hidden');
+            activeDot.classList.remove('hidden');
+            desktopStatus.textContent = 'Caméra active — pointez vers le code-barres';
+
+            if (typeof BarcodeDetector !== 'undefined') {
+                startNativeDesktopScan();
+            } else {
+                await startZXingDesktopScan();
+            }
+        } catch (err) {
+            desktopStatus.textContent = 'Erreur : ' + err.message;
+        }
+    }
+
+    function stopDesktopCamera() {
+        clearInterval(desktopInterval);
+        desktopInterval = null;
+        if (desktopStream) {
+            desktopStream.getTracks().forEach(t => t.stop());
+            desktopStream = null;
+        }
+        desktopVideo.srcObject = null;
+        desktopIdle.style.display    = 'flex';
+        desktopOverlay.style.display = 'none';
+        btnStartDesk.classList.remove('hidden');
+        btnStopDesk.classList.add('hidden');
+        activeDot.classList.add('hidden');
+        desktopStatus.textContent = 'Prêt';
+    }
+
+    function startNativeDesktopScan() {
+        // eslint-disable-next-line no-undef
+        const detector = new BarcodeDetector({
+            formats: ['ean_13','ean_8','code_128','code_39','qr_code','upc_a','upc_e','itf','data_matrix'],
+        });
+        desktopInterval = setInterval(async () => {
+            if (!desktopStream || desktopVideo.readyState < 2) return;
+            try {
+                const found = await detector.detect(desktopVideo);
+                if (found.length) { injectBarcode(found[0].rawValue); }
+            } catch (_) {}
+        }, 400);
+    }
+
+    async function startZXingDesktopScan() {
+        desktopStatus.textContent = 'Chargement ZXing…';
+        if (!window.ZXing) {
+            await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js');
+        }
+        desktopStatus.textContent = 'Caméra active (ZXing)';
+
+        // eslint-disable-next-line no-undef
+        const hints   = new Map();
+        // eslint-disable-next-line no-undef
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.DATA_MATRIX,
+        ]);
+        // eslint-disable-next-line no-undef
+        const reader = new ZXing.MultiFormatReader();
+        reader.setHints(hints);
+        const canvas  = document.createElement('canvas');
+
+        desktopInterval = setInterval(() => {
+            if (!desktopStream || desktopVideo.readyState < 2) return;
+            try {
+                canvas.width  = desktopVideo.videoWidth;
+                canvas.height = desktopVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(desktopVideo, 0, 0, canvas.width, canvas.height);
+                // eslint-disable-next-line no-undef
+                const lum  = new ZXing.RGBLuminanceSource(
+                    ctx.getImageData(0, 0, canvas.width, canvas.height).data,
+                    canvas.width, canvas.height
+                );
+                // eslint-disable-next-line no-undef
+                const bmp  = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+                const result = reader.decode(bmp);
+                injectBarcode(result.getText());
+            } catch (_) {}
+        }, 350);
+    }
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+            const s = document.createElement('script');
+            s.src = src; s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
 })();
 </script>
 @endpush

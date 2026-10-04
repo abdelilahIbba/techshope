@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\CameraScannerController;
 use Laravel\Fortify\Http\Controllers\EmailVerificationNotificationController;
 
 Route::get('/', function () {
@@ -116,7 +117,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pos/reports/export/sales-by-product', [PosController::class, 'exportSalesByProduct'])->middleware('permission:reports.export')->name('pos.reports.export.sales-by-product');
         Route::get('/pos/reports/export/sales-by-cashier', [PosController::class, 'exportSalesByCashier'])->middleware('permission:reports.export')->name('pos.reports.export.sales-by-cashier');
         Route::get('/pos/reports/export/expenses', [PosController::class, 'exportExpenses'])->middleware('permission:reports.export')->name('pos.reports.export.expenses');
+
+        // ── Camera Scanner ──
+        // Token: generate/get session token for this desktop tab
+        Route::get('/pos/scanner/token', [CameraScannerController::class, 'getToken'])->name('pos.scanner.token');
+        // SSE stream: desktop listens here for incoming barcodes
+        Route::get('/pos/scanner/stream', [CameraScannerController::class, 'stream'])->name('pos.scanner.stream');
+        // Lookup: resolve a barcode to product data (AJAX)
+        Route::get('/pos/scanner/lookup', [CameraScannerController::class, 'lookup'])->name('pos.scanner.lookup');
     });
 });
+
+// ── Camera Scanner: public routes (no auth — token is the secret) ──
+// Mobile page: accessible from phone on the same LAN
+Route::get('/pos/scanner/mobile/{token}', [CameraScannerController::class, 'mobilePage'])->name('pos.scanner.mobile');
+// Push: mobile POSTs the scanned barcode to this endpoint
+Route::post('/pos/scanner/push', [CameraScannerController::class, 'push'])->name('pos.scanner.push');
 
 require __DIR__.'/settings.php';

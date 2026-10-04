@@ -1,135 +1,138 @@
 services:
+
+  # ── PHP-FPM Application ────────────────────────────────────────────────────
   app:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: techshope_app_v2
+    container_name: techshope_sck_app
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
-      # Anonymous/named volumes shadow the slow Windows bind mount for
-      # directories that don't need to be edited from the host. This keeps
-      # vendor/, node_modules/, and Laravel's runtime cache dirs on the fast
-      # native Linux VM filesystem instead of the 9p/drvfs bridge to C:\.
-      - techshope_vendor_v2:/var/www/html/vendor
-      - techshope_bootstrap_cache_v2:/var/www/html/bootstrap/cache
-      - techshope_storage_framework_v2:/var/www/html/storage/framework
-      - techshope_storage_logs_v2:/var/www/html/storage/logs
+      # Named volumes keep vendor/, bootstrap/cache, storage on the fast
+      # native Linux VM filesystem (avoid slow 9p/drvfs over Windows bind-mount)
+      - techshope_sck_vendor:/var/www/html/vendor
+      - techshope_sck_bootstrap_cache:/var/www/html/bootstrap/cache
+      - techshope_sck_storage_framework:/var/www/html/storage/framework
+      - techshope_sck_storage_logs:/var/www/html/storage/logs
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
       DB_CONNECTION: pgsql
-      DB_HOST: techshope_pgsql_v2
+      DB_HOST: techshope_sck_pgsql
       DB_PORT: "5432"
-      DB_DATABASE: ${DB_DATABASE:-droguerie_s}
+      DB_DATABASE: ${DB_DATABASE:-techshope_sck}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       RUN_SEEDERS: ${RUN_SEEDERS:-true}
     depends_on:
-      techshope_pgsql_v2:
+      techshope_sck_pgsql:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - techshope_net_v2
+      - techshope_sck_net
 
-  techshope_web_v2:
+  # ── Nginx Web Server ───────────────────────────────────────────────────────
+  techshope_sck_web:
     image: nginx:1.27-alpine
-    container_name: techshope_web_v2
+    container_name: techshope_sck_web
     depends_on:
       - app
     ports:
-      - "18080:80"
+      - "18081:80"        # Host 18081 → avoid clash with old techshope (18080)
     volumes:
       - ./:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
     networks:
-      - techshope_net_v2
+      - techshope_sck_net
 
-  techshope_queue_v2:
+  # ── Queue Worker ───────────────────────────────────────────────────────────
+  techshope_sck_queue:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: techshope_queue_v2
+    container_name: techshope_sck_queue
     working_dir: /var/www/html
     command: ["php", "artisan", "queue:work", "--tries=1", "--verbose"]
     depends_on:
-      techshope_pgsql_v2:
+      techshope_sck_pgsql:
         condition: service_healthy
       app:
         condition: service_started
     volumes:
       - ./:/var/www/html
-      - techshope_vendor_v2:/var/www/html/vendor
-      - techshope_bootstrap_cache_v2:/var/www/html/bootstrap/cache
-      - techshope_storage_framework_v2:/var/www/html/storage/framework
-      - techshope_storage_logs_v2:/var/www/html/storage/logs
+      - techshope_sck_vendor:/var/www/html/vendor
+      - techshope_sck_bootstrap_cache:/var/www/html/bootstrap/cache
+      - techshope_sck_storage_framework:/var/www/html/storage/framework
+      - techshope_sck_storage_logs:/var/www/html/storage/logs
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
       DB_CONNECTION: pgsql
-      DB_HOST: techshope_pgsql_v2
+      DB_HOST: techshope_sck_pgsql
       DB_PORT: "5432"
-      DB_DATABASE: ${DB_DATABASE:-droguerie_s}
+      DB_DATABASE: ${DB_DATABASE:-techshope_sck}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
     restart: unless-stopped
     networks:
-      - techshope_net_v2
+      - techshope_sck_net
 
-  techshope_pgsql_v2:
+  # ── PostgreSQL Database ────────────────────────────────────────────────────
+  techshope_sck_pgsql:
     image: postgres:16-alpine
-    container_name: techshope_pgsql_v2
+    container_name: techshope_sck_pgsql
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-droguerie_s}
+      POSTGRES_DB: ${DB_DATABASE:-techshope_sck}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${POSTGRES_PORT:-55432}:5432"
+      - "${POSTGRES_PORT:-15433}:5432"   # Host 15433 → avoid clash with old techshope (15432)
     volumes:
-      - techshope_pgdata_v2:/var/lib/postgresql/data
+      - techshope_sck_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-droguerie_s}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-techshope_sck}"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
     restart: unless-stopped
     networks:
-      - techshope_net_v2
+      - techshope_sck_net
 
-  techshope_vite_v2:
+  # ── Vite Dev Server (optional — use profile: frontend) ────────────────────
+  techshope_sck_vite:
     build:
       context: .
       dockerfile: docker/node/Dockerfile
-    container_name: techshope_vite_v2
+    container_name: techshope_sck_vite
     profiles: ["frontend"]
     working_dir: /var/www/html
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 15173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 15174"
     ports:
-      - "15173:15173"
+      - "15174:15174"     # Host 15174 → avoid clash with old techshope (15173)
     volumes:
       - ./:/var/www/html
-      # node_modules and Vite's dependency-optimization cache on native
-      # volumes: npm installs and Vite's dep scans are also very slow over
-      # the Windows bind mount (same 9p bottleneck as vendor/ for PHP).
-      - techshope_node_modules_v2:/var/www/html/node_modules
-      - techshope_vite_cache_v2:/var/www/html/node_modules/.vite
+      - techshope_sck_node_modules:/var/www/html/node_modules
+      - techshope_sck_vite_cache:/var/www/html/node_modules/.vite
     depends_on:
       - app
     networks:
-      - techshope_net_v2
+      - techshope_sck_net
 
+# ── Networks ──────────────────────────────────────────────────────────────────
 networks:
-  techshope_net_v2:
+  techshope_sck_net:
     driver: bridge
 
+# ── Volumes ───────────────────────────────────────────────────────────────────
 volumes:
-  techshope_pgdata_v2:
-  techshope_vendor_v2:
-  techshope_bootstrap_cache_v2:
-  techshope_storage_framework_v2:
-  techshope_storage_logs_v2:
-  techshope_node_modules_v2:
-  techshope_vite_cache_v2:
+  techshope_sck_pgdata:
+  techshope_sck_vendor:
+  techshope_sck_bootstrap_cache:
+  techshope_sck_storage_framework:
+  techshope_sck_storage_logs:
+  techshope_sck_node_modules:
+  techshope_sck_vite_cache:

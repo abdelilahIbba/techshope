@@ -30,10 +30,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-techshope-v2.ini
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-techshope-sck.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
-COPY docker/php/entrypoint.sh /usr/local/bin/techshope-v2-entrypoint
-RUN chmod +x /usr/local/bin/techshope-v2-entrypoint
+COPY docker/php/entrypoint.sh /usr/local/bin/techshope-sck-entrypoint
+RUN chmod +x /usr/local/bin/techshope-sck-entrypoint
 
 # Bake composer.json/lock and run install at build time so the `vendor/`
 # volume is pre-seeded with a warm autoloader instead of being empty and
@@ -41,5 +41,5 @@ RUN chmod +x /usr/local/bin/techshope-v2-entrypoint
 COPY composer.json composer.lock ./
 RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
 
-ENTRYPOINT ["techshope-v2-entrypoint"]
+ENTRYPOINT ["techshope-sck-entrypoint"]
 CMD ["php-fpm"]

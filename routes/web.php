@@ -78,19 +78,30 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->middleware('permission:checkout.create')->name('pos.checkout');
         Route::get('/pos/receipt/{receipt}/print', [PosController::class, 'receiptPrint'])->middleware('permission:receipt.export')->name('pos.receipt.print');
         Route::get('/pos/barcode-print', [PosController::class, 'barcodePrintPage'])->middleware('permission:barcode.print')->name('pos.barcode.print');
-        // ── Promotions & Soldes ──
+        // ── Promotions & Soldes (إدارة العروض والتخفيضات) ──
+        // عرض صفحة العروض والتخفيضات لجميع المنتجات
         Route::get('/pos/promos', [PosController::class, 'promos'])->middleware('permission:stock.view')->name('pos.promos');
+        // إضافة منتج جديد مباشرة بسعر أصلي وسعر تخفيض
         Route::post('/pos/promos/store', [PosController::class, 'storePromoProduct'])->middleware('permission:stock.create')->name('pos.promos.store');
+        // تطبيق تخفيض على منتج موجود مسبقاً
         Route::post('/pos/promos/apply', [PosController::class, 'applyPromo'])->middleware('permission:stock.edit')->name('pos.promos.apply');
+        // تعديل بيانات التخفيض لمنتج معين
         Route::put('/pos/promos/{product}/update', [PosController::class, 'updatePromo'])->middleware('permission:stock.edit')->name('pos.promos.update');
+        // تفعيل أو تعطيل التخفيض مؤقتاً
         Route::post('/pos/promos/{product}/toggle', [PosController::class, 'togglePromo'])->middleware('permission:stock.edit')->name('pos.promos.toggle');
+        // إزالة التخفيض نهائياً وإعادة السعر الأصلي
         Route::delete('/pos/promos/{product}/remove', [PosController::class, 'removePromo'])->middleware('permission:stock.edit')->name('pos.promos.remove');
 
-        // ── Commandes Externes ──
+        // ── Commandes Externes (طلبات السوشيال ميديا: واتساب وإنستغرام) ──
+        // عرض قائمة الطلبات الخارجية ومتابعة حالتها
         Route::get('/pos/external-orders', [PosController::class, 'externalOrders'])->middleware('permission:external_orders.view')->name('pos.external-orders');
+        // تسجيل طلب خارجي جديد
         Route::post('/pos/external-orders', [PosController::class, 'storeExternalOrder'])->middleware('permission:external_orders.create')->name('pos.external-orders.store');
+        // تعديل بيانات طلب خارجي
         Route::put('/pos/external-orders/{externalOrder}', [PosController::class, 'updateExternalOrder'])->middleware('permission:external_orders.edit')->name('pos.external-orders.update');
+        // تحديث حالة الطلب السريع (قيد الانتظار، تم الشحن، تم التوصيل، ملغى)
         Route::patch('/pos/external-orders/{externalOrder}/status', [PosController::class, 'updateExternalOrderStatus'])->middleware('permission:external_orders.edit')->name('pos.external-orders.status');
+        // حذف طلب خارجي
         Route::delete('/pos/external-orders/{externalOrder}', [PosController::class, 'deleteExternalOrder'])->middleware('permission:external_orders.delete')->name('pos.external-orders.delete');
 
         // ── Rapports & Historique ──
@@ -118,20 +129,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pos/reports/export/sales-by-cashier', [PosController::class, 'exportSalesByCashier'])->middleware('permission:reports.export')->name('pos.reports.export.sales-by-cashier');
         Route::get('/pos/reports/export/expenses', [PosController::class, 'exportExpenses'])->middleware('permission:reports.export')->name('pos.reports.export.expenses');
 
-        // ── Camera Scanner ──
-        // Token: generate/get session token for this desktop tab
+        // ── Camera Scanner (ماسح الباركود بالكاميرا) ──
+        // 1. توليد أو جلب الرمز السري (Token) الخاص بجلسة الـ POS الحالية لربط الهاتف
         Route::get('/pos/scanner/token', [CameraScannerController::class, 'getToken'])->name('pos.scanner.token');
-        // SSE stream: desktop listens here for incoming barcodes
+        // 2. قناة البث المباشر (SSE - Server-Sent Events) لاستقبال الباركود المرسل من الهاتف فورياً
         Route::get('/pos/scanner/stream', [CameraScannerController::class, 'stream'])->name('pos.scanner.stream');
-        // Lookup: resolve a barcode to product data (AJAX)
+        // 3. البحث السريع عن بيانات المنتج عبر الباركود المقروء (AJAX)
         Route::get('/pos/scanner/lookup', [CameraScannerController::class, 'lookup'])->name('pos.scanner.lookup');
     });
 });
 
-// ── Camera Scanner: public routes (no auth — token is the secret) ──
-// Mobile page: accessible from phone on the same LAN
+// ── Camera Scanner: مسارات عامة للهاتف (تعتمد على الرمز السري Token بدلاً من تسجيل الدخول) ──
+// 4. صفحة الماسح على الهاتف المحمول (تعمل عبر الشبكة المحلية LAN عبر قراءة رمز QR)
 Route::get('/pos/scanner/mobile/{token}', [CameraScannerController::class, 'mobilePage'])->name('pos.scanner.mobile');
-// Push: mobile POSTs the scanned barcode to this endpoint
+// 5. نقطة استقبال الباركود المرسل من كاميرا الهاتف (مستثناة من حماية CSRF في bootstrap/app.php)
 Route::post('/pos/scanner/push', [CameraScannerController::class, 'push'])->name('pos.scanner.push');
 
 require __DIR__.'/settings.php';
